@@ -37,6 +37,10 @@ RULE:
 - Map Engine: MapLibre Native Android SDK 11.5.1
 - Spatial Math: MapLibre Turf Java 6.0.1
 - CI: GitHub Actions builds a debug APK with the committed Gradle wrapper
+- Federal imagery stack:
+  - Overview: cached USGS Imagery Only raster tiles through zoom 15
+  - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 22
+  - Navigation: cached USGS Imagery Topo selectable labeled mode
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -54,6 +58,13 @@ RULE:
    - The selected CONUS imagery data are public domain and require no API key.
    - Offline redistribution will use an approved regional packaging process rather
      than unrestricted bulk caching against the live USGS service.
+8. Michael approved a hybrid federal imagery presentation after device testing.
+   - USGS cached imagery remains the regional overview source.
+   - USDA FPAC NAIP is the close-detail source beginning at zoom 15.
+   - Direct USDA browser testing showed sufficient detail to distinguish lane
+     markings, building shadows, and roof seams at the inspected location.
+   - USGS Imagery Topo supplies an optional labeled navigation mode.
+   - Aerial/Labeled changes use layer visibility and do not reload the map style.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -72,6 +83,8 @@ EVIDENCE STATUS:
    of the underlying CONUS imagery data.
 3. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
 4. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
+5. Measure USDA dynamic-service latency on target devices and decide whether a
+   RangeWater-controlled proxy cache or regional offline package is needed.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -111,7 +124,7 @@ EVIDENCE STATUS:
   not federal raster imagery, despite comments identifying it as NAIP/USGS.
 
 - RW-TX-002-REV
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — PARTIAL DEVICE CHECK COMPLETE
   Scope: Replaces the demonstration style with an embedded MapLibre raster style
   using the official USGS Imagery Only cached-tile endpoint and source attribution.
   Preflight corrections: Preserved the verified lifecycle and memory bridge, current
@@ -120,6 +133,19 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35278999050
   Build artifact: RangeWater-Debug-APK
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
+  Device result: USGS imagery rendered and navigated, but the cached source stopped
+  short of the close pasture detail Michael needs and did not provide landmarks.
+  Background/resume and recreation acceptance were not reported as complete.
+
+- RW-TX-002-REV2
+  Status: IMPLEMENTED LOCALLY — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Scope: Hybrid USGS/USDA imagery, zoom-15 automatic detail transition, camera zoom
+  through level 22, and Aerial/Labeled modes using a single MapLibre style.
+  Preflight corrections: Preserved the verified lifecycle and memory bridge; omitted
+  an undeclared Compose animation dependency; kept CaveCode history and evidence
+  qualifications; placed custom attribution away from MapLibre's required logo.
+  Endpoint check: A fixed-bounds USDA FPAC NAIP exportImage request returned a valid
+  512-by-512 aerial image before implementation.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -136,19 +162,28 @@ EVIDENCE STATUS:
   limits remain distinct from the copyright status of the underlying imagery.
 - Bulk offline caching remains disabled until RangeWater has a validated regional
   packaging and provisioning design.
+- USDA FPAC NAIP exportImage is a live dynamic service and was visibly slower during
+  Michael's browser test. The 512-pixel request strategy is implemented but its real
+  device performance and service behavior remain acceptance-test items.
+- Close zoom to level 22 permits inspection but cannot create detail beyond the
+  underlying NAIP imagery; the final levels may visibly overzoom existing pixels.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: USGS federal basemap alignment
-- Working transmission: RW-TX-002-REV
-- Implementation status: COMPLETE
-- CI status: GREEN — source commit d87ab0cb8bc10575d0a102857081585844156dda
-- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35278999050
+- Current phase: Hybrid federal imagery integration
+- Working transmission: RW-TX-002-REV2
+- Implementation status: COMPLETE LOCALLY
+- CI status: PENDING
+- Build artifact: PENDING
 - Functional device verification: PENDING
-- Next action: Install the RW-TX-002-REV APK and verify that photographic USGS
-  orthoimagery loads, pans, zooms, survives background/resume, and recreates cleanly.
+- Next action: Build RW-TX-002-REV2 in GitHub Actions, then install the APK and verify:
+  1. USGS overview navigation remains responsive.
+  2. USDA NAIP detail appears after zoom 15 and permits useful pasture inspection.
+  3. Aerial/Labeled switching works without a black screen or full style reload.
+  4. Loading/error status and attribution remain readable and unobtrusive.
+  5. Background/resume and Activity recreation do not crash or blank the map.
 - Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
