@@ -39,14 +39,13 @@ import org.maplibre.android.maps.MapView
 @Composable
 fun MapScreen(
     modifier: Modifier = Modifier,
-    styleUri: String = MapConfig.DEFAULT_STYLE_URI,
     initialLat: Double = MapConfig.DEFAULT_LATITUDE,
     initialLng: Double = MapConfig.DEFAULT_LONGITUDE,
     initialZoom: Double = MapConfig.DEFAULT_ZOOM
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var engineStatus by remember { mutableStateOf("Loading map…") }
+    var engineStatus by remember { mutableStateOf("Loading USGS imagery…") }
 
     val mapView = remember {
         MapView(context).apply {
@@ -107,12 +106,12 @@ fun MapScreen(
             factory = {
                 mapView.apply {
                     getMapAsync { map ->
-                        map.setStyle(styleUri) {
+                        map.setStyle(MapConfig.createStyleBuilder()) {
                             map.cameraPosition = CameraPosition.Builder()
                                 .target(LatLng(initialLat, initialLng))
                                 .zoom(initialZoom)
                                 .build()
-                            engineStatus = "RangeWater • Engine Active"
+                            engineStatus = "RangeWater • ${MapConfig.ATTRIBUTION_LABEL}"
                         }
                     }
                 }
@@ -124,7 +123,7 @@ fun MapScreen(
         Surface(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 16.dp, start = 16.dp),
+                .padding(top = 16.dp, start = 16.dp, end = 16.dp),
             shape = RoundedCornerShape(8.dp),
             color = Color.Black.copy(alpha = 0.72f)
         ) {

@@ -47,9 +47,13 @@ RULE:
 5. The baseline grazing visualization uses a geodesic radius of 243.84 meters
    (800 feet) around a water asset.
 6. Terrain barriers and slope will eventually constrain the simple radius.
-7. RW-TX-002 uses MapLibre's public demo vector style only as a credential-free
-   development and rendering-verification source. It is not the selected production
-   basemap or satellite-imagery provider.
+7. Michael approved the federal imagery path for RangeWater.
+   - Production imagery family: USDA NAIP / USGS orthoimagery.
+   - Initial online source: USGS Imagery Only cached tile service.
+   - Attribution: USDA, USGS – The National Map: Orthoimagery.
+   - The selected CONUS imagery data are public domain and require no API key.
+   - Offline redistribution will use an approved regional packaging process rather
+     than unrestricted bulk caching against the live USGS service.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -62,12 +66,12 @@ EVIDENCE STATUS:
 
 🔧 BLOCK 5 — UNRESOLVED QUESTIONS
 --------------------------------------------------------------------------------
-1. Select lawful online and offline basemap and satellite-imagery sources.
-2. Record tile licenses, attribution requirements, storage limits, and download rules.
-3. Choose MapLibre OfflineManager regions or custom county MBTiles packaging.
-4. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
-5. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
-6. Select the permanent production imagery provider before offline downloads ship.
+1. Choose the offline regional-package format and provisioning path, including
+   MapLibre OfflineManager, MBTiles, PMTiles, or another validated format.
+2. Record live-service operational limits separately from the public-domain status
+   of the underlying CONUS imagery data.
+3. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
+4. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -101,6 +105,18 @@ EVIDENCE STATUS:
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
   Deferred: Water pins, GPS, 800-foot Turf geometry, production imagery, and offline maps.
 
+- RW-TX-002-RasterPatch
+  Status: RECEIVED — REVIEWED — REJECTED — NOT EXECUTED
+  Finding: The proposed raw MapLibre demo style was a vector demonstration map,
+  not federal raster imagery, despite comments identifying it as NAIP/USGS.
+
+- RW-TX-002-REV
+  Status: IMPLEMENTED — CI VERIFICATION PENDING
+  Scope: Replaces the demonstration style with an embedded MapLibre raster style
+  using the official USGS Imagery Only cached-tile endpoint and source attribution.
+  Preflight corrections: Preserved the verified lifecycle and memory bridge, current
+  repository history, scientific-evidence caveat, and CONUS/licensed-area distinction.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -111,21 +127,24 @@ EVIDENCE STATUS:
 - Generated Gradle wrapper files must remain canonical and must not contain CaveCode.
 - Android source and configuration files may contain embedded CaveCode only where
   their native comment syntax safely allows it.
-- The MapLibre demo style is suitable for this rendering checkpoint only; production
-  licensing, attribution, availability, and caching rights remain unresolved.
+- USGS describes the downloadable CONUS orthoimagery as public domain, but some
+  non-CONUS source imagery has restrictions; live-service availability and bulk-use
+  limits remain distinct from the copyright status of the underlying imagery.
+- Bulk offline caching remains disabled until RangeWater has a validated regional
+  packaging and provisioning design.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Foundational MapLibre view integration
-- Working transmission: RW-TX-002
-- Implementation status: COMPLETE
-- CI status: GREEN — source commit 144934a9001778b3a58f4dcb9bd2799cafc69cc8
-- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35272844703
+- Current phase: USGS federal basemap alignment
+- Working transmission: RW-TX-002-REV
+- Implementation status: COMPLETE — CI VERIFICATION PENDING
+- Prior green baseline: source commit 144934a9001778b3a58f4dcb9bd2799cafc69cc8
+- Prior artifact: RangeWater-Debug-APK from GitHub Actions run 35272844703
 - Functional device verification: PENDING
-- Next action: Install the RW-TX-002 debug APK on an Android device and verify style
-  loading, panning, zooming, background/resume, and Activity recreation.
+- Next action: Compile RW-TX-002-REV, then install its APK and verify that photographic
+  USGS orthoimagery loads, pans, zooms, survives background/resume, and recreates cleanly.
 - Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
