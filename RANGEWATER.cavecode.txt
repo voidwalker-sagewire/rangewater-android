@@ -111,11 +111,15 @@ EVIDENCE STATUS:
   not federal raster imagery, despite comments identifying it as NAIP/USGS.
 
 - RW-TX-002-REV
-  Status: IMPLEMENTED — CI VERIFICATION PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Replaces the demonstration style with an embedded MapLibre raster style
   using the official USGS Imagery Only cached-tile endpoint and source attribution.
   Preflight corrections: Preserved the verified lifecycle and memory bridge, current
   repository history, scientific-evidence caveat, and CONUS/licensed-area distinction.
+  Verified source commit: d87ab0cb8bc10575d0a102857081585844156dda
+  Verified GitHub Actions run: 35278999050
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -139,12 +143,12 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: USGS federal basemap alignment
 - Working transmission: RW-TX-002-REV
-- Implementation status: COMPLETE — CI VERIFICATION PENDING
-- Prior green baseline: source commit 144934a9001778b3a58f4dcb9bd2799cafc69cc8
-- Prior artifact: RangeWater-Debug-APK from GitHub Actions run 35272844703
+- Implementation status: COMPLETE
+- CI status: GREEN — source commit d87ab0cb8bc10575d0a102857081585844156dda
+- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35278999050
 - Functional device verification: PENDING
-- Next action: Compile RW-TX-002-REV, then install its APK and verify that photographic
-  USGS orthoimagery loads, pans, zooms, survives background/resume, and recreates cleanly.
+- Next action: Install the RW-TX-002-REV APK and verify that photographic USGS
+  orthoimagery loads, pans, zooms, survives background/resume, and recreates cleanly.
 - Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
