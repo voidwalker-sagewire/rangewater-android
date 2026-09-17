@@ -47,6 +47,9 @@ RULE:
 5. The baseline grazing visualization uses a geodesic radius of 243.84 meters
    (800 feet) around a water asset.
 6. Terrain barriers and slope will eventually constrain the simple radius.
+7. RW-TX-002 uses MapLibre's public demo vector style only as a credential-free
+   development and rendering-verification source. It is not the selected production
+   basemap or satellite-imagery provider.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -64,6 +67,7 @@ EVIDENCE STATUS:
 3. Choose MapLibre OfflineManager regions or custom county MBTiles packaging.
 4. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
 5. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
+6. Select the permanent production imagery provider before offline downloads ship.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -84,6 +88,15 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35268546471
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
 
+- RW-TX-002
+  Status: IMPLEMENTED — CI VERIFICATION PENDING
+  Scope: MapLibre initialization, Compose AndroidView hosting, replaceable development
+  style configuration, native lifecycle forwarding, memory-pressure forwarding, and
+  a visible engine-status overlay.
+  Preflight corrections: Added the promised onLowMemory bridge and guarded MapView
+  destruction so Activity teardown and Compose disposal cannot destroy it twice.
+  Deferred: Water pins, GPS, 800-foot Turf geometry, production imagery, and offline maps.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -94,17 +107,22 @@ EVIDENCE STATUS:
 - Generated Gradle wrapper files must remain canonical and must not contain CaveCode.
 - Android source and configuration files may contain embedded CaveCode only where
   their native comment syntax safely allows it.
+- The MapLibre demo style is suitable for this rendering checkpoint only; production
+  licensing, attribution, availability, and caching rights remain unresolved.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Initial Android scaffold verified
-- Working transmission: RW-TX-001-REV2
-- Build status: GREEN — source commit c9c404b0f77557427faa84690c72055f0548e50f
-- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35268546471
-- Next action: Receive and preflight RW-TX-002 for MapLibre view integration and
-  selection of the first lawful online map style/source.
+- Current phase: Foundational MapLibre view integration
+- Working transmission: RW-TX-002
+- Local implementation status: COMPLETE
+- CI status: PENDING
+- Functional device verification: PENDING
+- Next action: Compile RW-TX-002 in GitHub Actions, then install its debug APK on an
+  Android device and verify style loading, panning, zooming, background/resume, and
+  repeated screen rotation or Activity recreation.
+- Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
