@@ -76,17 +76,20 @@ EVIDENCE STATUS:
   Findings: AGP 8.9 API ceiling, incomplete wrapper, and CaveCode noncompliance.
 
 - RW-TX-001-REV2
-  Status: APPROVED WITH ASH IMPLEMENTATION CORRECTIONS — EXECUTION IN PROGRESS
+  Status: IMPLEMENTED — BUILD VERIFIED
   Corrections: Official unmodified wrapper scripts, verified wrapper binary,
   wrapper validation in CI, present-state update, evidence-status clarification,
   and corrected Compose BOM coordinates after the first compiler run.
+  Verified source commit: c9c404b0f77557427faa84690c72055f0548e50f
+  Verified GitHub Actions run: 35268546471
+  Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
-- The first real CI build has not yet passed.
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
   Gemini-supplied Compose BOM group (`androidx.compose.bom`). Ash corrected it to
   the official `androidx.compose:compose-bom` coordinate for the second run.
+- Second CI run 35268546471 completed successfully and uploaded the debug APK.
 - Offline map capability does not grant permission to cache third-party imagery.
 - Generated Gradle wrapper files must remain canonical and must not contain CaveCode.
 - Android source and configuration files may contain embedded CaveCode only where
@@ -96,11 +99,12 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Initial Android scaffold implementation
+- Current phase: Initial Android scaffold verified
 - Working transmission: RW-TX-001-REV2
-- Build status: PENDING FIRST CI RUN
-- Next action: Commit the scaffold, run GitHub Actions, repair build errors, then
-  update this map with the verified commit and workflow result.
+- Build status: GREEN — source commit c9c404b0f77557427faa84690c72055f0548e50f
+- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35268546471
+- Next action: Receive and preflight RW-TX-002 for MapLibre view integration and
+  selection of the first lawful online map style/source.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
