@@ -89,12 +89,16 @@ EVIDENCE STATUS:
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
 
 - RW-TX-002
-  Status: IMPLEMENTED — CI VERIFICATION PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: MapLibre initialization, Compose AndroidView hosting, replaceable development
   style configuration, native lifecycle forwarding, memory-pressure forwarding, and
   a visible engine-status overlay.
   Preflight corrections: Added the promised onLowMemory bridge and guarded MapView
   destruction so Activity teardown and Compose disposal cannot destroy it twice.
+  Verified source commit: 144934a9001778b3a58f4dcb9bd2799cafc69cc8
+  Verified GitHub Actions run: 35272844703
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
   Deferred: Water pins, GPS, 800-foot Turf geometry, production imagery, and offline maps.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
@@ -116,12 +120,12 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Foundational MapLibre view integration
 - Working transmission: RW-TX-002
-- Local implementation status: COMPLETE
-- CI status: PENDING
+- Implementation status: COMPLETE
+- CI status: GREEN — source commit 144934a9001778b3a58f4dcb9bd2799cafc69cc8
+- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35272844703
 - Functional device verification: PENDING
-- Next action: Compile RW-TX-002 in GitHub Actions, then install its debug APK on an
-  Android device and verify style loading, panning, zooming, background/resume, and
-  repeated screen rotation or Activity recreation.
+- Next action: Install the RW-TX-002 debug APK on an Android device and verify style
+  loading, panning, zooming, background/resume, and Activity recreation.
 - Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
