@@ -78,11 +78,15 @@ EVIDENCE STATUS:
 - RW-TX-001-REV2
   Status: APPROVED WITH ASH IMPLEMENTATION CORRECTIONS — EXECUTION IN PROGRESS
   Corrections: Official unmodified wrapper scripts, verified wrapper binary,
-  wrapper validation in CI, present-state update, and evidence-status clarification.
+  wrapper validation in CI, present-state update, evidence-status clarification,
+  and corrected Compose BOM coordinates after the first compiler run.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - The first real CI build has not yet passed.
+- First CI run 35268226473 reached dependency resolution and exposed an invalid
+  Gemini-supplied Compose BOM group (`androidx.compose.bom`). Ash corrected it to
+  the official `androidx.compose:compose-bom` coordinate for the second run.
 - Offline map capability does not grant permission to cache third-party imagery.
 - Generated Gradle wrapper files must remain canonical and must not contain CaveCode.
 - Android source and configuration files may contain embedded CaveCode only where
