@@ -1,0 +1,17 @@
+# 🪨 BLOCK 1 — SYSTEM AND BUILD EXCLUSIONS
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+
+# 🪨 BLOCK 2 — GRADLE WRAPPER PRESERVATION
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat

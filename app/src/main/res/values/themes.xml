@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 🪨 BLOCK 1 — SYSTEM STYLES AND WINDOW DECORATION -->
+<resources>
+    <style name="Theme.RangeWater" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

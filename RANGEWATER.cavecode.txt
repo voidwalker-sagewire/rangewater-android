@@ -1,0 +1,109 @@
+================================================================================
+RANGEWATER MASTER STATE & PROJECT MEMORY
+================================================================================
+File: RANGEWATER.cavecode.txt
+Format: CaveCode v1.0 project master map
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+
+🪨 BLOCK 1 — PROJECT IDENTITY
+--------------------------------------------------------------------------------
+- App Name: RangeWater
+- Tagline: Grazing Buffers & Water Placement
+- Repository: voidwalker-sagewire/rangewater-android
+- Target Platform: Android / Google Play Store
+- Package / App ID: com.sagewire.rangewater
+- Package Notice: This is the intended permanent package identity. Once registered
+  or associated with the Play application, it must not be changed.
+- Target Audience: Cattle producers, rotational grazing managers, pasture operators
+- Mission: Deliver a rugged, offline-capable utility that models cattle watering
+  distances to help producers place water, plan fences, and improve grazing use.
+
+🪨 BLOCK 2 — AUTHORITY AND COLLABORATION
+--------------------------------------------------------------------------------
+- Michael: Project Owner, Lead Architect, Final Decision Authority
+- Gemini: Primary Development Partner, Work-Order Author, Spatial Architecture
+- Ash: Junior Developer, Preflight Reviewer, Debugger, Repository Implementer
+
+RULE:
+- Michael ratifies product and architectural decisions.
+- AI proposals remain proposals until Michael approves them.
+- Build claims remain unverified until the compiler and CI confirm them.
+
+🎮 BLOCK 3 — CURRENT ARCHITECTURE
+--------------------------------------------------------------------------------
+- UI: Jetpack Compose with Kotlin 2.0.21 and Compose Compiler plugin 2.0.21
+- Android: compileSdk 36, targetSdk 36, minSdk 24
+- Build: AGP 8.10.1, Gradle 8.11.1, Java 17
+- Map Engine: MapLibre Native Android SDK 11.5.1
+- Spatial Math: MapLibre Turf Java 6.0.1
+- CI: GitHub Actions builds a debug APK with the committed Gradle wrapper
+
+🪨 BLOCK 4 — SETTLED DECISIONS
+--------------------------------------------------------------------------------
+1. RangeWater is a native Android application built with Kotlin and Compose.
+2. The intended package identity is com.sagewire.rangewater.
+3. The application is offline-first and will use MapLibre rather than Google Maps.
+4. Turf is a direct compile dependency for geodesic circle calculations.
+5. The baseline grazing visualization uses a geodesic radius of 243.84 meters
+   (800 feet) around a water asset.
+6. Terrain barriers and slope will eventually constrain the simple radius.
+
+EVIDENCE STATUS:
+- Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
+  materials, and the USDA-NRCS National Range and Pasture Handbook were named in
+  RW-TX-001-REV2 as supporting sources.
+- Exact pages and passages supporting the behavioral 800-foot interpretation have
+  not yet been preserved in this repository.
+- Until that evidence audit is completed, 800 feet is the ratified project design
+  baseline, not a fully verified scientific claim.
+
+🔧 BLOCK 5 — UNRESOLVED QUESTIONS
+--------------------------------------------------------------------------------
+1. Select lawful online and offline basemap and satellite-imagery sources.
+2. Record tile licenses, attribution requirements, storage limits, and download rules.
+3. Choose MapLibre OfflineManager regions or custom county MBTiles packaging.
+4. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
+5. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
+
+🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
+--------------------------------------------------------------------------------
+- RW-TX-001
+  Status: RECEIVED — REVIEWED — REVISION REQUIRED — NOT EXECUTED
+  Findings: API target drift, invalid Turf version, and incomplete scaffold.
+
+- RW-TX-001-REV
+  Status: RECEIVED — REVIEWED — REVISION REQUIRED — NOT EXECUTED
+  Findings: AGP 8.9 API ceiling, incomplete wrapper, and CaveCode noncompliance.
+
+- RW-TX-001-REV2
+  Status: APPROVED WITH ASH IMPLEMENTATION CORRECTIONS — EXECUTION IN PROGRESS
+  Corrections: Official unmodified wrapper scripts, verified wrapper binary,
+  wrapper validation in CI, present-state update, and evidence-status clarification.
+
+🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
+--------------------------------------------------------------------------------
+- The first real CI build has not yet passed.
+- Offline map capability does not grant permission to cache third-party imagery.
+- Generated Gradle wrapper files must remain canonical and must not contain CaveCode.
+- Android source and configuration files may contain embedded CaveCode only where
+  their native comment syntax safely allows it.
+
+🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
+--------------------------------------------------------------------------------
+- Repository: CREATED
+- Repository access: VERIFIED — Ash has administrator and push permission
+- Current phase: Initial Android scaffold implementation
+- Working transmission: RW-TX-001-REV2
+- Build status: PENDING FIRST CI RUN
+- Next action: Commit the scaffold, run GitHub Actions, repair build errors, then
+  update this map with the verified commit and workflow result.
+
+🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
+--------------------------------------------------------------------------------
+RangeWater is an offline-capable Android utility for cattle producers and rotational
+grazers. It maps grazing-distance radii around water assets to help producers plan
+trough placement, fence layouts, and pasture utilization.
+
+================================================================================
+END — RANGEWATER MASTER STATE & PROJECT MEMORY
+================================================================================
