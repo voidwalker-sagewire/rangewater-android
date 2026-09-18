@@ -224,8 +224,8 @@ EVIDENCE STATUS:
   USGS Imagery Topo without obscuring MapLibre or provider attribution.
 
 - RW-TX-004
-  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM DEVICE TEST PASSED — BUILD VERIFIED
-  — PHYSICAL DEVICE CHECK PENDING
+  Status: CLOSED — ACCEPTED — JVM TESTS PASSED — ROOM DEVICE TEST PASSED
+  — BUILD VERIFIED — PHYSICAL DEVICE VERIFIED
   Scope: Room-backed durable multi-water assets, ID-derived automatic names, Flow-driven
   aggregated point/ring GeoJSON, amber selection, inspection card, typed editing, notes,
   confirmed deletion, and restoration after process death or device restart.
@@ -246,6 +246,13 @@ EVIDENCE STATUS:
   Result: SUCCESS — Turf and multi-feature JVM tests passed, the Room insert/default-
   name/update/delete Flow test passed on an Android API 35 emulator, and the version
   0.4.0 debug APK compiled and uploaded.
+  Device result: PASSED — multiple saved water points and overlapping 800-foot rings
+  rendered correctly; selection highlighted the active point and ring in amber; the
+  inspection card displayed name, type, coordinates, and notes; editing and confirmed
+  deletion worked; Aerial/Labeled switching preserved all overlays; and the remaining
+  saved drops survived a full swipe-close and cold reopen on target hardware.
+  Acceptance evidence: Michael supplied six physical-device screenshots and explicitly
+  confirmed successful full swipe-close/reopen restoration on September 18, 2026.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -276,17 +283,16 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Persistent multi-water architecture
+- Current phase: Persistent multi-water foundation accepted
 - Working transmission: RW-TX-004 — durable multi-water persistence
-- Implementation status: COMPLETE — PHYSICAL DEVICE VERIFICATION PENDING
-- CI status: GREEN — corrected source commit 1105d9535b728b89967146467b8a2543c6ab47cd
-- Verification run: 35333683856 — JVM, Android Room, and APK gates passed
+- Implementation status: CLOSED — ACCEPTED — PHYSICAL DEVICE VERIFIED
+- CI status: GREEN — final verified HEAD 71445a2d40c9c7682c439f15ce9b528d81f7cca6
+- Verification run: 35334064090 — JVM, Android Room, and APK gates passed
 - Build artifact: RangeWater-Debug-APK (version 0.4.0, versionCode 2)
-- Functional device verification: PENDING
+- Functional device verification: PASSED on target hardware September 18, 2026
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
-- Next action: Ash runs CI; Michael then verifies multiple placement, overlap, selection,
-  editing, confirmed deletion, and cold-start restoration on physical hardware.
-- Resume point after acceptance: RW-TX-005 pasture-boundary planning.
+- Next action: Define and ratify RW-TX-005 pasture-boundary scope before implementation.
+- Resume point: RW-TX-005 pasture-boundary planning.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
