@@ -136,6 +136,28 @@ EVIDENCE STATUS:
    baseline and evaluate a future paid tier using properly licensed higher-resolution
    commercial imagery. Provider, licensing, entitlement, pricing, and billing remain
    undecided; no paid-imagery commitment is made by RW-TX-003.
+7. Proposed downstream pasture-connectivity model (not yet ratified):
+   - Adjacent or divided pastures remain separate polygons, including when they share
+     a fence line.
+   - A gate may become a durable boundary-linked asset connecting two pastures, with a
+     proposed opening width of 8 through 32 feet. Presets, custom widths, gate types,
+     status, snapping rules, and schema remain undecided.
+8. Proposed livestock-movement routes (not yet ratified):
+   - Operators may trace a directional path through one or more gates to represent a
+     planned cattle movement between pastures.
+   - Route persistence, arrows, naming, validation, and editing remain undecided and
+     depend on approved pasture and gate models.
+9. Proposed animal profiles and optional distance rules (not yet ratified):
+   - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
+   - Each profile requires evidence-backed distance thresholds and must not inherit the
+     cattle 800-foot baseline without validation.
+10. Proposed tiered cattle-water visualization (not yet ratified):
+    - 0 through 800 feet may be presented as a preferred green zone.
+    - 800 through 1,000 feet may be presented as a yellow caution or transition band.
+    - The meaning and styling beyond 1,000 feet, scientific evidence, overlap behavior,
+      and interaction with pasture-coverage analysis remain undecided.
+    - The current verified implementation intentionally renders one cyan 800-foot ring;
+      the green/yellow tier concept was not part of the executed RW-TX-003/004 scope.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
