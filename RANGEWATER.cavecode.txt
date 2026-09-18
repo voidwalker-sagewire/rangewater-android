@@ -118,8 +118,24 @@ RULE:
     - Cancel restores the pre-edit geometry. Save rejects self-crossing or otherwise
       invalid geometry and recalculates acreage before persistence.
     - Water overlays remain visible but non-interactive during pasture drawing or editing.
-    - Water-ring interaction outside edit mode and the Room schema remain design decisions
-      to ratify before implementation.
+    - Ordinary-mode selection priority is ratified: a rendered water marker wins its hit
+      test first; otherwise a tap inside a pasture selects that pasture. Drawing/editing
+      modes suspend both ordinary selection paths.
+    - Persistent schema is ratified: PastureEntity stores durable identity, generated
+      default name, optional notes, and audit timestamps; ordered PastureVertexEntity
+      rows store each coordinate with a parent foreign key and cascade deletion.
+    - Pasture vertices also reserve nullable elevationMeters, elevationSource,
+      verticalDatum, verticalAccuracyMeters, and elevationCapturedAt fields. RW-TX-005
+      stores the fields but does not implement DEM lookup, GPS capture, grade, or terrain
+      analysis.
+    - Room advances from version 1 to version 2 through an explicit non-destructive
+      Migration(1, 2). Android migration tests must prove existing water points survive.
+    - Boundary coordinates are authoritative; acreage is derived. Unsaved drawing/editing
+      drafts remain in memory until Save. Future gates use separate entities and reference
+      pasture IDs rather than being embedded in pasture rows.
+    - Existing water overlays remain unmodified and unclipped in RW-TX-005. Coverage
+      percentages, tiered green/yellow water zones, gates, routes, terrain analysis, and
+      animal profiles remain downstream work.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -314,6 +330,17 @@ EVIDENCE STATUS:
   Acceptance evidence: Michael supplied six physical-device screenshots and explicitly
   confirmed successful full swipe-close/reopen restoration on September 18, 2026.
 
+- RW-TX-005
+  Status: ARCHITECTURE RATIFIED — WORK ORDER NOT YET RECEIVED — NOT IMPLEMENTED
+  Scope: Persistent pasture polygons, ordered editable fence-corner vertices, geodesic
+  acreage estimates, magenta cased rendering, explicit draw/edit workflows, and a
+  non-destructive Room v1-to-v2 migration preserving all saved water assets.
+  Ratified safeguards: Minimum three unique vertices; self-crossing rejection; Undo,
+  Cancel, Finish/Save; derived rather than stored acreage; ordinary water-marker-first
+  selection; nullable elevation provenance fields reserved without elevation features.
+  Deferred: Coverage percentages, green/yellow tiered water zones, DEM scanning, grade,
+  gates, livestock routes, animal profiles, cloud synchronization, and survey claims.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -345,16 +372,15 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-005 pasture-boundary architecture planning
 - Working transmission: RW-TX-005 — pasture-boundary mapping
-- Implementation status: DESIGN PARTIALLY RATIFIED — IMPLEMENTATION NOT STARTED
+- Implementation status: ARCHITECTURE RATIFIED — READY FOR GEMINI WORK ORDER
 - CI status: GREEN — final verified HEAD 71445a2d40c9c7682c439f15ce9b528d81f7cca6
 - Verification run: 35334064090 — JVM, Android Room, and APK gates passed
 - Build artifact: RangeWater-Debug-APK (version 0.4.0, versionCode 2)
 - Functional device verification: PASSED on target hardware September 18, 2026
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
-- Next action: Ratify ordinary-mode water/pasture selection priority and the persistent
-  Room schema before authoring the RW-TX-005 work order.
-- Resume point: RW-TX-005 drawing, styling, acreage, and boundary-editing behavior are
-  ratified; persistent schema and final interaction priority remain.
+- Next action: Michael sends the ratified architecture packet to Gemini for a complete
+  buildable RW-TX-005 work order, then returns that proposal to Ash for preflight.
+- Resume point: RW-TX-005 architecture is fully ratified; implementation has not started.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
