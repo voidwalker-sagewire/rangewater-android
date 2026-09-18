@@ -3,6 +3,7 @@ package com.sagewire.rangewater.ui.map
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.os.Bundle
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,10 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -45,8 +50,15 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.visibility
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
+import org.maplibre.turf.TurfConstants
+import org.maplibre.turf.TurfTransformation
 
 enum class ActiveMapMode {
     AERIAL,
@@ -55,10 +67,11 @@ enum class ActiveMapMode {
 
 /*
  * 🪨 BLOCK 1 — MAP HOST COMPOSABLE
- * Purpose: Hosts MapLibre with the verified lifecycle/memory bridge and hybrid imagery UI.
+ * Purpose: Hosts MapLibre with the verified lifecycle/memory bridge, hybrid imagery,
+ *          and native water-point placement.
  * 🎮 Behavior: Switches overview/detail sources by zoom and Aerial/Labeled layers
- *    by visibility, with mode-specific camera limits and no style reload.
- * 🔧 Unfinished Work: Add water placement and 800-foot buffers in RW-TX-003.
+ *    by visibility, while a memory-only GeoJSON overlay displays one water point
+ *    and its 243.84-meter geodesic coverage ring.
  */
 @Composable
 fun MapScreen(
@@ -76,6 +89,8 @@ fun MapScreen(
     var currentZoom by remember { mutableDoubleStateOf(initialZoom) }
     var isMapRendering by remember { mutableStateOf(true) }
     var hasLoadError by remember { mutableStateOf(false) }
+    var isPlacementArmed by remember { mutableStateOf(false) }
+    var placedWaterPoint by remember { mutableStateOf<LatLng?>(null) }
 
     val mapView = remember {
         MapView(context).apply {
@@ -149,6 +164,30 @@ fun MapScreen(
         }
     }
 
+    // 🪨 BLOCK 3 — ONE-SHOT MAP TAP LISTENER
+    // Re-registering when the arm state changes gives the listener the current state;
+    // disposal removes the exact listener instance and prevents accumulation.
+    DisposableEffect(mapInstance, isPlacementArmed) {
+        val map = mapInstance
+        if (map == null) {
+            onDispose { }
+        } else {
+            val clickListener = MapLibreMap.OnMapClickListener { coordinate ->
+                if (!isPlacementArmed) {
+                    false
+                } else {
+                    placedWaterPoint = coordinate
+                    isPlacementArmed = false
+                    map.getStyle { style -> updateWaterOverlay(style, coordinate) }
+                    true
+                }
+            }
+
+            map.addOnMapClickListener(clickListener)
+            onDispose { map.removeOnMapClickListener(clickListener) }
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = {
@@ -158,12 +197,13 @@ fun MapScreen(
                         map.setMinZoomPreference(MapConfig.MIN_ALLOWED_ZOOM)
                         map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
 
-                        map.setStyle(MapConfig.createStyleBuilder()) {
+                        map.setStyle(MapConfig.createStyleBuilder()) { style ->
                             map.cameraPosition = CameraPosition.Builder()
                                 .target(LatLng(initialLat, initialLng))
                                 .zoom(initialZoom)
                                 .build()
                             applyMapMode(map, activeMode)
+                            placedWaterPoint?.let { updateWaterOverlay(style, it) }
                         }
 
                         map.addOnCameraMoveListener {
@@ -178,7 +218,7 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 🖍️ BLOCK 3 — MAP MODE AND STATUS CONTROLS
+        // 🖍️ BLOCK 4 — MAP MODE AND STATUS CONTROLS
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -206,6 +246,7 @@ fun MapScreen(
                                 .background(
                                     color = when {
                                         hasLoadError -> Color.Red
+                                        isPlacementArmed -> Color(0xFF00E5FF)
                                         activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
                                         currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
                                         else -> Color(0xFF2196F3)
@@ -218,6 +259,7 @@ fun MapScreen(
                         Text(
                             text = when {
                                 hasLoadError -> "Imagery load issue"
+                                isPlacementArmed -> "Tap pasture to place • z$formattedZoom"
                                 activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$formattedZoom"
                                 currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$formattedZoom"
                                 else -> "USGS Overview • z$formattedZoom"
@@ -258,7 +300,58 @@ fun MapScreen(
             }
         }
 
-        // 🌐 BLOCK 4 — ACTIVE SOURCE ATTRIBUTION
+        // 🖍️ BLOCK 5 — DELIBERATE WATER-PLACEMENT CONTROLS
+        // Elevated above both provider attribution and MapLibre's required logo.
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 56.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = Color.Black.copy(alpha = 0.8f),
+            tonalElevation = 4.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { isPlacementArmed = !isPlacementArmed },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isPlacementArmed) {
+                            Color(0xFF00E5FF)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        contentColor = if (isPlacementArmed) Color.Black else Color.White
+                    ),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text(
+                        text = if (isPlacementArmed) "Cancel" else "Place Water",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                if (placedWaterPoint != null) {
+                    OutlinedButton(
+                        onClick = {
+                            placedWaterPoint = null
+                            isPlacementArmed = false
+                            mapInstance?.getStyle(::clearWaterOverlay)
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text("Clear", fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+
+        // 🌐 BLOCK 6 — ACTIVE SOURCE ATTRIBUTION
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -278,6 +371,25 @@ fun MapScreen(
             )
         }
     }
+}
+
+private fun updateWaterOverlay(style: Style, coordinate: LatLng) {
+    val center = Point.fromLngLat(coordinate.longitude, coordinate.latitude)
+    val ring = TurfTransformation.circle(
+        center,
+        MapConfig.BUFFER_RADIUS_METERS,
+        MapConfig.BUFFER_CIRCLE_STEPS,
+        TurfConstants.UNIT_METERS
+    )
+
+    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINT)?.setGeoJson(center)
+    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RING)?.setGeoJson(ring)
+}
+
+private fun clearWaterOverlay(style: Style) {
+    val empty = FeatureCollection.fromFeatures(emptyArray<Feature>())
+    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINT)?.setGeoJson(empty)
+    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RING)?.setGeoJson(empty)
 }
 
 private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {

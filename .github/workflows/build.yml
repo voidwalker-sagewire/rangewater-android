@@ -1,5 +1,6 @@
 # 🪨 BLOCK 1 — CONTINUOUS INTEGRATION BUILD RUNNER
-# 🎮 Behavior: Validates the wrapper, builds a debug APK, and retains the artifact.
+# 🎮 Behavior: Validates the wrapper, runs JVM tests, builds a debug APK,
+#    and retains the artifact.
 name: Build RangeWater Debug APK
 
 on:
@@ -26,6 +27,9 @@ jobs:
 
       - name: Grant Execute Permission to Wrapper
         run: chmod +x ./gradlew
+
+      - name: Run Debug JVM Unit Tests
+        run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Compile Debug APK
         run: ./gradlew assembleDebug --stacktrace

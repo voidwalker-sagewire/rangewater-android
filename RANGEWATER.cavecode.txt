@@ -41,6 +41,8 @@ RULE:
   - Overview: cached USGS Imagery Only raster tiles through zoom 15
   - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 20
   - Navigation: cached USGS Imagery Topo labeled mode capped at zoom 16
+- Water overlay: native in-memory GeoJSON point plus Turf-generated polygon rendered
+  with MapLibre Circle, Fill, and Line layers above every basemap mode
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -71,6 +73,10 @@ RULE:
    - Labeled mode is capped at its source limit of zoom 16.
    - Selecting Labeled above zoom 16 preserves the map center and eases back to 16.
    - A compact numeric zoom readout remains visible for device validation.
+10. RW-TX-003 uses a single ephemeral water point and a 243.84-meter geodesic ring.
+    - Placement is explicitly armed; the next map tap places or replaces the point.
+    - Unarmed taps do not alter the point, and Clear removes both overlay features.
+    - No database, preferences, file, or cloud persistence is introduced in this phase.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -91,6 +97,10 @@ EVIDENCE STATUS:
 4. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
 5. Measure USDA dynamic-service latency on target devices and decide whether a
    RangeWater-controlled proxy cache or regional offline package is needed.
+6. Product option under consideration: keep federal imagery as the capable free
+   baseline and evaluate a future paid tier using properly licensed higher-resolution
+   commercial imagery. Provider, licensing, entitlement, pricing, and billing remain
+   undecided; no paid-imagery commitment is made by RW-TX-003.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -161,7 +171,7 @@ EVIDENCE STATUS:
   passed. Zoom 22 and labeled overzoom produced enlarged blurry pixels.
 
 - RW-TX-002-REV3
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE VERIFIED
   Scope: Caps Aerial at zoom 20 and Labeled at zoom 16, eases deep Aerial views back
   to 16 when Labeled is selected, and adds a live one-decimal zoom readout.
   Preflight corrections: Merged the zoom policy into the device-proven lifecycle,
@@ -171,6 +181,24 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35325266809
   Build artifact: RangeWater-Debug-APK
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
+  Device result: Aerial stopped at z20.0, Labeled stopped at z16.0, numeric zoom
+  updated during gestures, deep Aerial-to-Labeled switching preserved the viewed
+  location while easing to z16.0, and background/resume retained the map.
+
+- RW-TX-003-WTR
+  Status: RECEIVED — REVIEWED — REJECTED — NOT EXECUTED
+  Finding: The proposal targeted Turf.js, browser pointer/DOM behavior, WebGL teardown,
+  and web storage rather than RangeWater's native Kotlin/MapLibre Android stack.
+
+- RW-TX-003-WTR-REV
+  Status: IMPLEMENTED — TEST/BUILD VERIFICATION PENDING
+  Scope: Native one-shot water placement, memory-only point replacement and clearing,
+  Turf Java 243.84-meter geodesic circle construction, persistent overlay visibility
+  across Aerial/Labeled switching, and representative-latitude JVM spatial tests.
+  Preflight corrections: Preserved REV3's verified lifecycle guard, thresholded memory
+  forwarding, removable render listeners, smooth labeled clamp, top inset, and bottom-end
+  attribution; omitted the undeclared Compose animation dependency; added the JVM test
+  task to CI so geometry is checked before APK compilation.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -191,22 +219,22 @@ EVIDENCE STATUS:
   Michael's browser test. The 512-pixel request strategy is implemented but its real
   device performance and service behavior remain acceptance-test items.
 - Device testing confirmed that zoom 22 enlarged source pixels without adding ground
-  detail. Mode-specific limits are implemented in REV3 and await device acceptance.
+  detail. REV3's mode-specific zoom limits passed physical-device acceptance.
+- Water placement in RW-TX-003 is intentionally volatile. Process death, Activity
+  recreation, or a fresh launch may discard the point until persistence is designed.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Hybrid imagery zoom-policy refinement
-- Working transmission: RW-TX-002-REV3
+- Current phase: Native water-point placement and geodesic coverage
+- Working transmission: RW-TX-003-WTR-REV
 - Implementation status: COMPLETE
-- CI status: GREEN — source commit e2284846e6c4893231705096b0dcf12d5d3fa2de
-- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35325266809
+- CI status: PENDING — JVM Turf tests and debug APK build required
 - Functional device verification: PENDING
-- Next action: Build RW-TX-002-REV3, then verify Aerial stops at zoom 20, Labeled
-  stops at zoom 16, deep Aerial-to-Labeled switching preserves center while easing
-  back to 16, and the live zoom readout updates during pinch gestures.
-- Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
+- Next action: Run CI, then verify arm/place, 800-foot ring display, replacement,
+  unarmed-tap safety, Aerial/Labeled overlay continuity, and Clear on physical hardware.
+- Resume point after verification: Design durable asset persistence and pasture tools.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

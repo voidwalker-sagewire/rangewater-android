@@ -44,6 +44,16 @@ object MapConfig {
     const val LAYER_AERIAL_DETAIL = "layer-aerial-detail"
     const val LAYER_LABELED_TOPO = "layer-labeled-topo"
 
+    // 🪨 The project's ratified 800-foot geodesic water-coverage baseline.
+    const val BUFFER_RADIUS_METERS = 243.84
+    const val BUFFER_CIRCLE_STEPS = 64
+
+    const val SOURCE_WATER_POINT = "source-water-point"
+    const val SOURCE_WATER_RING = "source-water-ring"
+    const val LAYER_WATER_RING_FILL = "layer-water-ring-fill"
+    const val LAYER_WATER_RING_LINE = "layer-water-ring-line"
+    const val LAYER_WATER_POINT = "layer-water-point"
+
     /*
      * 🎮 BLOCK 2 — UNIFIED STYLE SPECIFICATION
      * A single style lets the UI switch Aerial/Labeled layers without rebuilding
@@ -75,6 +85,14 @@ object MapConfig {
               "tileSize": 256,
               "maxzoom": 16,
               "attribution": "$TOPO_ATTRIBUTION"
+            },
+            "$SOURCE_WATER_RING": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_WATER_POINT": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
             }
           },
           "layers": [
@@ -97,6 +115,36 @@ object MapConfig {
               "type": "raster",
               "source": "source-usgs-topo",
               "layout": { "visibility": "none" }
+            },
+            {
+              "id": "$LAYER_WATER_RING_FILL",
+              "type": "fill",
+              "source": "$SOURCE_WATER_RING",
+              "paint": {
+                "fill-color": "#00E5FF",
+                "fill-opacity": 0.15
+              }
+            },
+            {
+              "id": "$LAYER_WATER_RING_LINE",
+              "type": "line",
+              "source": "$SOURCE_WATER_RING",
+              "paint": {
+                "line-color": "#00B0FF",
+                "line-opacity": 0.8,
+                "line-width": 1.5
+              }
+            },
+            {
+              "id": "$LAYER_WATER_POINT",
+              "type": "circle",
+              "source": "$SOURCE_WATER_POINT",
+              "paint": {
+                "circle-radius": 6.0,
+                "circle-color": "#00E5FF",
+                "circle-stroke-color": "#FFFFFF",
+                "circle-stroke-width": 2.0
+              }
             }
           ]
         }
