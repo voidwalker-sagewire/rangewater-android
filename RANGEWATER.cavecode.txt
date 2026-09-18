@@ -161,12 +161,16 @@ EVIDENCE STATUS:
   passed. Zoom 22 and labeled overzoom produced enlarged blurry pixels.
 
 - RW-TX-002-REV3
-  Status: IMPLEMENTED LOCALLY — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Caps Aerial at zoom 20 and Labeled at zoom 16, eases deep Aerial views back
   to 16 when Labeled is selected, and adds a live one-decimal zoom readout.
   Preflight corrections: Merged the zoom policy into the device-proven lifecycle,
   memory, render-listener, attribution, and no-style-reload implementation; omitted
   the draft's undeclared Compose animation dependency and state-based destroy guard.
+  Verified source commit: e2284846e6c4893231705096b0dcf12d5d3fa2de
+  Verified GitHub Actions run: 35325266809
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -195,9 +199,9 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Hybrid imagery zoom-policy refinement
 - Working transmission: RW-TX-002-REV3
-- Implementation status: COMPLETE LOCALLY
-- CI status: PENDING
-- Build artifact: PENDING
+- Implementation status: COMPLETE
+- CI status: GREEN — source commit e2284846e6c4893231705096b0dcf12d5d3fa2de
+- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35325266809
 - Functional device verification: PENDING
 - Next action: Build RW-TX-002-REV3, then verify Aerial stops at zoom 20, Labeled
   stops at zoom 16, deep Aerial-to-Labeled switching preserves center while easing
