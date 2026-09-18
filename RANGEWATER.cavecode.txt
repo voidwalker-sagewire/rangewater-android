@@ -77,6 +77,17 @@ RULE:
     - Placement is explicitly armed; the next map tap places or replaces the point.
     - Unarmed taps do not alter the point, and Clear removes both overlay features.
     - No database, preferences, file, or cloud persistence is introduced in this phase.
+11. Michael approved the RW-TX-004 persistence and multi-water interaction direction.
+    - Android Room with KSP is the approved native offline persistence engine.
+    - Multiple water assets will be stored locally and exposed as Flow-backed state.
+    - New assets receive automatic sequential display names such as "Water Point 1";
+      the operator may rename them afterward rather than being interrupted at placement.
+    - Tapping an existing marker opens a compact bottom card for inspection, editing,
+      and confirmed deletion.
+    - Overlapping 800-foot rings remain intentionally visible because their blended
+      coverage communicates connected zones and possible grazing-pressure overlap.
+    - Cloud accounts, synchronization, billing, live GPS, and pasture polygons remain
+      outside RW-TX-004 unless Michael separately approves them.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -101,6 +112,16 @@ EVIDENCE STATUS:
    baseline and evaluate a future paid tier using properly licensed higher-resolution
    commercial imagery. Provider, licensing, entitlement, pricing, and billing remain
    undecided; no paid-imagery commitment is made by RW-TX-003.
+7. RW-TX-004 implementation details still requiring preflight resolution:
+   - Generate the sequential default name only after Room returns the auto-generated ID,
+     without creating a misleading timestamp change or a partially named visible record.
+   - Run Room in-memory tests under Android instrumentation or an explicitly configured
+     Robolectric JVM environment; Room.inMemoryDatabaseBuilder is not a plain JVM test.
+   - Never enable destructive migration in a production build. If temporarily used for
+     development, confine it to debug builds and replace it before user data is entrusted
+     to the database.
+   - Ring geometry is derived rather than stored; DAO deletion tests verify the record,
+     while a separate aggregation test verifies that deleted records yield no ring.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -210,6 +231,14 @@ EVIDENCE STATUS:
   hardware. Screenshot evidence shows the point and ring correctly rendered above
   USGS Imagery Topo without obscuring MapLibre or provider attribution.
 
+- RW-TX-004 — Architecture Decisions
+  Status: RATIFIED — BUILDABLE WORK ORDER PENDING
+  Decisions: Room plus KSP, automatic post-insert naming with optional rename, multiple
+  persisted water assets, Flow-driven map updates, and a compact selection bottom card.
+  Scope locks: Local-only data; no accounts, cloud synchronization, billing, live GPS,
+  or pasture polygons. Existing verified MapLibre lifecycle and imagery behavior remain
+  protected foundations rather than rewrite targets.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -237,16 +266,18 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Native water-point placement and geodesic coverage
-- Working transmission: RW-TX-003-WTR-REV
-- Implementation status: COMPLETE
+- Current phase: Persistent multi-water architecture
+- Working transmission: RW-TX-004 — architecture ratified; work order pending
+- Implementation status: NOT STARTED
 - CI status: GREEN — source commit 40c9da49c3c185b957cfd36492ede97896831db6
 - Verification run: 35328767228 — JVM Turf tests and debug APK build passed
 - Build artifact: RangeWater-Debug-APK
 - Functional device verification: PASSED
-- Current transmission status: CLOSED — ACCEPTED
-- Next action: Prepare the persistence and multi-asset scope before implementation.
-- Resume point: Design durable water-asset persistence and pasture polygon tools.
+- Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
+- Next action: Gemini prepares RW-TX-004 with the ratified decisions and preflight
+  corrections; Ash audits the exact dependencies, schema, tests, and UI integration.
+- Resume point: Implement durable multi-water persistence without modifying the
+  device-verified mapping foundation.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
