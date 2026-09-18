@@ -331,7 +331,8 @@ EVIDENCE STATUS:
   confirmed successful full swipe-close/reopen restoration on September 18, 2026.
 
 - RW-TX-005
-  Status: IMPLEMENTED — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM MIGRATION/DAO TESTS PASSED
+  — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Persistent pasture polygons, ordered editable fence-corner vertices, geodesic
   acreage estimates, magenta cased rendering, explicit draw/edit workflows, and a
   non-destructive Room v1-to-v2 migration preserving all saved water assets.
@@ -346,6 +347,12 @@ EVIDENCE STATUS:
   water-marker-first selection; nullable elevation provenance fields reserved without
   elevation or terrain features; no destructive migration fallback.
   Release identity: version 0.5.0, versionCode 3.
+  Verified source commit: 72fe84e241c1d875ed95db706c2866867612efa5
+  Verified GitHub Actions run: 35384169682
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — JVM geometry, Turf acreage, and feature-conversion tests passed;
+  Android API 35 Room migration and DAO tests passed; the version 0.5.0 debug APK
+  compiled and uploaded as an Actions artifact.
   Deferred: Coverage percentages, green/yellow tiered water zones, DEM scanning, grade,
   gates, livestock routes, animal profiles, cloud synchronization, and survey claims.
 
@@ -380,16 +387,16 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-005 pasture-boundary implementation verification
 - Working transmission: RW-TX-005 — pasture-boundary mapping
-- Implementation status: COMPLETE IN WORKTREE — CI VERIFICATION PENDING
-- CI status: PENDING — local Gradle distribution download is unavailable in the
-  restricted Ash workspace; GitHub Actions is the authoritative build/test runner.
-- Build artifact: Awaiting RangeWater-Debug-APK version 0.5.0 (versionCode 3).
+- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
+- CI status: GREEN — verified source HEAD 72fe84e241c1d875ed95db706c2866867612efa5
+- Verification run: 35384169682 — JVM, Room migration/DAO, APK, and artifact gates passed
+- Build artifact: RangeWater-Debug-APK version 0.5.0 (versionCode 3)
 - Functional device verification: PENDING for RW-TX-005; RW-TX-004 remains accepted.
 - Previous transmission status: RW-TX-004 CLOSED — ACCEPTED
-- Next action: Commit RW-TX-005, run JVM and Android instrumentation gates in CI, then
-  give Michael the pasture drawing, figure-eight rejection, editing, acreage, migration,
-  cold-start restoration, and water-regression acceptance checklist.
-- Resume point: RW-TX-005 implementation is complete and awaiting compiler/CI evidence.
+- Next action: Michael installs the run 35384169682 artifact and executes the pasture
+  drawing, figure-eight rejection, editing, acreage, migration, cold-start restoration,
+  and water-regression acceptance checklist.
+- Resume point: RW-TX-005 is build verified; physical-device acceptance remains.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
