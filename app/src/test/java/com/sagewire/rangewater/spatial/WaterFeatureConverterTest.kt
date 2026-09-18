@@ -42,7 +42,8 @@ class WaterFeatureConverterTest {
         assertEquals(1, polygon.coordinates().size)
         assertEquals(65, polygon.coordinates().single().size)
 
-        val afterDelete = WaterFeatureConverter.toRingFeatures(samplePoints.drop(1), null).features()!!
+        val remainingPoints = samplePoints.filterNot { it.id == 2L }
+        val afterDelete = WaterFeatureConverter.toRingFeatures(remainingPoints, null).features()!!
         assertEquals(1, afterDelete.size)
         assertEquals(1L, afterDelete.single().getNumberProperty("id").toLong())
         assertFalse(afterDelete.single().getBooleanProperty("selected"))
