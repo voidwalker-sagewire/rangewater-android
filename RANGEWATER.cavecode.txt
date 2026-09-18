@@ -331,13 +331,21 @@ EVIDENCE STATUS:
   confirmed successful full swipe-close/reopen restoration on September 18, 2026.
 
 - RW-TX-005
-  Status: ARCHITECTURE RATIFIED — WORK ORDER NOT YET RECEIVED — NOT IMPLEMENTED
+  Status: IMPLEMENTED — CI VERIFICATION PENDING — DEVICE CHECK PENDING
   Scope: Persistent pasture polygons, ordered editable fence-corner vertices, geodesic
   acreage estimates, magenta cased rendering, explicit draw/edit workflows, and a
   non-destructive Room v1-to-v2 migration preserving all saved water assets.
-  Ratified safeguards: Minimum three unique vertices; self-crossing rejection; Undo,
-  Cancel, Finish/Save; derived rather than stored acreage; ordinary water-marker-first
-  selection; nullable elevation provenance fields reserved without elevation features.
+  Preflight corrections: Replaced the abbreviated MapScreen proposal with a complete
+  integration retaining the verified lifecycle, memory threshold, render-listener
+  cleanup, zoom clamping, water editing, and attribution behavior; implemented actual
+  vertex dragging; corrected overlay z-order; kept ID-derived water naming; added a
+  unique vertex-sequence index; and replaced placeholder acreage/migration tests with
+  geometry, conversion, DAO, cascade, and real v1-to-v2 database checks.
+  Safeguards: Minimum three distinct vertices; duplicate, collapsed, and self-crossing
+  rejection; Undo, Cancel, Finish/Save; derived rather than stored acreage; ordinary
+  water-marker-first selection; nullable elevation provenance fields reserved without
+  elevation or terrain features; no destructive migration fallback.
+  Release identity: version 0.5.0, versionCode 3.
   Deferred: Coverage percentages, green/yellow tiered water zones, DEM scanning, grade,
   gates, livestock routes, animal profiles, cloud synchronization, and survey claims.
 
@@ -370,17 +378,18 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-005 pasture-boundary architecture planning
+- Current phase: RW-TX-005 pasture-boundary implementation verification
 - Working transmission: RW-TX-005 — pasture-boundary mapping
-- Implementation status: ARCHITECTURE RATIFIED — READY FOR GEMINI WORK ORDER
-- CI status: GREEN — final verified HEAD 71445a2d40c9c7682c439f15ce9b528d81f7cca6
-- Verification run: 35334064090 — JVM, Android Room, and APK gates passed
-- Build artifact: RangeWater-Debug-APK (version 0.4.0, versionCode 2)
-- Functional device verification: PASSED on target hardware September 18, 2026
-- Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
-- Next action: Michael sends the ratified architecture packet to Gemini for a complete
-  buildable RW-TX-005 work order, then returns that proposal to Ash for preflight.
-- Resume point: RW-TX-005 architecture is fully ratified; implementation has not started.
+- Implementation status: COMPLETE IN WORKTREE — CI VERIFICATION PENDING
+- CI status: PENDING — local Gradle distribution download is unavailable in the
+  restricted Ash workspace; GitHub Actions is the authoritative build/test runner.
+- Build artifact: Awaiting RangeWater-Debug-APK version 0.5.0 (versionCode 3).
+- Functional device verification: PENDING for RW-TX-005; RW-TX-004 remains accepted.
+- Previous transmission status: RW-TX-004 CLOSED — ACCEPTED
+- Next action: Commit RW-TX-005, run JVM and Android instrumentation gates in CI, then
+  give Michael the pasture drawing, figure-eight rejection, editing, acreage, migration,
+  cold-start restoration, and water-regression acceptance checklist.
+- Resume point: RW-TX-005 implementation is complete and awaiting compiler/CI evidence.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

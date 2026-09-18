@@ -2,11 +2,15 @@ package com.sagewire.rangewater.ui.map
 
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
+import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
+import android.view.MotionEvent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +38,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,9 +56,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sagewire.rangewater.data.PastureCoordinate
+import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.RangeWaterDatabase
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
+import com.sagewire.rangewater.spatial.AcreageCalculator
+import com.sagewire.rangewater.spatial.GeometryValidator
+import com.sagewire.rangewater.spatial.PastureFeatureConverter
+import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -65,16 +77,19 @@ import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.visibility
 import org.maplibre.android.style.sources.GeoJsonSource
 
-enum class ActiveMapMode {
-    AERIAL,
-    LABELED
+enum class ActiveMapMode { AERIAL, LABELED }
+
+private enum class InteractionState {
+    ORDINARY,
+    WATER_PLACEMENT,
+    PASTURE_DRAWING,
+    PASTURE_EDITING
 }
 
 /*
- * 🪨 BLOCK 1 — PERSISTENT MULTI-WATER MAP HOST
- * Purpose: Preserves the verified MapLibre lifecycle while rendering Room-backed assets.
- * 🎮 Behavior: Adds, selects, edits, and deletes local water points; every point receives
- *    a derived 243.84-meter geodesic ring that remains above either imagery mode.
+ * 🪨 BLOCK 1 — PERSISTENT WATER AND PASTURE MAP HOST
+ * Purpose: Adds durable pasture drawing/editing without regressing the verified map,
+ * lifecycle, memory, imagery, zoom, attribution, or water-asset behavior.
  */
 @Composable
 fun MapScreen(
@@ -88,27 +103,61 @@ fun MapScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val database = remember(appContext) { RangeWaterDatabase.getDatabase(appContext) }
-    val waterPointDao = remember(database) { database.waterPointDao() }
-    val waterPoints by waterPointDao.observeAll()
-        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val waterDao = remember(database) { database.waterPointDao() }
+    val pastureDao = remember(database) { database.pastureDao() }
+    val waterPoints by waterDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val pastures by pastureDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var activeMode by remember { mutableStateOf(ActiveMapMode.AERIAL) }
+    var interactionState by remember { mutableStateOf(InteractionState.ORDINARY) }
     var currentZoom by remember { mutableDoubleStateOf(initialZoom) }
     var isMapRendering by remember { mutableStateOf(true) }
     var hasLoadError by remember { mutableStateOf(false) }
-    var isPlacementArmed by remember { mutableStateOf(false) }
-    var selectedPointId by remember { mutableStateOf<Long?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var editName by remember { mutableStateOf("") }
-    var editNotes by remember { mutableStateOf("") }
-    var editType by remember { mutableStateOf(WaterSourceType.TROUGH) }
 
-    val selectedPoint = waterPoints.firstOrNull { it.id == selectedPointId }
-    val mapView = remember {
-        MapView(context).apply { onCreate(Bundle()) }
+    var selectedWaterId by remember { mutableStateOf<Long?>(null) }
+    var selectedPastureId by remember { mutableStateOf<Long?>(null) }
+    var selectedVertexIndex by remember { mutableStateOf<Int?>(null) }
+    val draftVertices = remember { mutableStateListOf<PastureCoordinate>() }
+    val undoSnapshots = remember { mutableStateListOf<List<PastureCoordinate>>() }
+    var draftRevision by remember { mutableIntStateOf(0) }
+
+    var showPastureNameDialog by remember { mutableStateOf(false) }
+    var pastureNameInput by remember { mutableStateOf("") }
+    var showPastureDetailsDialog by remember { mutableStateOf(false) }
+    var pastureEditName by remember { mutableStateOf("") }
+    var pastureEditNotes by remember { mutableStateOf("") }
+    var showPastureDeleteDialog by remember { mutableStateOf(false) }
+
+    var showWaterEditDialog by remember { mutableStateOf(false) }
+    var showWaterDeleteDialog by remember { mutableStateOf(false) }
+    var waterEditName by remember { mutableStateOf("") }
+    var waterEditNotes by remember { mutableStateOf("") }
+    var waterEditType by remember { mutableStateOf(WaterSourceType.TROUGH) }
+
+    val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
+    val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
+    val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
+
+    fun replaceDraft(vertices: List<PastureCoordinate>) {
+        draftVertices.clear()
+        draftVertices.addAll(vertices)
+        draftRevision++
     }
+
+    fun rememberUndoPoint() {
+        undoSnapshots.add(draftVertices.toList())
+    }
+
+    fun leaveGeometryMode() {
+        interactionState = InteractionState.ORDINARY
+        draftVertices.clear()
+        undoSnapshots.clear()
+        selectedVertexIndex = null
+        draftRevision++
+    }
+
+    fun geometryError(): String? = GeometryValidator.validationError(draftVertices)
 
     // 🪨 BLOCK 2 — VERIFIED LIFECYCLE, MEMORY, AND RENDER BRIDGE
     DisposableEffect(lifecycleOwner, mapView, appContext) {
@@ -135,14 +184,10 @@ fun MapScreen(
             override fun onConfigurationChanged(newConfig: Configuration) = Unit
             override fun onLowMemory() = mapView.onLowMemory()
             override fun onTrimMemory(level: Int) {
-                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-                    mapView.onLowMemory()
-                }
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) mapView.onLowMemory()
             }
         }
-        val willRenderListener = MapView.OnWillStartRenderingMapListener {
-            isMapRendering = true
-        }
+        val willRenderListener = MapView.OnWillStartRenderingMapListener { isMapRendering = true }
         val didRenderListener = MapView.OnDidFinishRenderingMapListener { fullyRendered ->
             if (fullyRendered) {
                 isMapRendering = false
@@ -159,7 +204,6 @@ fun MapScreen(
         mapView.addOnWillStartRenderingMapListener(willRenderListener)
         mapView.addOnDidFinishRenderingMapListener(didRenderListener)
         mapView.addOnDidFailLoadingMapListener(failedLoadListener)
-
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             appContext.unregisterComponentCallbacks(memoryCallbacks)
@@ -171,48 +215,163 @@ fun MapScreen(
     }
 
     // 🎮 BLOCK 3 — ROOM-TO-MAP SYNCHRONIZATION
-    LaunchedEffect(waterPoints, selectedPointId, mapInstance) {
-        pushWaterOverlays(mapInstance, waterPoints, selectedPointId)
+    LaunchedEffect(
+        waterPoints,
+        pastures,
+        selectedWaterId,
+        selectedPastureId,
+        selectedVertexIndex,
+        draftRevision,
+        interactionState,
+        mapInstance
+    ) {
+        pushAllOverlays(
+            map = mapInstance,
+            waterPoints = waterPoints,
+            selectedWaterId = selectedWaterId,
+            pastures = pastures,
+            selectedPastureId = selectedPastureId,
+            draftVertices = draftVertices.toList(),
+            editing = interactionState == InteractionState.PASTURE_EDITING,
+            selectedVertexIndex = selectedVertexIndex
+        )
     }
-    LaunchedEffect(waterPoints, selectedPointId) {
-        if (selectedPointId != null && selectedPoint == null) {
-            selectedPointId = null
-            showEditDialog = false
-            showDeleteDialog = false
-        }
+    LaunchedEffect(waterPoints, pastures, selectedWaterId, selectedPastureId) {
+        if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
+        if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
     }
 
-    // 🎮 BLOCK 4 — PLACEMENT AND FEATURE-SELECTION TAP ROUTING
-    DisposableEffect(mapInstance, isPlacementArmed, waterPointDao, scope) {
+    // 🎮 BLOCK 4 — MODE-AWARE MAP TAP ROUTING
+    DisposableEffect(mapInstance, interactionState, selectedVertexIndex) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
         } else {
-            val clickListener = MapLibreMap.OnMapClickListener { coordinate ->
-                if (isPlacementArmed) {
-                    isPlacementArmed = false
-                    scope.launch {
-                        selectedPointId = waterPointDao.insertWithDefaultName(
-                            latitude = coordinate.latitude,
-                            longitude = coordinate.longitude
-                        )
+            val listener = MapLibreMap.OnMapClickListener { coordinate ->
+                when (interactionState) {
+                    InteractionState.WATER_PLACEMENT -> {
+                        interactionState = InteractionState.ORDINARY
+                        scope.launch {
+                            selectedWaterId = waterDao.insertWithDefaultName(
+                                coordinate.latitude,
+                                coordinate.longitude
+                            )
+                            selectedPastureId = null
+                        }
                     }
-                } else {
-                    val screenPoint = map.projection.toScreenLocation(coordinate)
-                    selectedPointId = map.queryRenderedFeatures(
-                        RectF(
-                            screenPoint.x - 24f,
-                            screenPoint.y - 24f,
-                            screenPoint.x + 24f,
-                            screenPoint.y + 24f
-                        ),
-                        MapConfig.LAYER_WATER_POINTS
-                    ).firstOrNull()?.getNumberProperty("id")?.toLong()
+                    InteractionState.PASTURE_DRAWING -> {
+                        rememberUndoPoint()
+                        draftVertices.add(coordinate.toPastureCoordinate())
+                        selectedVertexIndex = draftVertices.lastIndex
+                        draftRevision++
+                    }
+                    InteractionState.PASTURE_EDITING -> {
+                        val hit = queryFeaturesNear(
+                            map,
+                            map.projection.toScreenLocation(coordinate),
+                            24f,
+                            MapConfig.LAYER_PASTURE_HANDLES
+                        ).firstOrNull()
+                        when (hit?.getStringProperty("handleType")) {
+                            "midpoint" -> {
+                                val segment = hit.getNumberProperty("index").toInt()
+                                val point = hit.geometry() as? org.maplibre.geojson.Point
+                                if (point != null) {
+                                    rememberUndoPoint()
+                                    draftVertices.add(
+                                        segment + 1,
+                                        PastureCoordinate(point.latitude(), point.longitude())
+                                    )
+                                    selectedVertexIndex = segment + 1
+                                    draftRevision++
+                                }
+                            }
+                            "vertex" -> selectedVertexIndex =
+                                hit.getNumberProperty("index").toInt()
+                        }
+                    }
+                    InteractionState.ORDINARY -> {
+                        val screenPoint = map.projection.toScreenLocation(coordinate)
+                        val waterHit = queryFeaturesNear(
+                            map,
+                            screenPoint,
+                            24f,
+                            MapConfig.LAYER_WATER_POINTS
+                        ).firstOrNull()
+                        if (waterHit != null) {
+                            selectedWaterId = waterHit.getNumberProperty("id").toLong()
+                            selectedPastureId = null
+                        } else {
+                            val pastureHit = map.queryRenderedFeatures(
+                                screenPoint,
+                                MapConfig.LAYER_PASTURE_FILL
+                            ).firstOrNull()
+                            selectedPastureId = pastureHit?.getNumberProperty("id")?.toLong()
+                            selectedWaterId = null
+                        }
+                    }
                 }
                 true
             }
-            map.addOnMapClickListener(clickListener)
-            onDispose { map.removeOnMapClickListener(clickListener) }
+            map.addOnMapClickListener(listener)
+            onDispose { map.removeOnMapClickListener(listener) }
+        }
+    }
+
+    // 🎮 BLOCK 5 — EXPLICIT VERTEX DRAGGING
+    DisposableEffect(mapView, mapInstance, interactionState) {
+        val map = mapInstance
+        if (map == null || interactionState != InteractionState.PASTURE_EDITING) {
+            onDispose { }
+        } else {
+            var dragIndex: Int? = null
+            val touchListener = android.view.View.OnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        val hit = queryFeaturesNear(
+                            map,
+                            PointF(event.x, event.y),
+                            28f,
+                            MapConfig.LAYER_PASTURE_HANDLES
+                        ).firstOrNull { it.getStringProperty("handleType") == "vertex" }
+                        if (hit == null) {
+                            false
+                        } else {
+                            dragIndex = hit.getNumberProperty("index").toInt()
+                            selectedVertexIndex = dragIndex
+                            rememberUndoPoint()
+                            map.uiSettings.isScrollGesturesEnabled = false
+                            true
+                        }
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val index = dragIndex
+                        if (index == null || index !in draftVertices.indices) {
+                            false
+                        } else {
+                            val moved = map.projection.fromScreenLocation(PointF(event.x, event.y))
+                            draftVertices[index] = moved.toPastureCoordinate()
+                            draftRevision++
+                            true
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (dragIndex == null) {
+                            false
+                        } else {
+                            dragIndex = null
+                            map.uiSettings.isScrollGesturesEnabled = true
+                            true
+                        }
+                    }
+                    else -> dragIndex != null
+                }
+            }
+            mapView.setOnTouchListener(touchListener)
+            onDispose {
+                mapView.setOnTouchListener(null)
+                map.uiSettings.isScrollGesturesEnabled = true
+            }
         }
     }
 
@@ -230,324 +389,616 @@ fun MapScreen(
                                 .zoom(initialZoom)
                                 .build()
                             applyMapMode(map, activeMode)
-                            pushWaterOverlays(map, waterPoints, selectedPointId)
+                            pushAllOverlays(
+                                map,
+                                waterPoints,
+                                selectedWaterId,
+                                pastures,
+                                selectedPastureId,
+                                draftVertices.toList(),
+                                interactionState == InteractionState.PASTURE_EDITING,
+                                selectedVertexIndex
+                            )
                         }
-                        map.addOnCameraMoveListener {
-                            currentZoom = map.cameraPosition.zoom
-                        }
-                        map.addOnCameraIdleListener {
-                            currentZoom = map.cameraPosition.zoom
-                        }
+                        map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
+                        map.addOnCameraIdleListener { currentZoom = map.cameraPosition.zoom }
                     }
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
 
-        // 🖍️ BLOCK 5 — MAP STATUS AND MODE CONTROLS
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, start = 12.dp, end = 12.dp)
-                .align(Alignment.TopCenter),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.75f),
-                    contentColor = Color.White
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(
-                                    color = when {
-                                        hasLoadError -> Color.Red
-                                        isPlacementArmed -> Color(0xFF00E5FF)
-                                        activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
-                                        currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
-                                        else -> Color(0xFF2196F3)
-                                    },
-                                    shape = CircleShape
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(7.dp))
-                        val formattedZoom = String.format(Locale.US, "%.1f", currentZoom)
-                        Text(
-                            text = when {
-                                hasLoadError -> "Imagery load issue"
-                                isPlacementArmed -> "Tap pasture to place • z$formattedZoom"
-                                activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$formattedZoom"
-                                currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$formattedZoom"
-                                else -> "USGS Overview • z$formattedZoom"
-                            },
-                            fontSize = 12.sp
-                        )
-                        if (isMapRendering) {
-                            Spacer(modifier = Modifier.width(7.dp))
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(11.dp),
-                                strokeWidth = 1.5.dp,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(
-                        selected = activeMode == ActiveMapMode.AERIAL,
-                        onClick = {
-                            activeMode = ActiveMapMode.AERIAL
-                            mapInstance?.let { applyMapMode(it, ActiveMapMode.AERIAL) }
-                        },
-                        label = { Text("Aerial", fontSize = 12.sp) },
-                        colors = mapModeChipColors()
-                    )
-                    FilterChip(
-                        selected = activeMode == ActiveMapMode.LABELED,
-                        onClick = {
-                            activeMode = ActiveMapMode.LABELED
-                            mapInstance?.let { applyMapMode(it, ActiveMapMode.LABELED) }
-                        },
-                        label = { Text("Labeled", fontSize = 12.sp) },
-                        colors = mapModeChipColors()
-                    )
-                }
+        MapStatusAndModeControls(
+            activeMode = activeMode,
+            currentZoom = currentZoom,
+            isMapRendering = isMapRendering,
+            hasLoadError = hasLoadError,
+            interactionState = interactionState,
+            onModeSelected = { mode ->
+                activeMode = mode
+                mapInstance?.let { applyMapMode(it, mode) }
             }
-        }
+        )
 
-        // 🖍️ BLOCK 6 — ADD-WATER CONTROL
-        if (selectedPoint == null) {
+        if (interactionState == InteractionState.ORDINARY && selectedWater == null && selectedPasture == null) {
             Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 56.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.Black.copy(alpha = 0.8f),
+                color = Color.Black.copy(alpha = 0.82f),
                 tonalElevation = 4.dp
             ) {
-                Button(
-                    onClick = { isPlacementArmed = !isPlacementArmed },
+                Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPlacementArmed) {
-                            Color(0xFF00E5FF)
-                        } else {
-                            MaterialTheme.colorScheme.primary
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            interactionState = InteractionState.WATER_PLACEMENT
+                            selectedWaterId = null
+                            selectedPastureId = null
+                        }
+                    ) { Text("Add Water") }
+                    Button(
+                        onClick = {
+                            interactionState = InteractionState.PASTURE_DRAWING
+                            selectedWaterId = null
+                            selectedPastureId = null
+                            replaceDraft(emptyList())
+                            undoSnapshots.clear()
                         },
-                        contentColor = if (isPlacementArmed) Color.Black else Color.White
-                    ),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text(
-                        text = if (isPlacementArmed) "Cancel" else "Add Water",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF2D95))
+                    ) { Text("Draw Pasture") }
                 }
             }
         }
 
-        // 🖍️ BLOCK 7 — SELECTED-ASSET INSPECTION CARD
-        selectedPoint?.let { point ->
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(start = 12.dp, end = 12.dp, bottom = 52.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
-                tonalElevation = 6.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(point.name, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(
-                                "${point.sourceType.displayName()} • 800 ft ring",
-                                color = Color(0xFFFFD600),
-                                fontSize = 12.sp
-                            )
-                        }
-                        TextButton(onClick = { selectedPointId = null }) {
-                            Text("Close", color = Color.LightGray)
-                        }
-                    }
-                    Text(
-                        String.format(
-                            Locale.US,
-                            "Lat %.5f  •  Lng %.5f",
-                            point.latitude,
-                            point.longitude
-                        ),
-                        color = Color.LightGray,
-                        fontSize = 12.sp
-                    )
-                    if (point.notes.isNotBlank()) {
-                        Text(point.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                editName = point.name
-                                editNotes = point.notes
-                                editType = point.sourceType
-                                showEditDialog = true
-                            }
-                        ) {
-                            Text("Edit")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = { showDeleteDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFD32F2F)
-                            )
-                        ) {
-                            Text("Delete")
-                        }
-                    }
-                }
-            }
-        }
-
-        // 🌐 BLOCK 8 — ACTIVE SOURCE ATTRIBUTION
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 12.dp, bottom = 16.dp),
-            shape = RoundedCornerShape(4.dp),
-            color = Color.Black.copy(alpha = 0.55f)
-        ) {
-            Text(
-                text = when {
-                    activeMode == ActiveMapMode.LABELED -> MapConfig.TOPO_ATTRIBUTION
-                    currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> MapConfig.USDA_ATTRIBUTION
-                    else -> MapConfig.USGS_ATTRIBUTION
-                },
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 9.sp,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        if (interactionState == InteractionState.WATER_PLACEMENT) {
+            BottomInstruction(
+                text = "Tap pasture to place water",
+                action = "Cancel",
+                onAction = { interactionState = InteractionState.ORDINARY }
             )
         }
+
+        if (interactionState == InteractionState.PASTURE_DRAWING ||
+            interactionState == InteractionState.PASTURE_EDITING
+        ) {
+            PastureGeometryControls(
+                acres = AcreageCalculator.calculateAcres(draftVertices),
+                canUndo = undoSnapshots.isNotEmpty(),
+                canFinish = draftVertices.distinctBy { it.latitude to it.longitude }.size >= 3,
+                canRemove = selectedVertexIndex != null && draftVertices.size > 3,
+                editing = interactionState == InteractionState.PASTURE_EDITING,
+                onUndo = {
+                    if (undoSnapshots.isNotEmpty()) {
+                        replaceDraft(undoSnapshots.removeAt(undoSnapshots.lastIndex))
+                        selectedVertexIndex = null
+                    }
+                },
+                onRemove = {
+                    val index = selectedVertexIndex
+                    if (index != null && index in draftVertices.indices && draftVertices.size > 3) {
+                        rememberUndoPoint()
+                        draftVertices.removeAt(index)
+                        selectedVertexIndex = null
+                        draftRevision++
+                    }
+                },
+                onCancel = { leaveGeometryMode() },
+                onFinish = {
+                    val error = geometryError()
+                    if (error != null) {
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    } else if (interactionState == InteractionState.PASTURE_DRAWING) {
+                        pastureNameInput = ""
+                        showPastureNameDialog = true
+                    } else {
+                        val pastureId = selectedPastureId
+                        if (pastureId != null) {
+                            scope.launch {
+                                pastureDao.replaceVertices(pastureId, draftVertices.toList())
+                                leaveGeometryMode()
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+        selectedWater?.let { point ->
+            WaterInspectionCard(
+                point = point,
+                onClose = { selectedWaterId = null },
+                onEdit = {
+                    waterEditName = point.name
+                    waterEditNotes = point.notes
+                    waterEditType = point.sourceType
+                    showWaterEditDialog = true
+                },
+                onDelete = { showWaterDeleteDialog = true }
+            )
+        }
+
+        selectedPasture?.let { pasture ->
+            if (interactionState == InteractionState.ORDINARY) {
+                PastureInspectionCard(
+                    pasture = pasture,
+                    onClose = { selectedPastureId = null },
+                    onEditDetails = {
+                        pastureEditName = pasture.pasture.name
+                        pastureEditNotes = pasture.pasture.notes
+                        showPastureDetailsDialog = true
+                    },
+                    onEditBoundary = {
+                        interactionState = InteractionState.PASTURE_EDITING
+                        replaceDraft(pasture.orderedCoordinates())
+                        undoSnapshots.clear()
+                        selectedVertexIndex = null
+                    },
+                    onDelete = { showPastureDeleteDialog = true }
+                )
+            }
+        }
+
+        ActiveAttribution(activeMode, currentZoom)
     }
 
-    if (showEditDialog && selectedPoint != null) {
+    if (showPastureNameDialog) {
         AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text("Edit Water Asset") },
+            onDismissRequest = { showPastureNameDialog = false },
+            title = { Text("Name Pasture") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = editName,
-                        onValueChange = { editName = it },
-                        label = { Text("Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text("Water type", fontSize = 12.sp)
-                    WaterSourceType.entries.chunked(3).forEach { rowTypes ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            rowTypes.forEach { type ->
-                                FilterChip(
-                                    selected = editType == type,
-                                    onClick = { editType = type },
-                                    label = { Text(type.displayName(), fontSize = 10.sp) }
-                                )
-                            }
-                        }
-                    }
-                    OutlinedTextField(
-                        value = editNotes,
-                        onValueChange = { editNotes = it },
-                        label = { Text("Notes") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                OutlinedTextField(
+                    value = pastureNameInput,
+                    onValueChange = { pastureNameInput = it },
+                    label = { Text("Optional name") },
+                    singleLine = true
+                )
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        val current = selectedPoint
-                        if (current != null) {
-                            scope.launch {
-                                waterPointDao.update(
-                                    current.copy(
-                                        name = editName.trim().ifBlank { current.name },
-                                        sourceType = editType,
-                                        notes = editNotes.trim(),
-                                        updatedAt = System.currentTimeMillis()
-                                    )
-                                )
-                                showEditDialog = false
-                            }
+                Button(onClick = {
+                    val error = geometryError()
+                    if (error != null) {
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    } else {
+                        val vertices = draftVertices.toList()
+                        val name = pastureNameInput
+                        showPastureNameDialog = false
+                        scope.launch {
+                            selectedPastureId = pastureDao.insertWithVertices(name, "", vertices)
+                            leaveGeometryMode()
                         }
                     }
-                ) { Text("Save") }
+                }) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showPastureNameDialog = false }) { Text("Back") }
             }
         )
     }
 
-    if (showDeleteDialog && selectedPoint != null) {
+    if (showPastureDetailsDialog && selectedPasture != null) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete ${selectedPoint.name}?") },
-            text = { Text("This removes the saved water point and its 800-foot ring from this device.") },
+            onDismissRequest = { showPastureDetailsDialog = false },
+            title = { Text("Edit Pasture") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = pastureEditName,
+                        onValueChange = { pastureEditName = it },
+                        label = { Text("Name") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = pastureEditNotes,
+                        onValueChange = { pastureEditNotes = it },
+                        label = { Text("Notes") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val pasture = selectedPasture.pasture
+                    scope.launch {
+                        pastureDao.updateDetails(
+                            pasture.id,
+                            pastureEditName.trim().ifBlank { pasture.name },
+                            pastureEditNotes.trim(),
+                            System.currentTimeMillis()
+                        )
+                        showPastureDetailsDialog = false
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPastureDetailsDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showPastureDeleteDialog && selectedPasture != null) {
+        AlertDialog(
+            onDismissRequest = { showPastureDeleteDialog = false },
+            title = { Text("Delete ${selectedPasture.pasture.name}?") },
+            text = { Text("This removes the saved pasture boundary from this device.") },
             confirmButton = {
                 Button(
                     onClick = {
-                        val id = selectedPoint.id
-                        showDeleteDialog = false
+                        val id = selectedPasture.pasture.id
+                        showPastureDeleteDialog = false
                         scope.launch {
-                            waterPointDao.deleteById(id)
-                            selectedPointId = null
+                            pastureDao.deleteById(id)
+                            selectedPastureId = null
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                 ) { Text("Delete") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showPastureDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showWaterEditDialog && selectedWater != null) {
+        AlertDialog(
+            onDismissRequest = { showWaterEditDialog = false },
+            title = { Text("Edit Water Asset") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = waterEditName,
+                        onValueChange = { waterEditName = it },
+                        label = { Text("Name") },
+                        singleLine = true
+                    )
+                    Text("Water type", fontSize = 12.sp)
+                    WaterSourceType.entries.chunked(3).forEach { rowTypes ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            rowTypes.forEach { type ->
+                                FilterChip(
+                                    selected = waterEditType == type,
+                                    onClick = { waterEditType = type },
+                                    label = { Text(type.displayName(), fontSize = 10.sp) }
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = waterEditNotes,
+                        onValueChange = { waterEditNotes = it },
+                        label = { Text("Notes") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val current = selectedWater
+                    scope.launch {
+                        waterDao.update(
+                            current.copy(
+                                name = waterEditName.trim().ifBlank { current.name },
+                                sourceType = waterEditType,
+                                notes = waterEditNotes.trim(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        )
+                        showWaterEditDialog = false
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWaterEditDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showWaterDeleteDialog && selectedWater != null) {
+        AlertDialog(
+            onDismissRequest = { showWaterDeleteDialog = false },
+            title = { Text("Delete ${selectedWater.name}?") },
+            text = { Text("This removes the saved water point and its 800-foot ring from this device.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = selectedWater.id
+                        showWaterDeleteDialog = false
+                        scope.launch {
+                            waterDao.deleteById(id)
+                            selectedWaterId = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWaterDeleteDialog = false }) { Text("Cancel") }
             }
         )
     }
 }
 
-private fun pushWaterOverlays(
+@Composable
+private fun MapStatusAndModeControls(
+    activeMode: ActiveMapMode,
+    currentZoom: Double,
+    isMapRendering: Boolean,
+    hasLoadError: Boolean,
+    interactionState: InteractionState,
+    onModeSelected: (ActiveMapMode) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, start = 12.dp, end = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.Black.copy(alpha = 0.75f),
+                contentColor = Color.White
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(8.dp).background(
+                            when {
+                                hasLoadError -> Color.Red
+                                interactionState == InteractionState.PASTURE_DRAWING ||
+                                    interactionState == InteractionState.PASTURE_EDITING -> Color(0xFFFF2D95)
+                                interactionState == InteractionState.WATER_PLACEMENT -> Color(0xFF00E5FF)
+                                activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
+                                currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
+                                else -> Color(0xFF2196F3)
+                            },
+                            CircleShape
+                        )
+                    )
+                    Spacer(Modifier.width(7.dp))
+                    val zoom = String.format(Locale.US, "%.1f", currentZoom)
+                    Text(
+                        when {
+                            hasLoadError -> "Imagery load issue"
+                            interactionState == InteractionState.PASTURE_DRAWING -> "Tap fence corners • z$zoom"
+                            interactionState == InteractionState.PASTURE_EDITING -> "Edit boundary • z$zoom"
+                            interactionState == InteractionState.WATER_PLACEMENT -> "Tap pasture to place • z$zoom"
+                            activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
+                            currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
+                            else -> "USGS Overview • z$zoom"
+                        },
+                        fontSize = 12.sp
+                    )
+                    if (isMapRendering) {
+                        Spacer(Modifier.width(7.dp))
+                        CircularProgressIndicator(Modifier.size(11.dp), strokeWidth = 1.5.dp, color = Color.White)
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = activeMode == ActiveMapMode.AERIAL,
+                    onClick = { onModeSelected(ActiveMapMode.AERIAL) },
+                    label = { Text("Aerial", fontSize = 12.sp) },
+                    colors = mapModeChipColors()
+                )
+                FilterChip(
+                    selected = activeMode == ActiveMapMode.LABELED,
+                    onClick = { onModeSelected(ActiveMapMode.LABELED) },
+                    label = { Text("Labeled", fontSize = 12.sp) },
+                    colors = mapModeChipColors()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.PastureGeometryControls(
+    acres: Double,
+    canUndo: Boolean,
+    canFinish: Boolean,
+    canRemove: Boolean,
+    editing: Boolean,
+    onUndo: () -> Unit,
+    onRemove: () -> Unit,
+    onCancel: () -> Unit,
+    onFinish: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, bottom = 52.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
+        tonalElevation = 6.dp
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(
+                String.format(Locale.US, "%.1f acres", acres),
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text("Map estimate — not a surveyed boundary", color = Color.LightGray, fontSize = 10.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                TextButton(onClick = onCancel) { Text("Cancel") }
+                OutlinedButton(onClick = onUndo, enabled = canUndo) { Text("Undo") }
+                if (editing) {
+                    OutlinedButton(onClick = onRemove, enabled = canRemove) { Text("Remove Corner") }
+                }
+                Button(onClick = onFinish, enabled = canFinish) {
+                    Text(if (editing) "Save" else "Finish")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.BottomInstruction(text: String, action: String, onAction: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 40.dp, end = 40.dp, bottom = 56.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.Black.copy(alpha = 0.84f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text, color = Color.White)
+            TextButton(onClick = onAction) { Text(action) }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.WaterInspectionCard(
+    point: WaterPointEntity,
+    onClose: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, bottom = 52.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
+        tonalElevation = 6.dp
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                Column {
+                    Text(point.name, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("${point.sourceType.displayName()} • 800 ft ring", color = Color(0xFFFFD600), fontSize = 12.sp)
+                }
+                TextButton(onClick = onClose) { Text("Close", color = Color.LightGray) }
+            }
+            Text(
+                String.format(Locale.US, "Lat %.5f  •  Lng %.5f", point.latitude, point.longitude),
+                color = Color.LightGray,
+                fontSize = 12.sp
+            )
+            if (point.notes.isNotBlank()) Text(point.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                OutlinedButton(onClick = onEdit) { Text("Edit") }
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+                    Text("Delete")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.PastureInspectionCard(
+    pasture: PastureWithVertices,
+    onClose: () -> Unit,
+    onEditDetails: () -> Unit,
+    onEditBoundary: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val acres = AcreageCalculator.calculateAcres(pasture.orderedCoordinates())
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, bottom = 52.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
+        tonalElevation = 6.dp
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                Column {
+                    Text(pasture.pasture.name, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(String.format(Locale.US, "%.1f acres • Map estimate", acres), color = Color(0xFFFF2D95), fontSize = 12.sp)
+                }
+                TextButton(onClick = onClose) { Text("Close", color = Color.LightGray) }
+            }
+            if (pasture.pasture.notes.isNotBlank()) {
+                Text(pasture.pasture.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                OutlinedButton(onClick = onEditDetails) { Text("Details") }
+                Spacer(Modifier.width(6.dp))
+                OutlinedButton(onClick = onEditBoundary) { Text("Boundary") }
+                Spacer(Modifier.width(6.dp))
+                Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+                    Text("Delete")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.ActiveAttribution(activeMode: ActiveMapMode, currentZoom: Double) {
+    Surface(
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 16.dp),
+        shape = RoundedCornerShape(4.dp),
+        color = Color.Black.copy(alpha = 0.55f)
+    ) {
+        Text(
+            when {
+                activeMode == ActiveMapMode.LABELED -> MapConfig.TOPO_ATTRIBUTION
+                currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> MapConfig.USDA_ATTRIBUTION
+                else -> MapConfig.USGS_ATTRIBUTION
+            },
+            color = Color.White.copy(alpha = 0.9f),
+            fontSize = 9.sp,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+
+private fun pushAllOverlays(
     map: MapLibreMap?,
-    points: List<WaterPointEntity>,
-    selectedId: Long?
+    waterPoints: List<WaterPointEntity>,
+    selectedWaterId: Long?,
+    pastures: List<PastureWithVertices>,
+    selectedPastureId: Long?,
+    draftVertices: List<PastureCoordinate>,
+    editing: Boolean,
+    selectedVertexIndex: Int?
 ) {
     map?.getStyle { style ->
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
-            ?.setGeoJson(WaterFeatureConverter.toPointFeatures(points, selectedId))
+            ?.setGeoJson(WaterFeatureConverter.toPointFeatures(waterPoints, selectedWaterId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RINGS)
-            ?.setGeoJson(WaterFeatureConverter.toRingFeatures(points, selectedId))
+            ?.setGeoJson(WaterFeatureConverter.toRingFeatures(waterPoints, selectedWaterId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURES)
+            ?.setGeoJson(PastureFeatureConverter.toPastureFeatures(pastures, selectedPastureId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)
+            ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)?.setGeoJson(
+            PastureFeatureConverter.handleFeatures(draftVertices, editing, selectedVertexIndex)
+        )
     }
 }
+
+private fun queryFeaturesNear(
+    map: MapLibreMap,
+    point: PointF,
+    radius: Float,
+    layer: String
+) = map.queryRenderedFeatures(
+    RectF(point.x - radius, point.y - radius, point.x + radius, point.y + radius),
+    layer
+)
+
+private fun LatLng.toPastureCoordinate() = PastureCoordinate(latitude, longitude)
 
 private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
     when (mode) {
@@ -558,11 +1009,8 @@ private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
                     CameraUpdateFactory.zoomTo(MapConfig.MAX_LABELED_ZOOM),
                     400,
                     object : MapLibreMap.CancelableCallback {
-                        override fun onFinish() =
-                            map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
-
-                        override fun onCancel() =
-                            map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
+                        override fun onFinish() = map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
+                        override fun onCancel() = map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
                     }
                 )
             } else {
@@ -570,16 +1018,12 @@ private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
             }
         }
     }
-
     map.getStyle { style ->
-        val aerialVisibility = if (mode == ActiveMapMode.AERIAL) Property.VISIBLE else Property.NONE
-        val labeledVisibility = if (mode == ActiveMapMode.LABELED) Property.VISIBLE else Property.NONE
-        style.getLayer(MapConfig.LAYER_AERIAL_OVERVIEW)
-            ?.setProperties(visibility(aerialVisibility))
-        style.getLayer(MapConfig.LAYER_AERIAL_DETAIL)
-            ?.setProperties(visibility(aerialVisibility))
-        style.getLayer(MapConfig.LAYER_LABELED_TOPO)
-            ?.setProperties(visibility(labeledVisibility))
+        val aerial = if (mode == ActiveMapMode.AERIAL) Property.VISIBLE else Property.NONE
+        val labeled = if (mode == ActiveMapMode.LABELED) Property.VISIBLE else Property.NONE
+        style.getLayer(MapConfig.LAYER_AERIAL_OVERVIEW)?.setProperties(visibility(aerial))
+        style.getLayer(MapConfig.LAYER_AERIAL_DETAIL)?.setProperties(visibility(aerial))
+        style.getLayer(MapConfig.LAYER_LABELED_TOPO)?.setProperties(visibility(labeled))
     }
 }
 
@@ -587,10 +1031,9 @@ private fun WaterSourceType.displayName(): String =
     name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }
 
 @Composable
-private fun mapModeChipColors() =
-    FilterChipDefaults.filterChipColors(
-        containerColor = Color.Black.copy(alpha = 0.6f),
-        labelColor = Color.White,
-        selectedContainerColor = MaterialTheme.colorScheme.primary,
-        selectedLabelColor = Color.White
-    )
+private fun mapModeChipColors() = FilterChipDefaults.filterChipColors(
+    containerColor = Color.Black.copy(alpha = 0.6f),
+    labelColor = Color.White,
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = Color.White
+)

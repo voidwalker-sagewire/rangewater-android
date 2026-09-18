@@ -50,6 +50,16 @@ object MapConfig {
 
     const val SOURCE_WATER_POINTS = "source-water-points"
     const val SOURCE_WATER_RINGS = "source-water-rings"
+    const val SOURCE_PASTURES = "source-pastures"
+    const val SOURCE_PASTURE_DRAFT = "source-pasture-draft"
+    const val SOURCE_PASTURE_HANDLES = "source-pasture-handles"
+    const val LAYER_PASTURE_FILL = "layer-pasture-fill"
+    const val LAYER_PASTURE_CASING = "layer-pasture-casing"
+    const val LAYER_PASTURE_LINE = "layer-pasture-line"
+    const val LAYER_PASTURE_DRAFT_FILL = "layer-pasture-draft-fill"
+    const val LAYER_PASTURE_DRAFT_CASING = "layer-pasture-draft-casing"
+    const val LAYER_PASTURE_DRAFT_LINE = "layer-pasture-draft-line"
+    const val LAYER_PASTURE_HANDLES = "layer-pasture-handles"
     const val LAYER_WATER_RINGS_FILL = "layer-water-rings-fill"
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
     const val LAYER_WATER_POINTS = "layer-water-points"
@@ -93,6 +103,18 @@ object MapConfig {
             "$SOURCE_WATER_POINTS": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PASTURES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PASTURE_DRAFT": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PASTURE_HANDLES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
             }
           },
           "layers": [
@@ -117,6 +139,24 @@ object MapConfig {
               "layout": { "visibility": "none" }
             },
             {
+              "id": "$LAYER_PASTURE_FILL",
+              "type": "fill",
+              "source": "$SOURCE_PASTURES",
+              "paint": {
+                "fill-color": "#FF2D95",
+                "fill-opacity": 0.08
+              }
+            },
+            {
+              "id": "$LAYER_PASTURE_DRAFT_FILL",
+              "type": "fill",
+              "source": "$SOURCE_PASTURE_DRAFT",
+              "paint": {
+                "fill-color": "#FF2D95",
+                "fill-opacity": 0.08
+              }
+            },
+            {
               "id": "$LAYER_WATER_RINGS_FILL",
               "type": "fill",
               "source": "$SOURCE_WATER_RINGS",
@@ -137,6 +177,52 @@ object MapConfig {
                 "line-width": [
                   "case", ["get", "selected"], 3.0, 1.5
                 ]
+              }
+            },
+            {
+              "id": "$LAYER_PASTURE_CASING",
+              "type": "line",
+              "source": "$SOURCE_PASTURES",
+              "paint": {
+                "line-color": "#151515",
+                "line-width": ["case", ["get", "selected"], 6.0, 4.0]
+              }
+            },
+            {
+              "id": "$LAYER_PASTURE_LINE",
+              "type": "line",
+              "source": "$SOURCE_PASTURES",
+              "paint": {
+                "line-color": "#FF2D95",
+                "line-width": ["case", ["get", "selected"], 4.0, 2.0]
+              }
+            },
+            {
+              "id": "$LAYER_PASTURE_DRAFT_CASING",
+              "type": "line",
+              "source": "$SOURCE_PASTURE_DRAFT",
+              "paint": { "line-color": "#151515", "line-width": 4.0 }
+            },
+            {
+              "id": "$LAYER_PASTURE_DRAFT_LINE",
+              "type": "line",
+              "source": "$SOURCE_PASTURE_DRAFT",
+              "paint": { "line-color": "#FF2D95", "line-width": 2.0 }
+            },
+            {
+              "id": "$LAYER_PASTURE_HANDLES",
+              "type": "circle",
+              "source": "$SOURCE_PASTURE_HANDLES",
+              "paint": {
+                "circle-radius": [
+                  "case",
+                  ["==", ["get", "handleType"], "midpoint"], 5.0,
+                  ["get", "selected"], 10.0,
+                  8.0
+                ],
+                "circle-color": "#FFFFFF",
+                "circle-stroke-color": "#FF2D95",
+                "circle-stroke-width": 3.0
               }
             },
             {
