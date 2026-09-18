@@ -358,7 +358,8 @@ EVIDENCE STATUS:
   gates, livestock routes, animal profiles, cloud synchronization, and survey claims.
 
 - RW-TX-005-REV
-  Status: IMPLEMENTED — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM TESTS PASSED
+  — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Corrects the phone-width boundary editor by replacing crowded midpoint handles
   with an explicit Add Corner mode and a stable two-row action matrix.
   Device finding: Core pasture drawing, selection, naming, acreage, overlapping pasture
@@ -376,6 +377,15 @@ EVIDENCE STATUS:
   Undo reverses add, drag, or removal; Cancel discards the edit draft; Save validates the
   complete boundary before replacing stored vertices.
   Release identity: version 0.5.1, versionCode 4.
+  Initial implementation commit: 8c91e67a46d5b88697b32272240b281cec202b67
+  Initial GitHub Actions run: 35405234334 — FAILED during Kotlin compilation because an
+  explicit Compose weight import resolved to an internal symbol; no tests, APK, or
+  artifact were accepted from that run.
+  Corrected source commit: 4eba5cdc6b6bd8ab81c6a65b2eb75cfb7b461f0c
+  Verified GitHub Actions run: 35405393306
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — JVM geometry and segment-projection tests passed; Android Room
+  migration/DAO tests passed; the version 0.5.1 debug APK compiled and uploaded.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -408,15 +418,16 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-005-REV mobile boundary-editor correction
 - Working transmission: RW-TX-005-REV — explicit corner insertion and responsive controls
-- Implementation status: COMPLETE IN WORKTREE — CI VERIFICATION PENDING
-- CI status: PENDING
-- Build artifact: Awaiting RangeWater-Debug-APK version 0.5.1 (versionCode 4)
+- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
+- CI status: GREEN — verified source HEAD 4eba5cdc6b6bd8ab81c6a65b2eb75cfb7b461f0c
+- Verification run: 35405393306 — JVM, Room migration/DAO, APK, and artifact gates passed
+- Build artifact: RangeWater-Debug-APK version 0.5.1 (versionCode 4)
 - Functional device verification: RW-TX-005 PARTIAL PASS — editor correction required;
   RW-TX-004 remains accepted.
 - Previous transmission status: RW-TX-005 BUILD VERIFIED — DEVICE REVISION REQUIRED
-- Next action: Commit RW-TX-005-REV, run JVM and Android instrumentation gates in CI,
-  then verify Add Corner, drag, Remove, Undo, Cancel, Save, and narrow-screen layout.
-- Resume point: RW-TX-005-REV implementation awaits compiler and CI evidence.
+- Next action: Michael installs run 35405393306 and verifies Add Corner, drag, Remove,
+  Undo, Cancel, Save, and the two-row narrow-screen layout on target hardware.
+- Resume point: RW-TX-005-REV is build verified; physical-device acceptance remains.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
