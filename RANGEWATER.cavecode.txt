@@ -137,6 +137,14 @@ EVIDENCE STATUS:
 2. Record live-service operational limits separately from the public-domain status
    of the underlying CONUS imagery data.
 3. Choose the elevation and slope pipeline: local DEM tiles or cached USGS 3DEP data.
+   - Proposed future grade analysis records nullable elevation, source, vertical datum,
+     reported accuracy, and capture timestamp with each pasture vertex.
+   - Segment grade requires both elevation change and geodesic horizontal distance:
+     grade percent = elevation change / horizontal distance x 100.
+   - USGS 3DEP lookup, device GNSS, and manual/survey elevations must remain identified
+     by source and datum; values from unlike vertical references must not be mixed.
+   - Fence-post grades are segment estimates. Terrain-aware livestock-path and >15%
+     slope analysis requires denser DEM sampling between vertices, not endpoints alone.
 4. Verify the exact evidence trail behind the 800-foot behavioral interpretation.
 5. Measure USDA dynamic-service latency on target devices and decide whether a
    RangeWater-controlled proxy cache or regional offline package is needed.
