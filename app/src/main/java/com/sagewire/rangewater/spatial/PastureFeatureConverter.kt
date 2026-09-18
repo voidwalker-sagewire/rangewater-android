@@ -40,7 +40,6 @@ object PastureFeatureConverter {
 
     fun handleFeatures(
         vertices: List<PastureCoordinate>,
-        includeMidpoints: Boolean,
         selectedVertexIndex: Int?
     ): FeatureCollection {
         val features = vertices.mapIndexed { index, coordinate ->
@@ -52,18 +51,6 @@ object PastureFeatureConverter {
                     addProperty("selected", index == selectedVertexIndex)
                 }
             )
-        }.toMutableList()
-        if (includeMidpoints) {
-            GeometryValidator.midpoints(vertices).forEachIndexed { index, coordinate ->
-                features += Feature.fromGeometry(
-                    Point.fromLngLat(coordinate.longitude, coordinate.latitude),
-                    JsonObject().apply {
-                        addProperty("index", index)
-                        addProperty("handleType", "midpoint")
-                        addProperty("selected", false)
-                    }
-                )
-            }
         }
         return FeatureCollection.fromFeatures(features)
     }

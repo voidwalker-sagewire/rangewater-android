@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -86,6 +87,11 @@ private enum class InteractionState {
     PASTURE_EDITING
 }
 
+private enum class PastureEditMode {
+    SELECT_OR_DRAG,
+    ADD_CORNER
+}
+
 /*
  * 🪨 BLOCK 1 — PERSISTENT WATER AND PASTURE MAP HOST
  * Purpose: Adds durable pasture drawing/editing without regressing the verified map,
@@ -118,6 +124,7 @@ fun MapScreen(
     var selectedWaterId by remember { mutableStateOf<Long?>(null) }
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
     var selectedVertexIndex by remember { mutableStateOf<Int?>(null) }
+    var pastureEditMode by remember { mutableStateOf(PastureEditMode.SELECT_OR_DRAG) }
     val draftVertices = remember { mutableStateListOf<PastureCoordinate>() }
     val undoSnapshots = remember { mutableStateListOf<List<PastureCoordinate>>() }
     var draftRevision by remember { mutableIntStateOf(0) }
@@ -154,6 +161,7 @@ fun MapScreen(
         draftVertices.clear()
         undoSnapshots.clear()
         selectedVertexIndex = null
+        pastureEditMode = PastureEditMode.SELECT_OR_DRAG
         draftRevision++
     }
 
@@ -232,7 +240,6 @@ fun MapScreen(
             pastures = pastures,
             selectedPastureId = selectedPastureId,
             draftVertices = draftVertices.toList(),
-            editing = interactionState == InteractionState.PASTURE_EDITING,
             selectedVertexIndex = selectedVertexIndex
         )
     }
@@ -242,7 +249,7 @@ fun MapScreen(
     }
 
     // 🎮 BLOCK 4 — MODE-AWARE MAP TAP ROUTING
-    DisposableEffect(mapInstance, interactionState, selectedVertexIndex) {
+    DisposableEffect(mapInstance, interactionState, selectedVertexIndex, pastureEditMode) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
@@ -266,28 +273,40 @@ fun MapScreen(
                         draftRevision++
                     }
                     InteractionState.PASTURE_EDITING -> {
-                        val hit = queryFeaturesNear(
-                            map,
-                            map.projection.toScreenLocation(coordinate),
-                            24f,
-                            MapConfig.LAYER_PASTURE_HANDLES
-                        ).firstOrNull()
-                        when (hit?.getStringProperty("handleType")) {
-                            "midpoint" -> {
-                                val segment = hit.getNumberProperty("index").toInt()
-                                val point = hit.geometry() as? org.maplibre.geojson.Point
-                                if (point != null) {
-                                    rememberUndoPoint()
-                                    draftVertices.add(
-                                        segment + 1,
-                                        PastureCoordinate(point.latitude(), point.longitude())
-                                    )
-                                    selectedVertexIndex = segment + 1
-                                    draftRevision++
-                                }
+                        val screenPoint = map.projection.toScreenLocation(coordinate)
+                        if (pastureEditMode == PastureEditMode.ADD_CORNER) {
+                            val lineHit = queryFeaturesNear(
+                                map,
+                                screenPoint,
+                                28f,
+                                MapConfig.LAYER_PASTURE_DRAFT_LINE
+                            ).isNotEmpty()
+                            val projection = GeometryValidator.projectOntoClosestSegment(
+                                coordinate.toPastureCoordinate(),
+                                draftVertices
+                            )
+                            if (!lineHit || projection == null) {
+                                Toast.makeText(
+                                    context,
+                                    "Tap closer to the fence line",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                rememberUndoPoint()
+                                draftVertices.add(projection.insertionIndex, projection.coordinate)
+                                selectedVertexIndex = projection.insertionIndex
+                                pastureEditMode = PastureEditMode.SELECT_OR_DRAG
+                                draftRevision++
+                                Toast.makeText(context, "Corner added", Toast.LENGTH_SHORT).show()
                             }
-                            "vertex" -> selectedVertexIndex =
-                                hit.getNumberProperty("index").toInt()
+                        } else {
+                            val hit = queryFeaturesNear(
+                                map,
+                                screenPoint,
+                                24f,
+                                MapConfig.LAYER_PASTURE_HANDLES
+                            ).firstOrNull()
+                            selectedVertexIndex = hit?.getNumberProperty("index")?.toInt()
                         }
                     }
                     InteractionState.ORDINARY -> {
@@ -319,9 +338,11 @@ fun MapScreen(
     }
 
     // 🎮 BLOCK 5 — EXPLICIT VERTEX DRAGGING
-    DisposableEffect(mapView, mapInstance, interactionState) {
+    DisposableEffect(mapView, mapInstance, interactionState, pastureEditMode) {
         val map = mapInstance
-        if (map == null || interactionState != InteractionState.PASTURE_EDITING) {
+        if (map == null || interactionState != InteractionState.PASTURE_EDITING ||
+            pastureEditMode != PastureEditMode.SELECT_OR_DRAG
+        ) {
             onDispose { }
         } else {
             var dragIndex: Int? = null
@@ -396,7 +417,6 @@ fun MapScreen(
                                 pastures,
                                 selectedPastureId,
                                 draftVertices.toList(),
-                                interactionState == InteractionState.PASTURE_EDITING,
                                 selectedVertexIndex
                             )
                         }
@@ -469,10 +489,21 @@ fun MapScreen(
                 canFinish = draftVertices.distinctBy { it.latitude to it.longitude }.size >= 3,
                 canRemove = selectedVertexIndex != null && draftVertices.size > 3,
                 editing = interactionState == InteractionState.PASTURE_EDITING,
+                addCornerArmed = pastureEditMode == PastureEditMode.ADD_CORNER,
+                selectedCorner = selectedVertexIndex?.plus(1),
                 onUndo = {
                     if (undoSnapshots.isNotEmpty()) {
                         replaceDraft(undoSnapshots.removeAt(undoSnapshots.lastIndex))
                         selectedVertexIndex = null
+                        pastureEditMode = PastureEditMode.SELECT_OR_DRAG
+                    }
+                },
+                onAddCorner = {
+                    pastureEditMode = if (pastureEditMode == PastureEditMode.ADD_CORNER) {
+                        PastureEditMode.SELECT_OR_DRAG
+                    } else {
+                        selectedVertexIndex = null
+                        PastureEditMode.ADD_CORNER
                     }
                 },
                 onRemove = {
@@ -481,6 +512,7 @@ fun MapScreen(
                         rememberUndoPoint()
                         draftVertices.removeAt(index)
                         selectedVertexIndex = null
+                        pastureEditMode = PastureEditMode.SELECT_OR_DRAG
                         draftRevision++
                     }
                 },
@@ -534,6 +566,7 @@ fun MapScreen(
                         replaceDraft(pasture.orderedCoordinates())
                         undoSnapshots.clear()
                         selectedVertexIndex = null
+                        pastureEditMode = PastureEditMode.SELECT_OR_DRAG
                     },
                     onDelete = { showPastureDeleteDialog = true }
                 )
@@ -804,7 +837,10 @@ private fun BoxScope.PastureGeometryControls(
     canFinish: Boolean,
     canRemove: Boolean,
     editing: Boolean,
+    addCornerArmed: Boolean,
+    selectedCorner: Int?,
     onUndo: () -> Unit,
+    onAddCorner: () -> Unit,
     onRemove: () -> Unit,
     onCancel: () -> Unit,
     onFinish: () -> Unit
@@ -824,15 +860,67 @@ private fun BoxScope.PastureGeometryControls(
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
-            Text("Map estimate — not a surveyed boundary", color = Color.LightGray, fontSize = 10.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TextButton(onClick = onCancel) { Text("Cancel") }
-                OutlinedButton(onClick = onUndo, enabled = canUndo) { Text("Undo") }
-                if (editing) {
-                    OutlinedButton(onClick = onRemove, enabled = canRemove) { Text("Remove Corner") }
+            Text(
+                when {
+                    addCornerArmed -> "Tap the fence line where the new corner belongs"
+                    editing && selectedCorner != null -> "Corner $selectedCorner selected — drag to move"
+                    editing -> "Tap a corner to select it, or choose Add Corner"
+                    else -> "Map estimate — not a surveyed boundary"
+                },
+                color = if (addCornerArmed) Color(0xFFFFD600) else Color.LightGray,
+                fontSize = 10.sp
+            )
+            if (editing) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onAddCorner,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (addCornerArmed) Color(0xFFFFD600) else Color(0xFFFF2D95),
+                            contentColor = if (addCornerArmed) Color.Black else Color.White
+                        )
+                    ) { Text(if (addCornerArmed) "Cancel Add" else "Add Corner", fontSize = 12.sp) }
+                    OutlinedButton(
+                        onClick = onRemove,
+                        enabled = canRemove,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Remove", fontSize = 12.sp) }
                 }
-                Button(onClick = onFinish, enabled = canFinish) {
-                    Text(if (editing) "Save" else "Finish")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    OutlinedButton(
+                        onClick = onUndo,
+                        enabled = canUndo,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Undo", fontSize = 12.sp) }
+                    Button(
+                        onClick = onFinish,
+                        enabled = canFinish,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save", fontSize = 12.sp) }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    OutlinedButton(
+                        onClick = onUndo,
+                        enabled = canUndo,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Undo", fontSize = 12.sp) }
+                    Button(
+                        onClick = onFinish,
+                        enabled = canFinish,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Finish", fontSize = 12.sp) }
                 }
             }
         }
@@ -970,7 +1058,6 @@ private fun pushAllOverlays(
     pastures: List<PastureWithVertices>,
     selectedPastureId: Long?,
     draftVertices: List<PastureCoordinate>,
-    editing: Boolean,
     selectedVertexIndex: Int?
 ) {
     map?.getStyle { style ->
@@ -982,9 +1069,8 @@ private fun pushAllOverlays(
             ?.setGeoJson(PastureFeatureConverter.toPastureFeatures(pastures, selectedPastureId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)
             ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
-        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)?.setGeoJson(
-            PastureFeatureConverter.handleFeatures(draftVertices, editing, selectedVertexIndex)
-        )
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)
+            ?.setGeoJson(PastureFeatureConverter.handleFeatures(draftVertices, selectedVertexIndex))
     }
 }
 

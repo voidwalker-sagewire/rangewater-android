@@ -215,12 +215,11 @@ object MapConfig {
               "source": "$SOURCE_PASTURE_HANDLES",
               "paint": {
                 "circle-radius": [
-                  "case",
-                  ["==", ["get", "handleType"], "midpoint"], 5.0,
-                  ["get", "selected"], 10.0,
-                  8.0
+                  "case", ["get", "selected"], 10.0, 8.0
                 ],
-                "circle-color": "#FFFFFF",
+                "circle-color": [
+                  "case", ["get", "selected"], "#FFD600", "#FFFFFF"
+                ],
                 "circle-stroke-color": "#FF2D95",
                 "circle-stroke-width": 3.0
               }

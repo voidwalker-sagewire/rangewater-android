@@ -112,9 +112,10 @@ RULE:
       the geometry loads or changes and is labeled "Map estimate — not a surveyed boundary."
     - Pasture-boundary editing is ratified. Selecting a saved pasture opens a bottom
       card with its name, acreage, Edit Boundary, Rename, and confirmed Delete actions.
-    - Edit Boundary is an explicit mode with large existing-vertex handles, segment
-      midpoint insertion handles, drag-to-reposition, vertex selection and removal,
-      and Undo, Cancel, and Save controls. A polygon may never fall below three vertices.
+    - Edit Boundary is an explicit mode with large existing-vertex handles, an explicit
+      Add Corner then tap-the-fence workflow, drag-to-reposition, vertex selection and
+      removal, and Undo, Cancel, and Save controls. A polygon may never fall below three
+      vertices. This explicit insertion mode supersedes RW-TX-005 midpoint handles.
     - Cancel restores the pre-edit geometry. Save rejects self-crossing or otherwise
       invalid geometry and recalculates acreage before persistence.
     - Water overlays remain visible but non-interactive during pasture drawing or editing.
@@ -356,6 +357,26 @@ EVIDENCE STATUS:
   Deferred: Coverage percentages, green/yellow tiered water zones, DEM scanning, grade,
   gates, livestock routes, animal profiles, cloud synchronization, and survey claims.
 
+- RW-TX-005-REV
+  Status: IMPLEMENTED — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Scope: Corrects the phone-width boundary editor by replacing crowded midpoint handles
+  with an explicit Add Corner mode and a stable two-row action matrix.
+  Device finding: Core pasture drawing, selection, naming, acreage, overlapping pasture
+  rendering, water-overlay ordering, and boundary persistence rendered correctly on the
+  Galaxy S23 Ultra. The first edit action row overflowed, collapsed Save into a vertical
+  control, and allowed midpoint handles to crowd short fence segments.
+  Preflight corrections: Applied the revision to verified HEAD 1e88405 rather than the
+  stale proposed base; retained direct vertex dragging and every verified lifecycle,
+  memory, zoom, attribution, water, Room, migration, and validation safeguard; added a
+  fence-line hit requirement and meter-based segment projection so Add Corner cannot
+  silently insert from an unrelated pasture tap.
+  Interaction contract: Tap Add Corner, then tap near an existing fence segment. The tap
+  is projected onto the closest segment, the vertex is inserted in sequence, selected in
+  amber, and immediately available for dragging. Remove requires a selected real corner.
+  Undo reverses add, drag, or removal; Cancel discards the edit draft; Save validates the
+  complete boundary before replacing stored vertices.
+  Release identity: version 0.5.1, versionCode 4.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -385,18 +406,17 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-005 pasture-boundary implementation verification
-- Working transmission: RW-TX-005 — pasture-boundary mapping
-- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
-- CI status: GREEN — verified source HEAD 72fe84e241c1d875ed95db706c2866867612efa5
-- Verification run: 35384169682 — JVM, Room migration/DAO, APK, and artifact gates passed
-- Build artifact: RangeWater-Debug-APK version 0.5.0 (versionCode 3)
-- Functional device verification: PENDING for RW-TX-005; RW-TX-004 remains accepted.
-- Previous transmission status: RW-TX-004 CLOSED — ACCEPTED
-- Next action: Michael installs the run 35384169682 artifact and executes the pasture
-  drawing, figure-eight rejection, editing, acreage, migration, cold-start restoration,
-  and water-regression acceptance checklist.
-- Resume point: RW-TX-005 is build verified; physical-device acceptance remains.
+- Current phase: RW-TX-005-REV mobile boundary-editor correction
+- Working transmission: RW-TX-005-REV — explicit corner insertion and responsive controls
+- Implementation status: COMPLETE IN WORKTREE — CI VERIFICATION PENDING
+- CI status: PENDING
+- Build artifact: Awaiting RangeWater-Debug-APK version 0.5.1 (versionCode 4)
+- Functional device verification: RW-TX-005 PARTIAL PASS — editor correction required;
+  RW-TX-004 remains accepted.
+- Previous transmission status: RW-TX-005 BUILD VERIFIED — DEVICE REVISION REQUIRED
+- Next action: Commit RW-TX-005-REV, run JVM and Android instrumentation gates in CI,
+  then verify Add Corner, drag, Remove, Undo, Cancel, Save, and narrow-screen layout.
+- Resume point: RW-TX-005-REV implementation awaits compiler and CI evidence.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
