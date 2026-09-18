@@ -102,8 +102,16 @@ RULE:
       #151515 outer casing, matching fill near 8% opacity, and white-centered magenta
       vertex handles during drawing and reshaping. Selected pastures use a thicker line
       and expose their editable corner handles.
-    - Acreage display, water-ring interaction, edit mechanics, and the Room schema remain
-      design decisions to ratify before implementation.
+    - Acreage calculation and presentation are ratified. RangeWater closes the GeoJSON
+      polygon, rejects fewer than three unique vertices and self-crossing geometry, and
+      calculates approximate geodesic area with TurfMeasurement.area().
+    - Turf square meters are converted using 4,046.8564224 square meters per acre.
+      Acreage updates after every add, undo, or vertex move; the UI displays one decimal
+      place while calculations retain full precision.
+    - Boundary coordinates are the durable source of truth. Acreage is derived whenever
+      the geometry loads or changes and is labeled "Map estimate — not a surveyed boundary."
+    - Water-ring interaction, edit mechanics, and the Room schema remain design decisions
+      to ratify before implementation.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -305,10 +313,10 @@ EVIDENCE STATUS:
 - Build artifact: RangeWater-Debug-APK (version 0.4.0, versionCode 2)
 - Functional device verification: PASSED on target hardware September 18, 2026
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
-- Next action: Ratify boundary styling, acreage display, water-ring interaction,
-  editing mechanics, and persistent schema before authoring the RW-TX-005 work order.
-- Resume point: RW-TX-005 drawing workflow and boundary styling are ratified; acreage
-  calculation and presentation are next.
+- Next action: Ratify water-ring interaction, boundary editing mechanics, and the
+  persistent Room schema before authoring the RW-TX-005 work order.
+- Resume point: RW-TX-005 drawing workflow, styling, and acreage behavior are ratified;
+  water-ring interaction is next.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
