@@ -33,16 +33,18 @@ RULE:
 --------------------------------------------------------------------------------
 - UI: Jetpack Compose with Kotlin 2.0.21 and Compose Compiler plugin 2.0.21
 - Android: compileSdk 36, targetSdk 36, minSdk 24
-- Build: AGP 8.10.1, Gradle 8.11.1, Java 17
+- Build: AGP 8.10.1, Gradle 8.11.1, Java 17, KSP 2.0.21-1.0.28
 - Map Engine: MapLibre Native Android SDK 11.5.1
 - Spatial Math: MapLibre Turf Java 6.0.1
-- CI: GitHub Actions builds a debug APK with the committed Gradle wrapper
+- Persistence: Android Room 2.8.5 with local SQLite and Flow-backed reads
+- CI: GitHub Actions runs JVM geometry tests, Android Room instrumentation tests,
+  and builds a debug APK with the committed Gradle wrapper
 - Federal imagery stack:
   - Overview: cached USGS Imagery Only raster tiles through zoom 15
   - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 20
   - Navigation: cached USGS Imagery Topo labeled mode capped at zoom 16
-- Water overlay: native in-memory GeoJSON point plus Turf-generated polygon rendered
-  with MapLibre Circle, Fill, and Line layers above every basemap mode
+- Water overlay: aggregated GeoJSON points plus Turf-generated polygons rendered with
+  data-driven MapLibre Circle, Fill, and Line layers above every basemap mode
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -112,16 +114,6 @@ EVIDENCE STATUS:
    baseline and evaluate a future paid tier using properly licensed higher-resolution
    commercial imagery. Provider, licensing, entitlement, pricing, and billing remain
    undecided; no paid-imagery commitment is made by RW-TX-003.
-7. RW-TX-004 implementation details still requiring preflight resolution:
-   - Generate the sequential default name only after Room returns the auto-generated ID,
-     without creating a misleading timestamp change or a partially named visible record.
-   - Run Room in-memory tests under Android instrumentation or an explicitly configured
-     Robolectric JVM environment; Room.inMemoryDatabaseBuilder is not a plain JVM test.
-   - Never enable destructive migration in a production build. If temporarily used for
-     development, confine it to debug builds and replace it before user data is entrusted
-     to the database.
-   - Ring geometry is derived rather than stored; DAO deletion tests verify the record,
-     while a separate aggregation test verifies that deleted records yield no ring.
 
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
@@ -231,13 +223,19 @@ EVIDENCE STATUS:
   hardware. Screenshot evidence shows the point and ring correctly rendered above
   USGS Imagery Topo without obscuring MapLibre or provider attribution.
 
-- RW-TX-004 — Architecture Decisions
-  Status: RATIFIED — BUILDABLE WORK ORDER PENDING
-  Decisions: Room plus KSP, automatic post-insert naming with optional rename, multiple
-  persisted water assets, Flow-driven map updates, and a compact selection bottom card.
+- RW-TX-004
+  Status: IMPLEMENTED — TEST/BUILD VERIFICATION PENDING
+  Scope: Room-backed durable multi-water assets, ID-derived automatic names, Flow-driven
+  aggregated point/ring GeoJSON, amber selection, inspection card, typed editing, notes,
+  confirmed deletion, and restoration after process death or device restart.
+  Preflight corrections: Based implementation on HEAD 5019159 rather than the stale work-
+  order HEAD; retained the verified lifecycle, memory threshold, render-listener cleanup,
+  smooth labeled clamp, top inset, and bottom-end attribution; omitted undeclared Compose
+  animation APIs; removed destructive migration; replaced list-size naming with atomic
+  post-ID naming; added delete confirmation and real Android Room instrumentation tests.
+  Dependency correction: Room 2.8.5 replaces the older proposed 2.6.1 baseline.
   Scope locks: Local-only data; no accounts, cloud synchronization, billing, live GPS,
-  or pasture polygons. Existing verified MapLibre lifecycle and imagery behavior remain
-  protected foundations rather than rewrite targets.
+  or pasture polygons.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -259,25 +257,24 @@ EVIDENCE STATUS:
   device performance and service behavior remain acceptance-test items.
 - Device testing confirmed that zoom 22 enlarged source pixels without adding ground
   detail. REV3's mode-specific zoom limits passed physical-device acceptance.
-- Water placement in RW-TX-003 is intentionally volatile. Process death, Activity
-  recreation, or a fresh launch may discard the point until persistence is designed.
+- RW-TX-004 stores water assets locally, but the database remains device-specific and is
+  not yet backed up or synchronized. Uninstalling the app removes its stored assets.
+- Destructive Room migration is prohibited. Any future schema version must include and
+  test a data-preserving migration before release.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Persistent multi-water architecture
-- Working transmission: RW-TX-004 — architecture ratified; work order pending
-- Implementation status: NOT STARTED
-- CI status: GREEN — source commit 40c9da49c3c185b957cfd36492ede97896831db6
-- Verification run: 35328767228 — JVM Turf tests and debug APK build passed
-- Build artifact: RangeWater-Debug-APK
-- Functional device verification: PASSED
+- Working transmission: RW-TX-004 — durable multi-water persistence
+- Implementation status: COMPLETE — VERIFICATION PENDING
+- CI status: PENDING — JVM, Android Room instrumentation, and APK gates required
+- Functional device verification: PENDING
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
-- Next action: Gemini prepares RW-TX-004 with the ratified decisions and preflight
-  corrections; Ash audits the exact dependencies, schema, tests, and UI integration.
-- Resume point: Implement durable multi-water persistence without modifying the
-  device-verified mapping foundation.
+- Next action: Ash runs CI; Michael then verifies multiple placement, overlap, selection,
+  editing, confirmed deletion, and cold-start restoration on physical hardware.
+- Resume point after acceptance: RW-TX-005 pasture-boundary planning.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

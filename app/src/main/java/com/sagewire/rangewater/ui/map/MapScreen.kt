@@ -2,8 +2,8 @@ package com.sagewire.rangewater.ui.map
 
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
+import android.graphics.RectF
 import android.os.Bundle
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,14 +25,18 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,21 +49,21 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sagewire.rangewater.data.RangeWaterDatabase
+import com.sagewire.rangewater.data.WaterPointEntity
+import com.sagewire.rangewater.data.WaterSourceType
+import com.sagewire.rangewater.spatial.WaterFeatureConverter
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.visibility
 import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.geojson.Feature
-import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.Point
-import org.maplibre.turf.TurfConstants
-import org.maplibre.turf.TurfTransformation
 
 enum class ActiveMapMode {
     AERIAL,
@@ -66,12 +71,10 @@ enum class ActiveMapMode {
 }
 
 /*
- * 🪨 BLOCK 1 — MAP HOST COMPOSABLE
- * Purpose: Hosts MapLibre with the verified lifecycle/memory bridge, hybrid imagery,
- *          and native water-point placement.
- * 🎮 Behavior: Switches overview/detail sources by zoom and Aerial/Labeled layers
- *    by visibility, while a memory-only GeoJSON overlay displays one water point
- *    and its 243.84-meter geodesic coverage ring.
+ * 🪨 BLOCK 1 — PERSISTENT MULTI-WATER MAP HOST
+ * Purpose: Preserves the verified MapLibre lifecycle while rendering Room-backed assets.
+ * 🎮 Behavior: Adds, selects, edits, and deletes local water points; every point receives
+ *    a derived 243.84-meter geodesic ring that remains above either imagery mode.
  */
 @Composable
 fun MapScreen(
@@ -83,6 +86,11 @@ fun MapScreen(
     val context = LocalContext.current
     val appContext = context.applicationContext
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    val database = remember(appContext) { RangeWaterDatabase.getDatabase(appContext) }
+    val waterPointDao = remember(database) { database.waterPointDao() }
+    val waterPoints by waterPointDao.observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var activeMode by remember { mutableStateOf(ActiveMapMode.AERIAL) }
@@ -90,12 +98,16 @@ fun MapScreen(
     var isMapRendering by remember { mutableStateOf(true) }
     var hasLoadError by remember { mutableStateOf(false) }
     var isPlacementArmed by remember { mutableStateOf(false) }
-    var placedWaterPoint by remember { mutableStateOf<LatLng?>(null) }
+    var selectedPointId by remember { mutableStateOf<Long?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf("") }
+    var editNotes by remember { mutableStateOf("") }
+    var editType by remember { mutableStateOf(WaterSourceType.TROUGH) }
 
+    val selectedPoint = waterPoints.firstOrNull { it.id == selectedPointId }
     val mapView = remember {
-        MapView(context).apply {
-            onCreate(Bundle())
-        }
+        MapView(context).apply { onCreate(Bundle()) }
     }
 
     // 🪨 BLOCK 2 — VERIFIED LIFECYCLE, MEMORY, AND RENDER BRIDGE
@@ -119,21 +131,15 @@ fun MapScreen(
                 else -> Unit
             }
         }
-
         val memoryCallbacks = object : ComponentCallbacks2 {
             override fun onConfigurationChanged(newConfig: Configuration) = Unit
-
-            override fun onLowMemory() {
-                mapView.onLowMemory()
-            }
-
+            override fun onLowMemory() = mapView.onLowMemory()
             override fun onTrimMemory(level: Int) {
                 if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
                     mapView.onLowMemory()
                 }
             }
         }
-
         val willRenderListener = MapView.OnWillStartRenderingMapListener {
             isMapRendering = true
         }
@@ -164,25 +170,47 @@ fun MapScreen(
         }
     }
 
-    // 🪨 BLOCK 3 — ONE-SHOT MAP TAP LISTENER
-    // Re-registering when the arm state changes gives the listener the current state;
-    // disposal removes the exact listener instance and prevents accumulation.
-    DisposableEffect(mapInstance, isPlacementArmed) {
+    // 🎮 BLOCK 3 — ROOM-TO-MAP SYNCHRONIZATION
+    LaunchedEffect(waterPoints, selectedPointId, mapInstance) {
+        pushWaterOverlays(mapInstance, waterPoints, selectedPointId)
+    }
+    LaunchedEffect(waterPoints, selectedPointId) {
+        if (selectedPointId != null && selectedPoint == null) {
+            selectedPointId = null
+            showEditDialog = false
+            showDeleteDialog = false
+        }
+    }
+
+    // 🎮 BLOCK 4 — PLACEMENT AND FEATURE-SELECTION TAP ROUTING
+    DisposableEffect(mapInstance, isPlacementArmed, waterPointDao, scope) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
         } else {
             val clickListener = MapLibreMap.OnMapClickListener { coordinate ->
-                if (!isPlacementArmed) {
-                    false
-                } else {
-                    placedWaterPoint = coordinate
+                if (isPlacementArmed) {
                     isPlacementArmed = false
-                    map.getStyle { style -> updateWaterOverlay(style, coordinate) }
-                    true
+                    scope.launch {
+                        selectedPointId = waterPointDao.insertWithDefaultName(
+                            latitude = coordinate.latitude,
+                            longitude = coordinate.longitude
+                        )
+                    }
+                } else {
+                    val screenPoint = map.projection.toScreenLocation(coordinate)
+                    selectedPointId = map.queryRenderedFeatures(
+                        RectF(
+                            screenPoint.x - 24f,
+                            screenPoint.y - 24f,
+                            screenPoint.x + 24f,
+                            screenPoint.y + 24f
+                        ),
+                        MapConfig.LAYER_WATER_POINTS
+                    ).firstOrNull()?.getNumberProperty("id")?.toLong()
                 }
+                true
             }
-
             map.addOnMapClickListener(clickListener)
             onDispose { map.removeOnMapClickListener(clickListener) }
         }
@@ -196,16 +224,14 @@ fun MapScreen(
                         mapInstance = map
                         map.setMinZoomPreference(MapConfig.MIN_ALLOWED_ZOOM)
                         map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
-
-                        map.setStyle(MapConfig.createStyleBuilder()) { style ->
+                        map.setStyle(MapConfig.createStyleBuilder()) {
                             map.cameraPosition = CameraPosition.Builder()
                                 .target(LatLng(initialLat, initialLng))
                                 .zoom(initialZoom)
                                 .build()
                             applyMapMode(map, activeMode)
-                            placedWaterPoint?.let { updateWaterOverlay(style, it) }
+                            pushWaterOverlays(map, waterPoints, selectedPointId)
                         }
-
                         map.addOnCameraMoveListener {
                             currentZoom = map.cameraPosition.zoom
                         }
@@ -218,7 +244,7 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 🖍️ BLOCK 4 — MAP MODE AND STATUS CONTROLS
+        // 🖍️ BLOCK 5 — MAP STATUS AND MODE CONTROLS
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,23 +326,19 @@ fun MapScreen(
             }
         }
 
-        // 🖍️ BLOCK 5 — DELIBERATE WATER-PLACEMENT CONTROLS
-        // Elevated above both provider attribution and MapLibre's required logo.
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 56.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.Black.copy(alpha = 0.8f),
-            tonalElevation = 4.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // 🖍️ BLOCK 6 — ADD-WATER CONTROL
+        if (selectedPoint == null) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 56.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Black.copy(alpha = 0.8f),
+                tonalElevation = 4.dp
             ) {
                 Button(
                     onClick = { isPlacementArmed = !isPlacementArmed },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isPlacementArmed) {
                             Color(0xFF00E5FF)
@@ -328,30 +350,88 @@ fun MapScreen(
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Text(
-                        text = if (isPlacementArmed) "Cancel" else "Place Water",
+                        text = if (isPlacementArmed) "Cancel" else "Add Water",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+            }
+        }
 
-                if (placedWaterPoint != null) {
-                    OutlinedButton(
-                        onClick = {
-                            placedWaterPoint = null
-                            isPlacementArmed = false
-                            mapInstance?.getStyle(::clearWaterOverlay)
-                        },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
-                        shape = RoundedCornerShape(18.dp)
+        // 🖍️ BLOCK 7 — SELECTED-ASSET INSPECTION CARD
+        selectedPoint?.let { point ->
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 12.dp, end = 12.dp, bottom = 52.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
+                tonalElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Clear", fontSize = 13.sp)
+                        Column {
+                            Text(point.name, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(
+                                "${point.sourceType.displayName()} • 800 ft ring",
+                                color = Color(0xFFFFD600),
+                                fontSize = 12.sp
+                            )
+                        }
+                        TextButton(onClick = { selectedPointId = null }) {
+                            Text("Close", color = Color.LightGray)
+                        }
+                    }
+                    Text(
+                        String.format(
+                            Locale.US,
+                            "Lat %.5f  •  Lng %.5f",
+                            point.latitude,
+                            point.longitude
+                        ),
+                        color = Color.LightGray,
+                        fontSize = 12.sp
+                    )
+                    if (point.notes.isNotBlank()) {
+                        Text(point.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                editName = point.name
+                                editNotes = point.notes
+                                editType = point.sourceType
+                                showEditDialog = true
+                            }
+                        ) {
+                            Text("Edit")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = { showDeleteDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD32F2F)
+                            )
+                        ) {
+                            Text("Delete")
+                        }
                     }
                 }
             }
         }
 
-        // 🌐 BLOCK 6 — ACTIVE SOURCE ATTRIBUTION
+        // 🌐 BLOCK 8 — ACTIVE SOURCE ATTRIBUTION
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -371,46 +451,118 @@ fun MapScreen(
             )
         }
     }
+
+    if (showEditDialog && selectedPoint != null) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Water Asset") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text("Water type", fontSize = 12.sp)
+                    WaterSourceType.entries.chunked(3).forEach { rowTypes ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            rowTypes.forEach { type ->
+                                FilterChip(
+                                    selected = editType == type,
+                                    onClick = { editType = type },
+                                    label = { Text(type.displayName(), fontSize = 10.sp) }
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = editNotes,
+                        onValueChange = { editNotes = it },
+                        label = { Text("Notes") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val current = selectedPoint
+                        if (current != null) {
+                            scope.launch {
+                                waterPointDao.update(
+                                    current.copy(
+                                        name = editName.trim().ifBlank { current.name },
+                                        sourceType = editType,
+                                        notes = editNotes.trim(),
+                                        updatedAt = System.currentTimeMillis()
+                                    )
+                                )
+                                showEditDialog = false
+                            }
+                        }
+                    }
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showDeleteDialog && selectedPoint != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete ${selectedPoint.name}?") },
+            text = { Text("This removes the saved water point and its 800-foot ring from this device.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = selectedPoint.id
+                        showDeleteDialog = false
+                        scope.launch {
+                            waterPointDao.deleteById(id)
+                            selectedPointId = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
-private fun updateWaterOverlay(style: Style, coordinate: LatLng) {
-    val center = Point.fromLngLat(coordinate.longitude, coordinate.latitude)
-    val ring = TurfTransformation.circle(
-        center,
-        MapConfig.BUFFER_RADIUS_METERS,
-        MapConfig.BUFFER_CIRCLE_STEPS,
-        TurfConstants.UNIT_METERS
-    )
-
-    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINT)?.setGeoJson(center)
-    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RING)?.setGeoJson(ring)
-}
-
-private fun clearWaterOverlay(style: Style) {
-    val empty = FeatureCollection.fromFeatures(emptyArray<Feature>())
-    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINT)?.setGeoJson(empty)
-    style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RING)?.setGeoJson(empty)
+private fun pushWaterOverlays(
+    map: MapLibreMap?,
+    points: List<WaterPointEntity>,
+    selectedId: Long?
+) {
+    map?.getStyle { style ->
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
+            ?.setGeoJson(WaterFeatureConverter.toPointFeatures(points, selectedId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RINGS)
+            ?.setGeoJson(WaterFeatureConverter.toRingFeatures(points, selectedId))
+    }
 }
 
 private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
     when (mode) {
-        ActiveMapMode.AERIAL -> {
-            map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
-        }
-
+        ActiveMapMode.AERIAL -> map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
         ActiveMapMode.LABELED -> {
             if (map.cameraPosition.zoom > MapConfig.MAX_LABELED_ZOOM) {
                 map.animateCamera(
                     CameraUpdateFactory.zoomTo(MapConfig.MAX_LABELED_ZOOM),
                     400,
                     object : MapLibreMap.CancelableCallback {
-                        override fun onFinish() {
+                        override fun onFinish() =
                             map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
-                        }
 
-                        override fun onCancel() {
+                        override fun onCancel() =
                             map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
-                        }
                     }
                 )
             } else {
@@ -420,17 +572,8 @@ private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
     }
 
     map.getStyle { style ->
-        val aerialVisibility = if (mode == ActiveMapMode.AERIAL) {
-            Property.VISIBLE
-        } else {
-            Property.NONE
-        }
-        val labeledVisibility = if (mode == ActiveMapMode.LABELED) {
-            Property.VISIBLE
-        } else {
-            Property.NONE
-        }
-
+        val aerialVisibility = if (mode == ActiveMapMode.AERIAL) Property.VISIBLE else Property.NONE
+        val labeledVisibility = if (mode == ActiveMapMode.LABELED) Property.VISIBLE else Property.NONE
         style.getLayer(MapConfig.LAYER_AERIAL_OVERVIEW)
             ?.setProperties(visibility(aerialVisibility))
         style.getLayer(MapConfig.LAYER_AERIAL_DETAIL)
@@ -439,6 +582,9 @@ private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
             ?.setProperties(visibility(labeledVisibility))
     }
 }
+
+private fun WaterSourceType.displayName(): String =
+    name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }
 
 @Composable
 private fun mapModeChipColors() =
