@@ -224,7 +224,8 @@ EVIDENCE STATUS:
   USGS Imagery Topo without obscuring MapLibre or provider attribution.
 
 - RW-TX-004
-  Status: IMPLEMENTED — TEST/BUILD VERIFICATION PENDING
+  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM DEVICE TEST PASSED — BUILD VERIFIED
+  — PHYSICAL DEVICE CHECK PENDING
   Scope: Room-backed durable multi-water assets, ID-derived automatic names, Flow-driven
   aggregated point/ring GeoJSON, amber selection, inspection card, typed editing, notes,
   confirmed deletion, and restoration after process death or device restart.
@@ -236,6 +237,15 @@ EVIDENCE STATUS:
   Dependency correction: Room 2.8.5 replaces the older proposed 2.6.1 baseline.
   Scope locks: Local-only data; no accounts, cloud synchronization, billing, live GPS,
   or pasture polygons.
+  Initial implementation commit: fa8d95e444ed36a4710acf2349e3985e9e005da4
+  Initial GitHub Actions run: 35333423489 — FAILED at a faulty converter-test
+  expectation; production conversion behavior was correct and no APK was published.
+  Corrected source commit: 1105d9535b728b89967146467b8a2543c6ab47cd
+  Verified GitHub Actions run: 35333683856
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — Turf and multi-feature JVM tests passed, the Room insert/default-
+  name/update/delete Flow test passed on an Android API 35 emulator, and the version
+  0.4.0 debug APK compiled and uploaded.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -268,8 +278,10 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Persistent multi-water architecture
 - Working transmission: RW-TX-004 — durable multi-water persistence
-- Implementation status: COMPLETE — VERIFICATION PENDING
-- CI status: PENDING — JVM, Android Room instrumentation, and APK gates required
+- Implementation status: COMPLETE — PHYSICAL DEVICE VERIFICATION PENDING
+- CI status: GREEN — corrected source commit 1105d9535b728b89967146467b8a2543c6ab47cd
+- Verification run: 35333683856 — JVM, Android Room, and APK gates passed
+- Build artifact: RangeWater-Debug-APK (version 0.4.0, versionCode 2)
 - Functional device verification: PENDING
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
 - Next action: Ash runs CI; Michael then verifies multiple placement, overlap, selection,
