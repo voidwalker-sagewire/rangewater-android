@@ -26,7 +26,8 @@ object MapConfig {
     // 🎮 Working zoom range and automatic imagery transition.
     const val DETAIL_TRANSITION_ZOOM = 15.0
     const val MIN_ALLOWED_ZOOM = 3.0
-    const val MAX_ALLOWED_ZOOM = 22.0
+    const val MAX_AERIAL_ZOOM = 20.0
+    const val MAX_LABELED_ZOOM = 16.0
 
     // 🪨 Cached federal overview and labeled-navigation endpoints.
     const val USGS_IMAGERY_TILE_URL =
@@ -65,7 +66,7 @@ object MapConfig {
               "tiles": ["$USDA_NAIP_EXPORT_URL"],
               "tileSize": 512,
               "minzoom": 15,
-              "maxzoom": 22,
+              "maxzoom": 20,
               "attribution": "$USDA_ATTRIBUTION"
             },
             "source-usgs-topo": {

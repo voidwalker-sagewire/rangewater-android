@@ -39,7 +39,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.util.Locale
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
@@ -55,7 +57,7 @@ enum class ActiveMapMode {
  * 🪨 BLOCK 1 — MAP HOST COMPOSABLE
  * Purpose: Hosts MapLibre with the verified lifecycle/memory bridge and hybrid imagery UI.
  * 🎮 Behavior: Switches overview/detail sources by zoom and Aerial/Labeled layers
- *    by visibility, without rebuilding the style.
+ *    by visibility, with mode-specific camera limits and no style reload.
  * 🔧 Unfinished Work: Add water placement and 800-foot buffers in RW-TX-003.
  */
 @Composable
@@ -154,16 +156,19 @@ fun MapScreen(
                     getMapAsync { map ->
                         mapInstance = map
                         map.setMinZoomPreference(MapConfig.MIN_ALLOWED_ZOOM)
-                        map.setMaxZoomPreference(MapConfig.MAX_ALLOWED_ZOOM)
+                        map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
 
                         map.setStyle(MapConfig.createStyleBuilder()) {
                             map.cameraPosition = CameraPosition.Builder()
                                 .target(LatLng(initialLat, initialLng))
                                 .zoom(initialZoom)
                                 .build()
-                            applyModeVisibility(map, activeMode)
+                            applyMapMode(map, activeMode)
                         }
 
+                        map.addOnCameraMoveListener {
+                            currentZoom = map.cameraPosition.zoom
+                        }
                         map.addOnCameraIdleListener {
                             currentZoom = map.cameraPosition.zoom
                         }
@@ -209,12 +214,13 @@ fun MapScreen(
                                 )
                         )
                         Spacer(modifier = Modifier.width(7.dp))
+                        val formattedZoom = String.format(Locale.US, "%.1f", currentZoom)
                         Text(
                             text = when {
                                 hasLoadError -> "Imagery load issue"
-                                activeMode == ActiveMapMode.LABELED -> "USGS Labeled"
-                                currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail"
-                                else -> "USGS Overview"
+                                activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$formattedZoom"
+                                currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$formattedZoom"
+                                else -> "USGS Overview • z$formattedZoom"
                             },
                             fontSize = 12.sp
                         )
@@ -234,7 +240,7 @@ fun MapScreen(
                         selected = activeMode == ActiveMapMode.AERIAL,
                         onClick = {
                             activeMode = ActiveMapMode.AERIAL
-                            mapInstance?.let { applyModeVisibility(it, ActiveMapMode.AERIAL) }
+                            mapInstance?.let { applyMapMode(it, ActiveMapMode.AERIAL) }
                         },
                         label = { Text("Aerial", fontSize = 12.sp) },
                         colors = mapModeChipColors()
@@ -243,7 +249,7 @@ fun MapScreen(
                         selected = activeMode == ActiveMapMode.LABELED,
                         onClick = {
                             activeMode = ActiveMapMode.LABELED
-                            mapInstance?.let { applyModeVisibility(it, ActiveMapMode.LABELED) }
+                            mapInstance?.let { applyMapMode(it, ActiveMapMode.LABELED) }
                         },
                         label = { Text("Labeled", fontSize = 12.sp) },
                         colors = mapModeChipColors()
@@ -274,7 +280,33 @@ fun MapScreen(
     }
 }
 
-private fun applyModeVisibility(map: MapLibreMap, mode: ActiveMapMode) {
+private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
+    when (mode) {
+        ActiveMapMode.AERIAL -> {
+            map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
+        }
+
+        ActiveMapMode.LABELED -> {
+            if (map.cameraPosition.zoom > MapConfig.MAX_LABELED_ZOOM) {
+                map.animateCamera(
+                    CameraUpdateFactory.zoomTo(MapConfig.MAX_LABELED_ZOOM),
+                    400,
+                    object : MapLibreMap.CancelableCallback {
+                        override fun onFinish() {
+                            map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
+                        }
+
+                        override fun onCancel() {
+                            map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
+                        }
+                    }
+                )
+            } else {
+                map.setMaxZoomPreference(MapConfig.MAX_LABELED_ZOOM)
+            }
+        }
+    }
+
     map.getStyle { style ->
         val aerialVisibility = if (mode == ActiveMapMode.AERIAL) {
             Property.VISIBLE

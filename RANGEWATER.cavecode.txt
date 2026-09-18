@@ -39,8 +39,8 @@ RULE:
 - CI: GitHub Actions builds a debug APK with the committed Gradle wrapper
 - Federal imagery stack:
   - Overview: cached USGS Imagery Only raster tiles through zoom 15
-  - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 22
-  - Navigation: cached USGS Imagery Topo selectable labeled mode
+  - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 20
+  - Navigation: cached USGS Imagery Topo labeled mode capped at zoom 16
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -65,6 +65,12 @@ RULE:
      markings, building shadows, and roof seams at the inspected location.
    - USGS Imagery Topo supplies an optional labeled navigation mode.
    - Aerial/Labeled changes use layer visibility and do not reload the map style.
+9. Michael approved mode-specific useful zoom limits after physical-device testing.
+   - Aerial mode is capped at zoom 20 to prevent the severe pixel enlargement seen
+     at zoom 22 while retaining useful pasture-level inspection.
+   - Labeled mode is capped at its source limit of zoom 16.
+   - Selecting Labeled above zoom 16 preserves the map center and eases back to 16.
+   - A compact numeric zoom readout remains visible for device validation.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -138,7 +144,7 @@ EVIDENCE STATUS:
   Background/resume and recreation acceptance were not reported as complete.
 
 - RW-TX-002-REV2
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE VERIFIED WITH REVISION REQUIRED
   Scope: Hybrid USGS/USDA imagery, zoom-15 automatic detail transition, camera zoom
   through level 22, and Aerial/Labeled modes using a single MapLibre style.
   Preflight corrections: Preserved the verified lifecycle and memory bridge; omitted
@@ -150,6 +156,17 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35286711128
   Build artifact: RangeWater-Debug-APK
   Result: SUCCESS — debug APK compiled and uploaded as an Actions artifact.
+  Device result: USGS overview, USDA detail transition, useful practical detail,
+  Aerial/Labeled switching, attribution, background/resume, and retained map position
+  passed. Zoom 22 and labeled overzoom produced enlarged blurry pixels.
+
+- RW-TX-002-REV3
+  Status: IMPLEMENTED LOCALLY — CI VERIFICATION PENDING — DEVICE CHECK PENDING
+  Scope: Caps Aerial at zoom 20 and Labeled at zoom 16, eases deep Aerial views back
+  to 16 when Labeled is selected, and adds a live one-decimal zoom readout.
+  Preflight corrections: Merged the zoom policy into the device-proven lifecycle,
+  memory, render-listener, attribution, and no-style-reload implementation; omitted
+  the draft's undeclared Compose animation dependency and state-based destroy guard.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -169,25 +186,22 @@ EVIDENCE STATUS:
 - USDA FPAC NAIP exportImage is a live dynamic service and was visibly slower during
   Michael's browser test. The 512-pixel request strategy is implemented but its real
   device performance and service behavior remain acceptance-test items.
-- Close zoom to level 22 permits inspection but cannot create detail beyond the
-  underlying NAIP imagery; the final levels may visibly overzoom existing pixels.
+- Device testing confirmed that zoom 22 enlarged source pixels without adding ground
+  detail. Mode-specific limits are implemented in REV3 and await device acceptance.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Hybrid federal imagery integration
-- Working transmission: RW-TX-002-REV2
-- Implementation status: COMPLETE
-- CI status: GREEN — source commit 79c1475423eef499879fbd93078c44eb4672048c
-- Build artifact: RangeWater-Debug-APK from GitHub Actions run 35286711128
+- Current phase: Hybrid imagery zoom-policy refinement
+- Working transmission: RW-TX-002-REV3
+- Implementation status: COMPLETE LOCALLY
+- CI status: PENDING
+- Build artifact: PENDING
 - Functional device verification: PENDING
-- Next action: Build RW-TX-002-REV2 in GitHub Actions, then install the APK and verify:
-  1. USGS overview navigation remains responsive.
-  2. USDA NAIP detail appears after zoom 15 and permits useful pasture inspection.
-  3. Aerial/Labeled switching works without a black screen or full style reload.
-  4. Loading/error status and attribution remain readable and unobtrusive.
-  5. Background/resume and Activity recreation do not crash or blank the map.
+- Next action: Build RW-TX-002-REV3, then verify Aerial stops at zoom 20, Labeled
+  stops at zoom 16, deep Aerial-to-Labeled switching preserves center while easing
+  back to 16, and the live zoom readout updates during pinch gestures.
 - Resume point after verification: RW-TX-003 — water pins and 800-foot Turf overlays.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
