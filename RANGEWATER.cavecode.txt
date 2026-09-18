@@ -191,7 +191,7 @@ EVIDENCE STATUS:
   and web storage rather than RangeWater's native Kotlin/MapLibre Android stack.
 
 - RW-TX-003-WTR-REV
-  Status: IMPLEMENTED — TEST/BUILD VERIFICATION PENDING
+  Status: IMPLEMENTED — JVM TESTS PASSED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Native one-shot water placement, memory-only point replacement and clearing,
   Turf Java 243.84-meter geodesic circle construction, persistent overlay visibility
   across Aerial/Labeled switching, and representative-latitude JVM spatial tests.
@@ -199,6 +199,11 @@ EVIDENCE STATUS:
   forwarding, removable render listeners, smooth labeled clamp, top inset, and bottom-end
   attribution; omitted the undeclared Compose animation dependency; added the JVM test
   task to CI so geometry is checked before APK compilation.
+  Verified source commit: 40c9da49c3c185b957cfd36492ede97896831db6
+  Verified GitHub Actions run: 35328767228
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — representative-latitude Turf tests passed, the debug APK compiled,
+  and the APK was uploaded as an Actions artifact.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -230,7 +235,9 @@ EVIDENCE STATUS:
 - Current phase: Native water-point placement and geodesic coverage
 - Working transmission: RW-TX-003-WTR-REV
 - Implementation status: COMPLETE
-- CI status: PENDING — JVM Turf tests and debug APK build required
+- CI status: GREEN — source commit 40c9da49c3c185b957cfd36492ede97896831db6
+- Verification run: 35328767228 — JVM Turf tests and debug APK build passed
+- Build artifact: RangeWater-Debug-APK
 - Functional device verification: PENDING
 - Next action: Run CI, then verify arm/place, 800-foot ring display, replacement,
   unarmed-tap safety, Aerial/Labeled overlay continuity, and Clear on physical hardware.
