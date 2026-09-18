@@ -98,8 +98,12 @@ RULE:
     - Finishing automatically closes the polygon and then prompts for a pasture name.
     - Completed pasture boundaries persist locally in Room.
     - Saved pastures can later be selected, renamed, reshaped, and deleted.
-    - Boundary styling, acreage display, water-ring interaction, edit mechanics, and the
-      Room schema remain design decisions to ratify before implementation.
+    - Boundary styling is ratified: bright magenta #FF2D95 inner line with near-black
+      #151515 outer casing, matching fill near 8% opacity, and white-centered magenta
+      vertex handles during drawing and reshaping. Selected pastures use a thicker line
+      and expose their editable corner handles.
+    - Acreage display, water-ring interaction, edit mechanics, and the Room schema remain
+      design decisions to ratify before implementation.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -303,7 +307,8 @@ EVIDENCE STATUS:
 - Previous transmission status: RW-TX-003-WTR-REV CLOSED — ACCEPTED
 - Next action: Ratify boundary styling, acreage display, water-ring interaction,
   editing mechanics, and persistent schema before authoring the RW-TX-005 work order.
-- Resume point: RW-TX-005 core nine-step drawing workflow is ratified; styling is next.
+- Resume point: RW-TX-005 drawing workflow and boundary styling are ratified; acreage
+  calculation and presentation are next.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
