@@ -479,14 +479,16 @@ EVIDENCE STATUS:
   visibility controls; that is separate polish and does not reopen this transmission.
 
 - RW-TX-006-WTR-REV1
-  Status: IMPLEMENTATION IN PREFLIGHT
+  Status: BUILD VERIFIED — PHYSICAL DEVICE ACCEPTANCE PENDING
   Scope: Adds persisted Full, Lines Only, and Off coverage modes plus an independent
   pasture-fill control while keeping water pins, pasture boundaries, and selection active.
   Preflight corrections: Integrated against authoritative HEAD 3a7dd50 rather than the
   proposal's stale MapScreen anchors; placed Layers on a separate phone-safe control row;
   and hides pasture fill by opacity instead of layer visibility so tap selection survives.
   Release identity: version 0.6.1, versionCode 7.
-  Verification status: JVM, Android persistence, APK, CI, and device checks pending.
+  Source commit: b6b737fe5a08461a15ec2b42a37978a8d1f8edb6.
+  CI run 35439290731: SUCCESS — JVM tests, Android emulator persistence/database
+  tests, debug APK assembly, and artifact upload passed. Physical device checks pending.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -519,18 +521,18 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-006-WTR-REV1 implementation and preflight
 - Working transmission: RW-TX-006-WTR-REV1
-- Implementation status: IN PREFLIGHT
-- CI status: GREEN — verified source HEAD 52fd9452a4032568afee6c7f00186dc1f8ac7303
-- Verification run: 35436011707 — JVM, Room persistence, APK, and artifact gates passed
-- Final evidence-head run: 35436234075 — SUCCESS
-- Build artifact: RangeWater-Debug-APK version 0.6.0 (versionCode 6)
+- Implementation status: BUILD VERIFIED — PHYSICAL DEVICE ACCEPTANCE PENDING
+- CI status: GREEN — verified source HEAD b6b737fe5a08461a15ec2b42a37978a8d1f8edb6
+- Verification run: 35439290731 — JVM, SharedPreferences/Room persistence, APK,
+  and artifact gates passed
+- Build artifact: RangeWater-Debug-APK version 0.6.1 (versionCode 7)
 - Functional device verification: RW-TX-006-WTR, RW-TX-005-REV2, RW-TX-005-REV,
   and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-006-WTR CLOSED — ACCEPTED
-- Next action: Complete compiler, JVM, Android persistence, APK, and CI verification;
-  then perform the Galaxy S23 Ultra visibility-control acceptance checklist.
-- Resume point: Visibility controls are implemented for preflight on the accepted
-  version 0.6.0 tiered-coverage baseline; accessible coverage remains downstream.
+- Next action: Perform the Galaxy S23 Ultra visibility-control acceptance checklist;
+  record the result before closing RW-TX-006-WTR-REV1.
+- Resume point: Version 0.6.1 visibility controls are build-verified; accessible
+  coverage remains a separate downstream model.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
