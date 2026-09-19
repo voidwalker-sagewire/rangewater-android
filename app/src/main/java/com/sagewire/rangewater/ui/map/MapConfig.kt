@@ -44,9 +44,14 @@ object MapConfig {
     const val LAYER_AERIAL_DETAIL = "layer-aerial-detail"
     const val LAYER_LABELED_TOPO = "layer-labeled-topo"
 
-    // 🪨 The project's ratified 800-foot geodesic water-coverage baseline.
-    const val BUFFER_RADIUS_METERS = 243.84
+    // 🪨 Ratified geodesic water-coverage thresholds.
+    const val PREFERRED_RADIUS_METERS = 243.84
+    const val TRANSITION_RADIUS_METERS = 304.80
+    const val ANNULUS_WIDTH_METERS = 60.96
+    const val BUFFER_RADIUS_METERS = PREFERRED_RADIUS_METERS
     const val BUFFER_CIRCLE_STEPS = 64
+    const val ZONE_PREFERRED = "preferred"
+    const val ZONE_TRANSITION = "transition"
 
     const val SOURCE_WATER_POINTS = "source-water-points"
     const val SOURCE_WATER_RINGS = "source-water-rings"
@@ -60,8 +65,10 @@ object MapConfig {
     const val LAYER_PASTURE_DRAFT_CASING = "layer-pasture-draft-casing"
     const val LAYER_PASTURE_DRAFT_LINE = "layer-pasture-draft-line"
     const val LAYER_PASTURE_HANDLES = "layer-pasture-handles"
-    const val LAYER_WATER_RINGS_FILL = "layer-water-rings-fill"
+    const val LAYER_WATER_TRANSITION_FILL = "layer-water-transition-fill"
+    const val LAYER_WATER_PREFERRED_FILL = "layer-water-preferred-fill"
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
+    const val LAYER_WATER_POINTS_HIGHLIGHT = "layer-water-points-highlight"
     const val LAYER_WATER_POINTS = "layer-water-points"
 
     /*
@@ -157,12 +164,23 @@ object MapConfig {
               }
             },
             {
-              "id": "$LAYER_WATER_RINGS_FILL",
+              "id": "$LAYER_WATER_TRANSITION_FILL",
               "type": "fill",
               "source": "$SOURCE_WATER_RINGS",
+              "filter": ["==", ["get", "zone"], "$ZONE_TRANSITION"],
               "paint": {
-                "fill-color": "#00E5FF",
-                "fill-opacity": 0.15
+                "fill-color": "#FFD600",
+                "fill-opacity": 0.18
+              }
+            },
+            {
+              "id": "$LAYER_WATER_PREFERRED_FILL",
+              "type": "fill",
+              "source": "$SOURCE_WATER_RINGS",
+              "filter": ["==", ["get", "zone"], "$ZONE_PREFERRED"],
+              "paint": {
+                "fill-color": "#2E7D32",
+                "fill-opacity": 0.22
               }
             },
             {
@@ -171,11 +189,14 @@ object MapConfig {
               "source": "$SOURCE_WATER_RINGS",
               "paint": {
                 "line-color": [
-                  "case", ["get", "selected"], "#FFD600", "#00B0FF"
+                  "case",
+                  ["get", "selected"], "#FFFFFF",
+                  ["==", ["get", "zone"], "$ZONE_PREFERRED"], "#2E7D32",
+                  "#FBC02D"
                 ],
-                "line-opacity": 0.85,
+                "line-opacity": 0.60,
                 "line-width": [
-                  "case", ["get", "selected"], 3.0, 1.5
+                  "case", ["get", "selected"], 2.0, 1.0
                 ]
               }
             },
@@ -225,6 +246,17 @@ object MapConfig {
               }
             },
             {
+              "id": "$LAYER_WATER_POINTS_HIGHLIGHT",
+              "type": "circle",
+              "source": "$SOURCE_WATER_POINTS",
+              "filter": ["==", ["get", "selected"], true],
+              "paint": {
+                "circle-radius": 12.0,
+                "circle-color": "#FFFFFF",
+                "circle-opacity": 0.95
+              }
+            },
+            {
               "id": "$LAYER_WATER_POINTS",
               "type": "circle",
               "source": "$SOURCE_WATER_POINTS",
@@ -236,7 +268,9 @@ object MapConfig {
                   "case", ["get", "selected"], "#FFD600", "#00E5FF"
                 ],
                 "circle-stroke-color": "#FFFFFF",
-                "circle-stroke-width": 2.0
+                "circle-stroke-width": [
+                  "case", ["get", "selected"], 3.0, 2.0
+                ]
               }
             }
           ]

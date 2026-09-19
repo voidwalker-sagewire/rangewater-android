@@ -777,7 +777,7 @@ fun MapScreen(
         AlertDialog(
             onDismissRequest = { showWaterDeleteDialog = false },
             title = { Text("Delete ${selectedWater.name}?") },
-            text = { Text("This removes the saved water point and its 800-foot ring from this device.") },
+            text = { Text("This removes the saved water point and its tiered coverage zones from this device.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -1075,7 +1075,7 @@ private fun BoxScope.WaterMoveControls(
                 } else {
                     String.format(
                         Locale.US,
-                        "Proposed: %.5f, %.5f • Previewing 800 ft ring",
+                        "Proposed: %.5f, %.5f • Previewing tiered coverage",
                         draftLocation.latitude,
                         draftLocation.longitude
                     )

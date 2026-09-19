@@ -6,12 +6,13 @@ import com.sagewire.rangewater.ui.map.MapConfig
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 import org.maplibre.turf.TurfConstants
 import org.maplibre.turf.TurfTransformation
 
 /*
  * 🪨 BLOCK 1 — PERSISTED-ASSET FEATURE CONVERSION
- * Purpose: Converts Room entities into synchronized point and 800-foot ring GeoJSON.
+ * Purpose: Converts Room entities into synchronized point and tiered coverage GeoJSON.
  */
 object WaterFeatureConverter {
     fun toPointFeatures(
@@ -30,15 +31,45 @@ object WaterFeatureConverter {
         points: List<WaterPointEntity>,
         selectedId: Long?
     ): FeatureCollection = FeatureCollection.fromFeatures(
-        points.map { entity ->
+        points.flatMap { entity ->
             val center = Point.fromLngLat(entity.longitude, entity.latitude)
-            val ring = TurfTransformation.circle(
+            val preferred = TurfTransformation.circle(
                 center,
-                MapConfig.BUFFER_RADIUS_METERS,
+                MapConfig.PREFERRED_RADIUS_METERS,
                 MapConfig.BUFFER_CIRCLE_STEPS,
                 TurfConstants.UNIT_METERS
             )
-            Feature.fromGeometry(ring, propertiesFor(entity, selectedId))
+            val transitionBoundary = TurfTransformation.circle(
+                center,
+                MapConfig.TRANSITION_RADIUS_METERS,
+                MapConfig.BUFFER_CIRCLE_STEPS,
+                TurfConstants.UNIT_METERS
+            )
+
+            // MapLibre classifies polygon holes by winding. Turf generates both circles
+            // with the same winding, so reverse the inner ring before constructing the
+            // true 800–1,000-foot annulus.
+            val transition = Polygon.fromLngLats(
+                listOf(
+                    transitionBoundary.coordinates().single(),
+                    preferred.coordinates().single().asReversed()
+                )
+            )
+
+            listOf(
+                Feature.fromGeometry(
+                    preferred,
+                    propertiesFor(entity, selectedId).apply {
+                        addProperty("zone", MapConfig.ZONE_PREFERRED)
+                    }
+                ),
+                Feature.fromGeometry(
+                    transition,
+                    propertiesFor(entity, selectedId).apply {
+                        addProperty("zone", MapConfig.ZONE_TRANSITION)
+                    }
+                )
+            )
         }
     )
 

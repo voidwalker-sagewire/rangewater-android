@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android / Google Play Store
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.5.2
-- Version Code: 5
+- App Version: 0.6.0
+- Version Code: 6
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -45,8 +45,9 @@ RULE:
   - Overview: cached USGS Imagery Only raster tiles through zoom 15
   - Detail: USDA FPAC NAIP dynamic exportImage requests from zoom 15 through 20
   - Navigation: cached USGS Imagery Topo labeled mode capped at zoom 16
-- Water overlay: aggregated GeoJSON points plus Turf-generated polygons rendered with
-  data-driven MapLibre Circle, Fill, and Line layers above every basemap mode
+- Water coverage engine: aggregated GeoJSON points plus Turf-generated 0-800-foot
+  preferred-access disks and true 800-1,000-foot planning-transition annuli rendered
+  with data-driven MapLibre Circle, Fill, and Line layers above every basemap mode
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -149,6 +150,18 @@ RULE:
     - Save updates only latitude, longitude, and updatedAt through the existing DAO while
       preserving the asset ID, name, type, notes, and createdAt.
     - No schema version, migration, dependency, or overlay-layer change is introduced.
+14. Michael ratified tiered water coverage in RW-TX-006-WTR.
+    - 0 through 800 feet (243.84 meters) is the translucent green preferred-access zone.
+    - 800 through 1,000 feet (243.84 through 304.80 meters) is the translucent yellow
+      planning-transition zone, constructed as a true 200-foot annulus with an inner hole.
+    - Beyond 1,000 feet has no coverage fill. The 1,000-foot boundary is not described
+      as a scientifically proven biological danger threshold.
+    - Default water pins remain cyan; selected pins remain amber with a strong white halo.
+    - Overlapping zones blend naturally, and Move Location previews both derived zones.
+    - Coverage remains derived from saved coordinates; Room stays at version 2 with no
+      new persistence fields, migration, or external dependency.
+    - Z-order remains pasture fill, water coverage, pasture boundaries, edit handles,
+      selected-water halo, then water pins.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -196,14 +209,6 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
-10. Proposed tiered cattle-water visualization (not yet ratified):
-    - 0 through 800 feet may be presented as a preferred green zone.
-    - 800 through 1,000 feet may be presented as a yellow caution or transition band.
-    - The meaning and styling beyond 1,000 feet, scientific evidence, overlap behavior,
-      and interaction with pasture-coverage analysis remain undecided.
-    - The current verified implementation intentionally renders one cyan 800-foot ring;
-      the green/yellow tier concept was not part of the executed RW-TX-003/004 scope.
-
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -429,6 +434,18 @@ EVIDENCE STATUS:
   and restoration of the moved location after a full swipe-close and cold reopen on
   September 19, 2026.
 
+- RW-TX-006-WTR
+  Status: IMPLEMENTATION IN PREFLIGHT
+  Scope: Replaces the single cyan 800-foot disk with a green 0-800-foot preferred-access
+  disk and a yellow 800-1,000-foot planning-transition annulus. Adds a white selected-pin
+  halo while preserving live move preview, cancellation rollback, Room v2, and all
+  accepted pasture, imagery, lifecycle, zoom, and attribution behavior.
+  Preflight corrections: Integrated against authoritative HEAD 60e9af2; retained existing
+  move-preview regression coverage; reversed the annulus inner-ring winding for reliable
+  MapLibre hole classification; and preserved the compatibility 800-foot constant.
+  Release identity: version 0.6.0, versionCode 6.
+  Verification status: Local JVM, assembly, CI, and physical-device checks pending.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -458,23 +475,24 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Between transmissions — tiered water-coverage design is next
-- Working transmission: None
-- Implementation status: RW-TX-005-REV2 CLOSED — ACCEPTED
-- CI status: GREEN — verified source HEAD 024bf0aa95acd9319c21a5962d7f277b0908deed
-- Verification run: 35410208009 — JVM, Room persistence, APK, and artifact gates passed
-- Build artifact: RangeWater-Debug-APK version 0.5.2 (versionCode 5)
+- Current phase: RW-TX-006-WTR implementation and preflight
+- Working transmission: RW-TX-006-WTR
+- Implementation status: IN PREFLIGHT
+- CI status: PENDING for RW-TX-006-WTR; previous accepted baseline remains green
+- Previous verification run: 35410208009 — JVM, Room persistence, APK, and artifact gates passed
+- Target build artifact: RangeWater-Debug-APK version 0.6.0 (versionCode 6)
 - Functional device verification: RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-005-REV2 CLOSED — ACCEPTED
-- Next action: Reconcile the 0–800-foot preferred zone and 800–1,000-foot warning-annulus
-  design before authoring its focused work order; animal-specific profiles remain deferred.
-- Resume point: Durable water and pasture editing are accepted through version 0.5.2.
+- Next action: Complete local and CI verification, then perform the RW-TX-006-WTR
+  physical-device acceptance checklist; animal-specific profiles remain deferred.
+- Resume point: Tiered water coverage is implemented for preflight on the accepted
+  durable-water and pasture-editing baseline.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
 RangeWater is an offline-capable Android utility for cattle producers and rotational
-grazers. It maps grazing-distance radii around water assets to help producers plan
-trough placement, fence layouts, and pasture utilization.
+grazers. It maps preferred-access and planning-transition distances around water assets
+to help producers plan trough placement, fence layouts, and pasture utilization.
 
 ================================================================================
 END — RANGEWATER MASTER STATE & PROJECT MEMORY
