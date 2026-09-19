@@ -494,6 +494,9 @@ EVIDENCE STATUS:
   Finding: the second-row Layers FilterChip inherited a transparent unselected style,
   producing low-contrast dark text over aerial imagery. Approved correction replaces it
   with an 82%-opaque black button with bold white status text; geometry is unchanged.
+  Correction CI run 35454988990 stopped at Kotlin compilation because the targeted Button
+  change required an explicit PaddingValues import. Ash added the missing import; no APK
+  was produced from the failed run and no behavior or persistence logic was changed.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
