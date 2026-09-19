@@ -82,6 +82,7 @@ enum class ActiveMapMode { AERIAL, LABELED }
 private enum class InteractionState {
     ORDINARY,
     WATER_PLACEMENT,
+    WATER_MOVING,
     PASTURE_DRAWING,
     PASTURE_EDITING
 }
@@ -140,9 +141,16 @@ fun MapScreen(
     var waterEditName by remember { mutableStateOf("") }
     var waterEditNotes by remember { mutableStateOf("") }
     var waterEditType by remember { mutableStateOf(WaterSourceType.TROUGH) }
+    var movingWaterPoint by remember { mutableStateOf<WaterPointEntity?>(null) }
+    var draftWaterLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
+    val effectiveWaterPoints = applyWaterMovePreview(
+        waterPoints = waterPoints,
+        movingWaterPoint = movingWaterPoint,
+        draftLocation = draftWaterLocation
+    )
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
 
     fun replaceDraft(vertices: List<PastureCoordinate>) {
@@ -223,7 +231,7 @@ fun MapScreen(
 
     // 🎮 BLOCK 3 — ROOM-TO-MAP SYNCHRONIZATION
     LaunchedEffect(
-        waterPoints,
+        effectiveWaterPoints,
         pastures,
         selectedWaterId,
         selectedPastureId,
@@ -234,7 +242,7 @@ fun MapScreen(
     ) {
         pushAllOverlays(
             map = mapInstance,
-            waterPoints = waterPoints,
+            waterPoints = effectiveWaterPoints,
             selectedWaterId = selectedWaterId,
             pastures = pastures,
             selectedPastureId = selectedPastureId,
@@ -255,6 +263,9 @@ fun MapScreen(
         } else {
             val listener = MapLibreMap.OnMapClickListener { coordinate ->
                 when (interactionState) {
+                    InteractionState.WATER_MOVING -> {
+                        draftWaterLocation = coordinate
+                    }
                     InteractionState.WATER_PLACEMENT -> {
                         interactionState = InteractionState.ORDINARY
                         scope.launch {
@@ -411,7 +422,7 @@ fun MapScreen(
                             applyMapMode(map, activeMode)
                             pushAllOverlays(
                                 map,
-                                waterPoints,
+                                effectiveWaterPoints,
                                 selectedWaterId,
                                 pastures,
                                 selectedPastureId,
@@ -479,6 +490,35 @@ fun MapScreen(
             )
         }
 
+        if (interactionState == InteractionState.WATER_MOVING) {
+            WaterMoveControls(
+                draftLocation = draftWaterLocation,
+                onCancel = {
+                    draftWaterLocation = null
+                    movingWaterPoint = null
+                    interactionState = InteractionState.ORDINARY
+                },
+                onSave = {
+                    val original = movingWaterPoint
+                    val location = draftWaterLocation
+                    if (original != null && location != null) {
+                        scope.launch {
+                            waterDao.update(
+                                original.copy(
+                                    latitude = location.latitude,
+                                    longitude = location.longitude,
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                            )
+                            draftWaterLocation = null
+                            movingWaterPoint = null
+                            interactionState = InteractionState.ORDINARY
+                        }
+                    }
+                }
+            )
+        }
+
         if (interactionState == InteractionState.PASTURE_DRAWING ||
             interactionState == InteractionState.PASTURE_EDITING
         ) {
@@ -536,18 +576,26 @@ fun MapScreen(
             )
         }
 
-        selectedWater?.let { point ->
-            WaterInspectionCard(
-                point = point,
-                onClose = { selectedWaterId = null },
-                onEdit = {
-                    waterEditName = point.name
-                    waterEditNotes = point.notes
-                    waterEditType = point.sourceType
-                    showWaterEditDialog = true
-                },
-                onDelete = { showWaterDeleteDialog = true }
-            )
+        if (interactionState == InteractionState.ORDINARY) {
+            selectedWater?.let { point ->
+                WaterInspectionCard(
+                    point = point,
+                    onClose = { selectedWaterId = null },
+                    onMove = {
+                        movingWaterPoint = point
+                        draftWaterLocation = null
+                        selectedPastureId = null
+                        interactionState = InteractionState.WATER_MOVING
+                    },
+                    onEdit = {
+                        waterEditName = point.name
+                        waterEditNotes = point.notes
+                        waterEditType = point.sourceType
+                        showWaterEditDialog = true
+                    },
+                    onDelete = { showWaterDeleteDialog = true }
+                )
+            }
         }
 
         selectedPasture?.let { pasture ->
@@ -783,7 +831,8 @@ private fun MapStatusAndModeControls(
                                 hasLoadError -> Color.Red
                                 interactionState == InteractionState.PASTURE_DRAWING ||
                                     interactionState == InteractionState.PASTURE_EDITING -> Color(0xFFFF2D95)
-                                interactionState == InteractionState.WATER_PLACEMENT -> Color(0xFF00E5FF)
+                                interactionState == InteractionState.WATER_PLACEMENT ||
+                                    interactionState == InteractionState.WATER_MOVING -> Color(0xFF00E5FF)
                                 activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
                                 currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
                                 else -> Color(0xFF2196F3)
@@ -799,6 +848,7 @@ private fun MapStatusAndModeControls(
                             interactionState == InteractionState.PASTURE_DRAWING -> "Tap fence corners • z$zoom"
                             interactionState == InteractionState.PASTURE_EDITING -> "Edit boundary • z$zoom"
                             interactionState == InteractionState.WATER_PLACEMENT -> "Tap pasture to place • z$zoom"
+                            interactionState == InteractionState.WATER_MOVING -> "Move water • z$zoom"
                             activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
                             currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
                             else -> "USGS Overview • z$zoom"
@@ -951,6 +1001,7 @@ private fun BoxScope.BottomInstruction(text: String, action: String, onAction: (
 private fun BoxScope.WaterInspectionCard(
     point: WaterPointEntity,
     onClose: () -> Unit,
+    onMove: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -977,11 +1028,71 @@ private fun BoxScope.WaterInspectionCard(
                 fontSize = 12.sp
             )
             if (point.notes.isNotBlank()) Text(point.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OutlinedButton(onClick = onEdit) { Text("Edit") }
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+            Button(
+                onClick = onMove,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00E5FF),
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Move Location", fontWeight = FontWeight.Bold)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
+                Button(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) {
                     Text("Delete")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.WaterMoveControls(
+    draftLocation: LatLng?,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, bottom = 52.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E).copy(alpha = 0.96f),
+        tonalElevation = 6.dp
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Move Water Location", color = Color.White, fontWeight = FontWeight.Bold)
+            Text(
+                if (draftLocation == null) {
+                    "Tap the map to preview a new location"
+                } else {
+                    String.format(
+                        Locale.US,
+                        "Proposed: %.5f, %.5f • Previewing 800 ft ring",
+                        draftLocation.latitude,
+                        draftLocation.longitude
+                    )
+                },
+                color = if (draftLocation == null) Color.LightGray else Color(0xFFFFD600),
+                fontSize = 11.sp
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = onSave,
+                    enabled = draftLocation != null,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Save", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1070,6 +1181,24 @@ private fun pushAllOverlays(
             ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)
             ?.setGeoJson(PastureFeatureConverter.handleFeatures(draftVertices, selectedVertexIndex))
+    }
+}
+
+internal fun applyWaterMovePreview(
+    waterPoints: List<WaterPointEntity>,
+    movingWaterPoint: WaterPointEntity?,
+    draftLocation: LatLng?
+): List<WaterPointEntity> {
+    if (movingWaterPoint == null || draftLocation == null) return waterPoints
+    return waterPoints.map { point ->
+        if (point.id == movingWaterPoint.id) {
+            point.copy(
+                latitude = draftLocation.latitude,
+                longitude = draftLocation.longitude
+            )
+        } else {
+            point
+        }
     }
 }
 
