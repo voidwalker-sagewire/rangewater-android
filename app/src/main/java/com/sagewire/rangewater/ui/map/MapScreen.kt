@@ -878,7 +878,7 @@ fun MapScreen(
                 ) {
                     Text(
                         "Select every pasture livestock can access from this water source.",
-                        color = Color.LightGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
                     if (pastures.isEmpty()) {

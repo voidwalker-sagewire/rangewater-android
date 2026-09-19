@@ -562,7 +562,7 @@ EVIDENCE STATUS:
   controls, persistence, and established map interactions are accepted as released.
 
 - RW-TX-007B
-  Status: IMPLEMENTED — BUILD VERIFIED — PHYSICAL DEVICE VERIFICATION PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CONTRAST CORRECTION IN PROGRESS
   Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
   and percentage metrics with assignment filtering, overlap union, and strict precedence.
   Release identity: version 0.8.0, versionCode 9.
@@ -576,7 +576,12 @@ EVIDENCE STATUS:
   Verified CI run 35471751745: SUCCESS — JVM partition mathematics, Android API 35
   JTS/Turf runtime and database regression tests, debug APK assembly, and artifact upload
   passed on the first implementation run.
-  Remaining gate: physical Galaxy S23 Ultra acceptance.
+  Physical finding: the Assign Pastures helper sentence used a fixed LightGray color on
+  the light Material dialog surface and was difficult to read on the Galaxy S23 Ultra.
+  Correction: use MaterialTheme.colorScheme.onSurfaceVariant so the helper text maintains
+  readable secondary-text contrast in both light and dark themes. Geometry, analytics,
+  persistence, and Room version 3 remain unchanged.
+  Remaining gate: verify the contrast-corrected build on the Galaxy S23 Ultra.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -607,9 +612,9 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-007B physical-device acceptance
+- Current phase: RW-TX-007B physical-device contrast correction
 - Working transmission: RW-TX-007B
-- Implementation status: SOURCE COMPLETE — BUILD VERIFIED — DEVICE PENDING
+- Implementation status: CONTRAST CORRECTION APPLIED — CI AND DEVICE RECHECK PENDING
 - Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
 - Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
 - CI status: GREEN — run 35471751745
@@ -617,10 +622,10 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Install the run 35471751745 debug APK and verify the pasture analytics card,
-  assignment filtering, relocation recalculation, layout, and restart behavior on device.
-- Resume point: RW-TX-007B is compile/test verified. Record physical acceptance or any
-  exact device finding before closing the transmission. Room remains version 3.
+- Next action: Build the contrast correction, then confirm the Assign Pastures helper text
+  is clearly readable on the Galaxy S23 Ultra before completing the remaining analytics checks.
+- Resume point: RW-TX-007B mathematics and persistence remain compile/test verified. The
+  only open correction is Assign Pastures helper-text contrast. Room remains version 3.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
