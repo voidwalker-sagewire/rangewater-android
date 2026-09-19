@@ -2,7 +2,11 @@ package com.sagewire.rangewater.spatial
 
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
+import com.sagewire.rangewater.data.PastureEntity
+import com.sagewire.rangewater.data.PastureVertexEntity
+import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.ui.map.MapConfig
+import com.sagewire.rangewater.ui.map.SpatialCoverageScope
 import com.sagewire.rangewater.ui.map.applyWaterMovePreview
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -100,6 +104,43 @@ class WaterFeatureConverterTest {
     }
 
     @Test
+    fun accessibleCoverageEmitsNoGeometryForUnassignedWaterButKeepsPin() {
+        val coverage = WaterFeatureConverter.toRingFeatures(
+            points = listOf(samplePoints[0]),
+            selectedId = samplePoints[0].id,
+            scope = SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+            assignments = emptyMap(),
+            pastures = listOf(squarePasture())
+        )
+
+        assertTrue(coverage.features()!!.isEmpty())
+        assertEquals(
+            1,
+            WaterFeatureConverter.toPointFeatures(listOf(samplePoints[0]), samplePoints[0].id)
+                .features()!!.size
+        )
+    }
+
+    @Test
+    fun accessibleCoverageClipsAssignedWaterAndPreservesSelectionMetadata() {
+        val coverage = WaterFeatureConverter.toRingFeatures(
+            points = listOf(samplePoints[0]),
+            selectedId = samplePoints[0].id,
+            scope = SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+            assignments = mapOf(samplePoints[0].id to listOf(11L)),
+            pastures = listOf(squarePasture())
+        ).features()!!
+
+        assertTrue(coverage.isNotEmpty())
+        assertTrue(coverage.all { it.getBooleanProperty("selected") })
+        assertTrue(coverage.all { it.getNumberProperty("id").toLong() == samplePoints[0].id })
+        assertEquals(
+            setOf(MapConfig.ZONE_PREFERRED, MapConfig.ZONE_TRANSITION),
+            coverage.map { it.getStringProperty("zone") }.toSet()
+        )
+    }
+
+    @Test
     fun movePreviewReplacesOnlyTargetCoordinatesAndMovesItsGeoJson() {
         val draft = LatLng(40.3725, -80.6415)
         val preview = applyWaterMovePreview(samplePoints, samplePoints[0], draft)
@@ -142,6 +183,21 @@ class WaterFeatureConverterTest {
         sourceType = sourceType,
         createdAt = 1_000L + id,
         updatedAt = 1_000L + id
+    )
+
+    private fun squarePasture(): PastureWithVertices = PastureWithVertices(
+        pasture = PastureEntity(
+            id = 11L,
+            name = "North Field",
+            createdAt = 2_000L,
+            updatedAt = 2_000L
+        ),
+        vertices = listOf(
+            PastureVertexEntity(1, 11, 0, 40.3590, -80.6310),
+            PastureVertexEntity(2, 11, 1, 40.3610, -80.6310),
+            PastureVertexEntity(3, 11, 2, 40.3610, -80.6290),
+            PastureVertexEntity(4, 11, 3, 40.3590, -80.6290)
+        )
     )
 
     private fun signedArea(ring: List<Point>): Double = ring.zipWithNext().sumOf { (a, b) ->

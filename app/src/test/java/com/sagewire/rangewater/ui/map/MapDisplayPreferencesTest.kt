@@ -10,6 +10,7 @@ class MapDisplayPreferencesTest {
         val preferences = DisplayPreferences()
 
         assertEquals(WaterCoverageMode.FULL, preferences.coverageMode)
+        assertEquals(SpatialCoverageScope.PHYSICAL_RADIUS, preferences.coverageScope)
         assertTrue(preferences.pastureFillEnabled)
     }
 
@@ -19,5 +20,21 @@ class MapDisplayPreferencesTest {
         assertEquals(WaterCoverageMode.FULL, WaterCoverageMode.fromStoredValue("UNKNOWN"))
         assertEquals(WaterCoverageMode.LINES_ONLY, WaterCoverageMode.fromStoredValue("LINES_ONLY"))
         assertEquals(WaterCoverageMode.OFF, WaterCoverageMode.fromStoredValue("OFF"))
+    }
+
+    @Test
+    fun storedCoverageScopeParsingFallsBackSafely() {
+        assertEquals(
+            SpatialCoverageScope.PHYSICAL_RADIUS,
+            SpatialCoverageScope.fromStoredValue(null)
+        )
+        assertEquals(
+            SpatialCoverageScope.PHYSICAL_RADIUS,
+            SpatialCoverageScope.fromStoredValue("UNKNOWN")
+        )
+        assertEquals(
+            SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+            SpatialCoverageScope.fromStoredValue("ACCESSIBLE_COVERAGE")
+        )
     }
 }

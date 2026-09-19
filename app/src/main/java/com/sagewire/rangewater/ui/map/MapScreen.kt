@@ -17,15 +17,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -114,8 +118,14 @@ fun MapScreen(
     val database = remember(appContext) { RangeWaterDatabase.getDatabase(appContext) }
     val waterDao = remember(database) { database.waterPointDao() }
     val pastureDao = remember(database) { database.pastureDao() }
+    val assignmentDao = remember(database) { database.waterPastureAssignmentDao() }
     val waterPoints by waterDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val pastures by pastureDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val assignments by assignmentDao.observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val assignmentMap = remember(assignments) {
+        assignments.groupBy({ it.waterPointId }, { it.pastureId })
+    }
     val displayPreferencesRepository = remember(appContext) {
         DisplayPreferencesRepository(appContext)
     }
@@ -123,6 +133,8 @@ fun MapScreen(
         mutableStateOf(displayPreferencesRepository.getPreferences())
     }
     var showLayersDialog by remember { mutableStateOf(false) }
+    var showAssignPasturesDialog by remember { mutableStateOf(false) }
+    val assignmentDraftIds = remember { mutableStateListOf<Long>() }
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var activeMode by remember { mutableStateOf(ActiveMapMode.AERIAL) }
@@ -248,6 +260,8 @@ fun MapScreen(
         selectedVertexIndex,
         draftRevision,
         interactionState,
+        assignmentMap,
+        displayPreferences.coverageScope,
         mapInstance
     ) {
         pushAllOverlays(
@@ -257,12 +271,15 @@ fun MapScreen(
             pastures = pastures,
             selectedPastureId = selectedPastureId,
             draftVertices = draftVertices.toList(),
-            selectedVertexIndex = selectedVertexIndex
+            selectedVertexIndex = selectedVertexIndex,
+            coverageScope = displayPreferences.coverageScope,
+            assignments = assignmentMap
         )
     }
     LaunchedEffect(waterPoints, pastures, selectedWaterId, selectedPastureId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
+        if (selectedWater == null) showAssignPasturesDialog = false
     }
     LaunchedEffect(displayPreferences, interactionState, mapInstance) {
         mapInstance?.let { map ->
@@ -451,7 +468,9 @@ fun MapScreen(
                                 pastures,
                                 selectedPastureId,
                                 draftVertices.toList(),
-                                selectedVertexIndex
+                                selectedVertexIndex,
+                                displayPreferences.coverageScope,
+                                assignmentMap
                             )
                         }
                         map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
@@ -469,6 +488,7 @@ fun MapScreen(
             hasLoadError = hasLoadError,
             interactionState = interactionState,
             coverageMode = displayPreferences.coverageMode,
+            coverageScope = displayPreferences.coverageScope,
             pastureFillEnabled = displayPreferences.pastureFillEnabled,
             onModeSelected = { mode ->
                 activeMode = mode
@@ -607,6 +627,7 @@ fun MapScreen(
             selectedWater?.let { point ->
                 WaterInspectionCard(
                     point = point,
+                    assignedPastureCount = assignmentMap[point.id].orEmpty().size,
                     onClose = { selectedWaterId = null },
                     onMove = {
                         movingWaterPoint = point
@@ -619,6 +640,11 @@ fun MapScreen(
                         waterEditNotes = point.notes
                         waterEditType = point.sourceType
                         showWaterEditDialog = true
+                    },
+                    onAssignPastures = {
+                        assignmentDraftIds.clear()
+                        assignmentDraftIds.addAll(assignmentMap[point.id].orEmpty())
+                        showAssignPasturesDialog = true
                     },
                     onDelete = { showWaterDeleteDialog = true }
                 )
@@ -824,13 +850,143 @@ fun MapScreen(
         )
     }
 
+    if (showAssignPasturesDialog && selectedWater != null) {
+        AlertDialog(
+            onDismissRequest = { showAssignPasturesDialog = false },
+            title = {
+                Text(
+                    "Assign Pastures: ${selectedWater.name}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Select every pasture livestock can access from this water source.",
+                        color = Color.LightGray,
+                        fontSize = 11.sp
+                    )
+                    if (pastures.isEmpty()) {
+                        Text("No saved pastures are available.", color = Color.Gray)
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(pastures, key = { it.pasture.id }) { pasture ->
+                                val pastureId = pasture.pasture.id
+                                val checked = pastureId in assignmentDraftIds
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (checked) {
+                                        Color(0xFF2E7D32).copy(alpha = 0.28f)
+                                    } else {
+                                        Color(0xFF2C2C2C)
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { enabled ->
+                                                if (enabled && pastureId !in assignmentDraftIds) {
+                                                    assignmentDraftIds.add(pastureId)
+                                                } else if (!enabled) {
+                                                    assignmentDraftIds.remove(pastureId)
+                                                }
+                                            }
+                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                pasture.pasture.name,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.1f acres",
+                                                    AcreageCalculator.calculateAcres(
+                                                        pasture.orderedCoordinates()
+                                                    )
+                                                ),
+                                                color = Color.LightGray,
+                                                fontSize = 11.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Text(
+                        if (assignmentDraftIds.isEmpty()) {
+                            "Unassigned: accessible coverage will be hidden."
+                        } else {
+                            "${assignmentDraftIds.size} pasture${if (assignmentDraftIds.size == 1) "" else "s"} selected"
+                        },
+                        color = if (assignmentDraftIds.isEmpty()) Color(0xFFFFD600) else Color(0xFF00E5FF),
+                        fontSize = 11.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val waterPointId = selectedWater.id
+                        val replacements = assignmentDraftIds.toList()
+                        scope.launch {
+                            assignmentDao.replaceForWaterPoint(waterPointId, replacements)
+                            showAssignPasturesDialog = false
+                        }
+                    },
+                    enabled = pastures.isNotEmpty() || assignmentDraftIds.isEmpty()
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAssignPasturesDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     if (showLayersDialog) {
         AlertDialog(
             onDismissRequest = { showLayersDialog = false },
             title = { Text("Map Layers", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Water Coverage", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Coverage Scope", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            SpatialCoverageScope.PHYSICAL_RADIUS to "Physical Radius",
+                            SpatialCoverageScope.ACCESSIBLE_COVERAGE to "Accessible Coverage"
+                        ).forEach { (coverageScope, label) ->
+                            FilterChip(
+                                selected = displayPreferences.coverageScope == coverageScope,
+                                onClick = {
+                                    displayPreferences = displayPreferences.copy(
+                                        coverageScope = coverageScope
+                                    )
+                                    displayPreferencesRepository.saveCoverageScope(coverageScope)
+                                },
+                                label = { Text(label, fontSize = 10.sp) },
+                                modifier = Modifier.weight(1f),
+                                colors = mapModeChipColors()
+                            )
+                        }
+                    }
+                    Text("Water Display", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -932,6 +1088,7 @@ private fun MapStatusAndModeControls(
     hasLoadError: Boolean,
     interactionState: InteractionState,
     coverageMode: WaterCoverageMode,
+    coverageScope: SpatialCoverageScope,
     pastureFillEnabled: Boolean,
     onModeSelected: (ActiveMapMode) -> Unit,
     onLayersClick: () -> Unit
@@ -1023,8 +1180,12 @@ private fun MapStatusAndModeControls(
                     WaterCoverageMode.LINES_ONLY -> "Lines"
                     WaterCoverageMode.OFF -> "Off"
                 }
+                val scopeLabel = when (coverageScope) {
+                    SpatialCoverageScope.PHYSICAL_RADIUS -> "Physical"
+                    SpatialCoverageScope.ACCESSIBLE_COVERAGE -> "Accessible"
+                }
                 Text(
-                    "Layers • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
+                    "Layers • $scopeLabel • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
                     color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -1155,8 +1316,10 @@ private fun BoxScope.BottomInstruction(text: String, action: String, onAction: (
 @Composable
 private fun BoxScope.WaterInspectionCard(
     point: WaterPointEntity,
+    assignedPastureCount: Int,
     onClose: () -> Unit,
     onMove: () -> Unit,
+    onAssignPastures: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -1173,7 +1336,11 @@ private fun BoxScope.WaterInspectionCard(
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Column {
                     Text(point.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("${point.sourceType.displayName()} • 800 ft ring", color = Color(0xFFFFD600), fontSize = 12.sp)
+                    Text(
+                        "${point.sourceType.displayName()} • Tiered coverage",
+                        color = Color(0xFFFFD600),
+                        fontSize = 12.sp
+                    )
                 }
                 TextButton(onClick = onClose) { Text("Close", color = Color.LightGray) }
             }
@@ -1183,15 +1350,33 @@ private fun BoxScope.WaterInspectionCard(
                 fontSize = 12.sp
             )
             if (point.notes.isNotBlank()) Text(point.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-            Button(
-                onClick = onMove,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00E5FF),
-                    contentColor = Color.Black
-                )
-            ) {
-                Text("Move Location", fontWeight = FontWeight.Bold)
+            Text(
+                if (assignedPastureCount == 0) {
+                    "Pastures: Unassigned"
+                } else {
+                    "Pastures: $assignedPastureCount assigned"
+                },
+                color = if (assignedPastureCount == 0) Color(0xFFFFD600) else Color(0xFF00E5FF),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onMove,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00E5FF),
+                        contentColor = Color.Black
+                    )
+                ) { Text("Move Location", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                Button(
+                    onClick = onAssignPastures,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2C2C2C),
+                        contentColor = Color.White
+                    )
+                ) { Text("Assign Pastures", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
@@ -1323,13 +1508,23 @@ private fun pushAllOverlays(
     pastures: List<PastureWithVertices>,
     selectedPastureId: Long?,
     draftVertices: List<PastureCoordinate>,
-    selectedVertexIndex: Int?
+    selectedVertexIndex: Int?,
+    coverageScope: SpatialCoverageScope,
+    assignments: Map<Long, List<Long>>
 ) {
     map?.getStyle { style ->
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
             ?.setGeoJson(WaterFeatureConverter.toPointFeatures(waterPoints, selectedWaterId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_RINGS)
-            ?.setGeoJson(WaterFeatureConverter.toRingFeatures(waterPoints, selectedWaterId))
+            ?.setGeoJson(
+                WaterFeatureConverter.toRingFeatures(
+                    points = waterPoints,
+                    selectedId = selectedWaterId,
+                    scope = coverageScope,
+                    assignments = assignments,
+                    pastures = pastures
+                )
+            )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURES)
             ?.setGeoJson(PastureFeatureConverter.toPastureFeatures(pastures, selectedPastureId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)

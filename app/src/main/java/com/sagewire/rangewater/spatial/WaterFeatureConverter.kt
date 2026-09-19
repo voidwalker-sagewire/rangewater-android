@@ -1,8 +1,10 @@
 package com.sagewire.rangewater.spatial
 
 import com.google.gson.JsonObject
+import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.ui.map.MapConfig
+import com.sagewire.rangewater.ui.map.SpatialCoverageScope
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
@@ -29,8 +31,13 @@ object WaterFeatureConverter {
 
     fun toRingFeatures(
         points: List<WaterPointEntity>,
-        selectedId: Long?
-    ): FeatureCollection = FeatureCollection.fromFeatures(
+        selectedId: Long?,
+        scope: SpatialCoverageScope = SpatialCoverageScope.PHYSICAL_RADIUS,
+        assignments: Map<Long, List<Long>> = emptyMap(),
+        pastures: List<PastureWithVertices> = emptyList()
+    ): FeatureCollection {
+        val pastureById = pastures.associateBy { it.pasture.id }
+        return FeatureCollection.fromFeatures(
         points.flatMap { entity ->
             val center = Point.fromLngLat(entity.longitude, entity.latitude)
             val preferred = TurfTransformation.circle(
@@ -56,22 +63,39 @@ object WaterFeatureConverter {
                 )
             )
 
-            listOf(
-                Feature.fromGeometry(
-                    preferred,
-                    propertiesFor(entity, selectedId).apply {
-                        addProperty("zone", MapConfig.ZONE_PREFERRED)
-                    }
-                ),
-                Feature.fromGeometry(
-                    transition,
-                    propertiesFor(entity, selectedId).apply {
-                        addProperty("zone", MapConfig.ZONE_TRANSITION)
-                    }
+            val zones = if (scope == SpatialCoverageScope.PHYSICAL_RADIUS) {
+                listOf(listOf(preferred), listOf(transition))
+            } else {
+                val assignedPolygons = assignments[entity.id].orEmpty().mapNotNull { pastureId ->
+                    pastureById[pastureId]?.toPolygon()
+                }
+                JtsGeometryConverter.clipZonesToPastures(
+                    zones = listOf(preferred, transition),
+                    pastures = assignedPolygons
                 )
-            )
+            }
+
+            zones[0].map { polygon ->
+                Feature.fromGeometry(polygon, zoneProperties(entity, selectedId, MapConfig.ZONE_PREFERRED))
+            } + zones[1].map { polygon ->
+                Feature.fromGeometry(polygon, zoneProperties(entity, selectedId, MapConfig.ZONE_TRANSITION))
+            }
         }
     )
+    }
+
+    private fun PastureWithVertices.toPolygon(): Polygon? {
+        val ordered = vertices.sortedBy { it.sequence }
+        if (ordered.size < 3) return null
+        val ring = ordered.map { vertex -> Point.fromLngLat(vertex.longitude, vertex.latitude) }
+        return Polygon.fromLngLats(listOf(ring + ring.first()))
+    }
+
+    private fun zoneProperties(
+        entity: WaterPointEntity,
+        selectedId: Long?,
+        zone: String
+    ) = propertiesFor(entity, selectedId).apply { addProperty("zone", zone) }
 
     private fun propertiesFor(entity: WaterPointEntity, selectedId: Long?) =
         JsonObject().apply {

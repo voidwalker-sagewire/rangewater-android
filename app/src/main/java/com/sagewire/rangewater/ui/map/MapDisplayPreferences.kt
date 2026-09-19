@@ -14,8 +14,19 @@ enum class WaterCoverageMode {
     }
 }
 
+enum class SpatialCoverageScope {
+    PHYSICAL_RADIUS,
+    ACCESSIBLE_COVERAGE;
+
+    companion object {
+        fun fromStoredValue(value: String?): SpatialCoverageScope =
+            entries.firstOrNull { it.name == value } ?: PHYSICAL_RADIUS
+    }
+}
+
 data class DisplayPreferences(
     val coverageMode: WaterCoverageMode = WaterCoverageMode.FULL,
+    val coverageScope: SpatialCoverageScope = SpatialCoverageScope.PHYSICAL_RADIUS,
     val pastureFillEnabled: Boolean = true
 )
 
@@ -29,6 +40,9 @@ class DisplayPreferencesRepository(context: Context) {
         coverageMode = WaterCoverageMode.fromStoredValue(
             preferences.getString(KEY_COVERAGE_MODE, WaterCoverageMode.FULL.name)
         ),
+        coverageScope = SpatialCoverageScope.fromStoredValue(
+            preferences.getString(KEY_COVERAGE_SCOPE, SpatialCoverageScope.PHYSICAL_RADIUS.name)
+        ),
         pastureFillEnabled = preferences.getBoolean(KEY_PASTURE_FILL, true)
     )
 
@@ -40,9 +54,14 @@ class DisplayPreferencesRepository(context: Context) {
         preferences.edit().putBoolean(KEY_PASTURE_FILL, enabled).apply()
     }
 
+    fun saveCoverageScope(scope: SpatialCoverageScope) {
+        preferences.edit().putString(KEY_COVERAGE_SCOPE, scope.name).apply()
+    }
+
     companion object {
         const val PREFERENCES_NAME = "rangewater_display_prefs"
         const val KEY_COVERAGE_MODE = "water_coverage_mode"
+        const val KEY_COVERAGE_SCOPE = "spatial_coverage_scope"
         const val KEY_PASTURE_FILL = "pasture_fill_enabled"
     }
 }

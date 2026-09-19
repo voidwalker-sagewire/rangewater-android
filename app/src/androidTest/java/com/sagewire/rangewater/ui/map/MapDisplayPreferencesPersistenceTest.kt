@@ -33,7 +33,18 @@ class MapDisplayPreferencesPersistenceTest {
         val preferences = repository.getPreferences()
 
         assertEquals(WaterCoverageMode.FULL, preferences.coverageMode)
+        assertEquals(SpatialCoverageScope.PHYSICAL_RADIUS, preferences.coverageScope)
         assertTrue(preferences.pastureFillEnabled)
+    }
+
+    @Test
+    fun coverageScopePersistsAcrossRepositoryInstances() {
+        repository.saveCoverageScope(SpatialCoverageScope.ACCESSIBLE_COVERAGE)
+
+        assertEquals(
+            SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+            DisplayPreferencesRepository(context).getPreferences().coverageScope
+        )
     }
 
     @Test

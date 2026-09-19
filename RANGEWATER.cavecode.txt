@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android / Google Play Store
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.6.1
-- Version Code: 7
+- App Version: 0.7.0
+- Version Code: 8
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -37,8 +37,10 @@ RULE:
 - Android: compileSdk 36, targetSdk 36, minSdk 24
 - Build: AGP 8.10.1, Gradle 8.11.1, Java 17, KSP 2.0.21-1.0.28
 - Map Engine: MapLibre Native Android SDK 11.5.1
-- Spatial Math: MapLibre Turf Java 6.0.1
-- Persistence: Android Room 2.8.5 with local SQLite and Flow-backed reads
+- Spatial Math: MapLibre Turf Java 6.0.1 plus JTS Core 1.20.0 for robust
+  polygon union and intersection topology
+- Persistence: Android Room 2.8.5 database version 3 with local SQLite,
+  Flow-backed reads, and SharedPreferences-backed display settings
 - CI: GitHub Actions runs JVM geometry tests, Android Room instrumentation tests,
   and builds a debug APK with the committed Gradle wrapper
 - Federal imagery stack:
@@ -49,7 +51,9 @@ RULE:
   preferred-access disks and true 800-1,000-foot planning-transition annuli rendered
   with data-driven MapLibre Circle, Fill, and Line layers above every basemap mode
 - Display preferences: platform SharedPreferences persist Full, Lines Only, or Off water
-  coverage plus independent pasture-fill state without changing Room schema version 2
+  coverage, Physical Radius or Accessible Coverage scope, and independent pasture-fill state
+- Water-pasture access model: an explicit many-to-many assignment table links each water
+  source to zero, one, or multiple accessible pastures; clipped coverage remains derived
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -171,6 +175,20 @@ RULE:
       when hidden so pasture tap selection continues to work; boundaries remain visible.
     - Display choices persist outside Room. Move Location temporarily forces Full coverage
       for placement feedback, then Cancel or Save restores the operator's chosen mode.
+16. Michael approved pasture-aware water assignment and accessible coverage in RW-TX-007A.
+    - Physical Radius remains the default and preserves full geodesic distance geometry.
+    - Accessible Coverage clips each water source's preferred and transition zones to only
+      the pastures explicitly assigned to that source.
+    - A water source may serve zero, one, or multiple pastures. Unassigned sources retain
+      visible, selectable pins but emit no geometry in Accessible Coverage scope.
+    - Multiple assigned pastures are unioned before intersection so split/shared waterers
+      can cover adjoining accessible fields without an artificial internal cut.
+    - Water-to-pasture assignments persist in a Room version 3 junction table with cascade
+      deletion and a tested, non-destructive Migration(2, 3).
+    - JTS Core 1.20.0 performs robust polygon topology after Turf constructs the geodesic
+      zone vertices. JTS coordinates are not used to calculate displayed pasture acreage.
+    - The new dependency's repository evidence identifies EPL-2.0 and Eclipse Distribution
+      License 1.0 terms; the packaged jar is approximately 1.24 MB.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -218,17 +236,11 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
-10. Proposed pasture-aware accessible-coverage model (recorded, not yet ratified):
-    - Physical Radius continues to show complete geodesic distance geometry for planning.
-    - Accessible Coverage clips derived water zones to explicitly assigned pasture polygons.
-    - A water asset may serve zero, one, or multiple pastures. A split waterer may serve
-      adjoining fields; a shared pond or trough may serve several assigned fields.
-    - Unassigned water remains in Physical Radius view so the app does not invent access.
-    - Permanent versus portable describes water-asset mobility and remains separate from
-      the Serves Pastures relationship that describes livestock access.
-    - Future pasture percentages must intersect assigned water zones with the pasture and
-      union overlaps before measuring area, preventing the same acre from being counted
-      more than once. Schema, clipping engine, assignment UI, and migration remain open.
+10. Pasture coverage acreage and percentages remain deferred to RW-TX-007B.
+    - Analytics must union overlapping assigned-water zones before measuring area so the
+      same acre is never counted twice.
+    - Permanent versus portable water mobility remains separate from the Serves Pastures
+      relationship that describes livestock access.
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -505,6 +517,22 @@ EVIDENCE STATUS:
   Michael physically confirmed the replacement Layers button is fixed and readable on the
   Galaxy S23 Ultra. RW-TX-006-WTR-REV1 is closed without reopening its accepted behavior.
 
+- RW-TX-007A
+  Status: IMPLEMENTED — ASH PREFLIGHT IN PROGRESS — CI VERIFICATION PENDING
+  Scope: Adds explicit many-to-many water-to-pasture assignments, Physical Radius versus
+  Accessible Coverage display scope, JTS-based clipping of both tiered zones against the
+  union of assigned pasture fences, a two-row water action card, and assignment UI.
+  Release identity: version 0.7.0, versionCode 8.
+  Target baseline: 7c36fff75308357f3fadc1e102310d08fef68c01.
+  Database delta: Room version 2 to 3 through non-destructive Migration(2, 3); existing
+  water, pasture, and ordered vertex data remain authoritative and unchanged.
+  Preflight corrections: adapted Gemini's proposal to the repository's actual DAO,
+  overlay, and Compose component APIs; retained the unique ordered-vertex index; uses
+  atomic ABORT inserts rather than replacement-conflict writes; and records the actual
+  JTS artifact size and license evidence.
+  Verification gate: JVM geometry/preference tests, Android migration/assignment tests,
+  APK assembly, and physical Galaxy S23 Ultra acceptance remain pending.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -534,20 +562,21 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Between transmissions — RW-TX-006-WTR-REV1 closed
-- Working transmission: None
-- Implementation status: RW-TX-006-WTR-REV1 EXECUTED & ACCEPTED
-- CI status: GREEN — final evidence HEAD 1d4f9e6c8bff225a26d9a096aa683cd5e9ab8c6c
-- Verification run: 35455401588 — JVM, SharedPreferences/Room persistence, APK,
-  and artifact gates passed after the Layers contrast correction
-- Build artifact: RangeWater-Debug-APK version 0.6.1 (versionCode 7)
+- Current phase: RW-TX-007A implementation and preflight
+- Working transmission: RW-TX-007A
+- Implementation status: SOURCE COMPLETE — CI VERIFICATION PENDING
+- Authoritative baseline: 7c36fff75308357f3fadc1e102310d08fef68c01
+- CI status: PENDING for version 0.7.0 (versionCode 8)
+- Build artifact: Pending RangeWater-Debug-APK version 0.7.0 (versionCode 8)
 - Functional device verification: RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-005-REV2,
   RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-006-WTR-REV1 CLOSED — ACCEPTED
-- Next action: Reconcile the next approved transmission. Keep pasture-aware accessible
-  coverage as a separate proposed downstream model until Michael ratifies its scope.
-- Resume point: RangeWater version 0.6.1 visibility controls, tiered water coverage,
-  water relocation, and pasture editing are accepted on physical hardware.
+- Next action: Publish the audited RW-TX-007A source, require green GitHub Actions, then
+  perform the assignment, clipping, shared-waterer, move-preview, and restart checklist
+  on the Galaxy S23 Ultra.
+- Resume point: RW-TX-007A source is implemented from baseline 7c36fff; local Gradle
+  execution is unavailable because the wrapper distribution is not cached, so GitHub
+  Actions is the authoritative compiler/test gate. RW-TX-007B analytics remain deferred.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
