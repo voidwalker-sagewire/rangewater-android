@@ -435,7 +435,8 @@ EVIDENCE STATUS:
   September 19, 2026.
 
 - RW-TX-006-WTR
-  Status: IMPLEMENTATION IN PREFLIGHT
+  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM TESTS PASSED
+  — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Replaces the single cyan 800-foot disk with a green 0-800-foot preferred-access
   disk and a yellow 800-1,000-foot planning-transition annulus. Adds a white selected-pin
   halo while preserving live move preview, cancellation rollback, Room v2, and all
@@ -444,7 +445,14 @@ EVIDENCE STATUS:
   move-preview regression coverage; reversed the annulus inner-ring winding for reliable
   MapLibre hole classification; and preserved the compatibility 800-foot constant.
   Release identity: version 0.6.0, versionCode 6.
-  Verification status: Local JVM, assembly, CI, and physical-device checks pending.
+  Verified source commit: 52fd9452a4032568afee6c7f00186dc1f8ac7303
+  Verified GitHub Actions run: 35436011707
+  Build artifact: RangeWater-Debug-APK
+  Result: SUCCESS — JVM geometry, true-annulus area/hole, selection, and move-preview
+  tests passed; Android API 35 Room migration and persistence tests passed; the version
+  0.6.0 debug APK compiled and uploaded.
+  Device result: PENDING — physical verification of color separation, hole rendering,
+  overlapping zones, selected halo, live movement, rollback, and cold restart remains.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -475,18 +483,18 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-006-WTR implementation and preflight
+- Current phase: RW-TX-006-WTR physical-device verification
 - Working transmission: RW-TX-006-WTR
-- Implementation status: IN PREFLIGHT
-- CI status: PENDING for RW-TX-006-WTR; previous accepted baseline remains green
-- Previous verification run: 35410208009 — JVM, Room persistence, APK, and artifact gates passed
-- Target build artifact: RangeWater-Debug-APK version 0.6.0 (versionCode 6)
+- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
+- CI status: GREEN — verified source HEAD 52fd9452a4032568afee6c7f00186dc1f8ac7303
+- Verification run: 35436011707 — JVM, Room persistence, APK, and artifact gates passed
+- Build artifact: RangeWater-Debug-APK version 0.6.0 (versionCode 6)
 - Functional device verification: RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-005-REV2 CLOSED — ACCEPTED
-- Next action: Complete local and CI verification, then perform the RW-TX-006-WTR
+- Next action: Michael installs run 35436011707 and performs the RW-TX-006-WTR
   physical-device acceptance checklist; animal-specific profiles remain deferred.
-- Resume point: Tiered water coverage is implemented for preflight on the accepted
-  durable-water and pasture-editing baseline.
+- Resume point: Tiered water coverage is build verified; physical-device acceptance
+  remains before RW-TX-006-WTR can close.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
