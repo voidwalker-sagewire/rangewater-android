@@ -562,7 +562,7 @@ EVIDENCE STATUS:
   controls, persistence, and established map interactions are accepted as released.
 
 - RW-TX-007B
-  Status: IMPLEMENTED — ASH PREFLIGHT IN PROGRESS — CI VERIFICATION PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — PHYSICAL DEVICE VERIFICATION PENDING
   Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
   and percentage metrics with assignment filtering, overlap union, and strict precedence.
   Release identity: version 0.8.0, versionCode 9.
@@ -572,8 +572,11 @@ EVIDENCE STATUS:
   preserved all three existing pasture actions; corrected entity constructors and enum
   types in tests; deduplicates assigned entity IDs; and uses OverlayNGRobust for every
   union, intersection, and difference operation.
-  Verification gate: JVM partition mathematics, Android runtime geometry, existing Room
-  tests, debug APK assembly, and Galaxy S23 Ultra physical acceptance remain pending.
+  Verified source commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681.
+  Verified CI run 35471751745: SUCCESS — JVM partition mathematics, Android API 35
+  JTS/Turf runtime and database regression tests, debug APK assembly, and artifact upload
+  passed on the first implementation run.
+  Remaining gate: physical Galaxy S23 Ultra acceptance.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -604,18 +607,20 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-007B implementation and preflight
+- Current phase: RW-TX-007B physical-device acceptance
 - Working transmission: RW-TX-007B
-- Implementation status: SOURCE COMPLETE — CI VERIFICATION PENDING
+- Implementation status: SOURCE COMPLETE — BUILD VERIFIED — DEVICE PENDING
 - Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
-- CI status: PENDING for version 0.8.0 (versionCode 9)
-- Build artifact: Pending RangeWater-Debug-APK version 0.8.0 (versionCode 9)
+- Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
+- CI status: GREEN — run 35471751745
+- Build artifact: RangeWater-Debug-APK version 0.8.0 (versionCode 9)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Publish the audited RW-TX-007B source, require green GitHub Actions, then
-  verify the pasture analytics card and live coordinate/assignment recalculation on device.
-- Resume point: RW-TX-007B source is implemented against 4d4e71b; Room remains version 3.
+- Next action: Install the run 35471751745 debug APK and verify the pasture analytics card,
+  assignment filtering, relocation recalculation, layout, and restart behavior on device.
+- Resume point: RW-TX-007B is compile/test verified. Record physical acceptance or any
+  exact device finding before closing the transmission. Room remains version 3.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
