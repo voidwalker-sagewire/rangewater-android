@@ -479,7 +479,7 @@ EVIDENCE STATUS:
   visibility controls; that is separate polish and does not reopen this transmission.
 
 - RW-TX-006-WTR-REV1
-  Status: BUILD VERIFIED — LAYERS BUTTON DEVICE CONFIRMATION PENDING
+  Status: EXECUTED & ACCEPTED — PHYSICALLY VERIFIED
   Scope: Adds persisted Full, Lines Only, and Off coverage modes plus an independent
   pasture-fill control while keeping water pins, pasture boundaries, and selection active.
   Preflight corrections: Integrated against authoritative HEAD 3a7dd50 rather than the
@@ -500,6 +500,10 @@ EVIDENCE STATUS:
   Corrected source commit: df88057ca065d6e50d3137b998245148bcfaebbf.
   Correction CI run 35455132243: SUCCESS — JVM tests, Android emulator persistence/database
   tests, debug APK assembly, and artifact upload passed.
+  Final evidence HEAD: 1d4f9e6c8bff225a26d9a096aa683cd5e9ab8c6c.
+  Final evidence CI run 35455401588: SUCCESS.
+  Michael physically confirmed the replacement Layers button is fixed and readable on the
+  Galaxy S23 Ultra. RW-TX-006-WTR-REV1 is closed without reopening its accepted behavior.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -530,20 +534,20 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-006-WTR-REV1 implementation and preflight
-- Working transmission: RW-TX-006-WTR-REV1
-- Implementation status: BUILD VERIFIED — LAYERS BUTTON DEVICE CONFIRMATION PENDING
-- CI status: GREEN — verified source HEAD df88057ca065d6e50d3137b998245148bcfaebbf
-- Verification run: 35455132243 — JVM, SharedPreferences/Room persistence, APK,
+- Current phase: Between transmissions — RW-TX-006-WTR-REV1 closed
+- Working transmission: None
+- Implementation status: RW-TX-006-WTR-REV1 EXECUTED & ACCEPTED
+- CI status: GREEN — final evidence HEAD 1d4f9e6c8bff225a26d9a096aa683cd5e9ab8c6c
+- Verification run: 35455401588 — JVM, SharedPreferences/Room persistence, APK,
   and artifact gates passed after the Layers contrast correction
 - Build artifact: RangeWater-Debug-APK version 0.6.1 (versionCode 7)
-- Functional device verification: RW-TX-006-WTR, RW-TX-005-REV2, RW-TX-005-REV,
-  and RW-TX-004 PASSED.
-- Previous transmission status: RW-TX-006-WTR CLOSED — ACCEPTED
-- Next action: Install the corrected APK and confirm the Layers control is a solid dark,
-  white-text button readable on the Galaxy S23 Ultra; then close RW-TX-006-WTR-REV1.
-- Resume point: Version 0.6.1 behavior and contrast correction are build-verified; one
-  final device appearance check remains. Accessible coverage remains downstream.
+- Functional device verification: RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-005-REV2,
+  RW-TX-005-REV, and RW-TX-004 PASSED.
+- Previous transmission status: RW-TX-006-WTR-REV1 CLOSED — ACCEPTED
+- Next action: Reconcile the next approved transmission. Keep pasture-aware accessible
+  coverage as a separate proposed downstream model until Michael ratifies its scope.
+- Resume point: RangeWater version 0.6.1 visibility controls, tiered water coverage,
+  water relocation, and pasture editing are accepted on physical hardware.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
