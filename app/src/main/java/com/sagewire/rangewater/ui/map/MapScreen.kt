@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -74,6 +75,7 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.style.layers.Property
+import org.maplibre.android.style.layers.PropertyFactory.fillOpacity
 import org.maplibre.android.style.layers.PropertyFactory.visibility
 import org.maplibre.android.style.sources.GeoJsonSource
 
@@ -113,6 +115,13 @@ fun MapScreen(
     val pastureDao = remember(database) { database.pastureDao() }
     val waterPoints by waterDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val pastures by pastureDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val displayPreferencesRepository = remember(appContext) {
+        DisplayPreferencesRepository(appContext)
+    }
+    var displayPreferences by remember {
+        mutableStateOf(displayPreferencesRepository.getPreferences())
+    }
+    var showLayersDialog by remember { mutableStateOf(false) }
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var activeMode by remember { mutableStateOf(ActiveMapMode.AERIAL) }
@@ -253,6 +262,15 @@ fun MapScreen(
     LaunchedEffect(waterPoints, pastures, selectedWaterId, selectedPastureId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
+    }
+    LaunchedEffect(displayPreferences, interactionState, mapInstance) {
+        mapInstance?.let { map ->
+            applyLayerVisibility(
+                map = map,
+                preferences = displayPreferences,
+                isMovingWater = interactionState == InteractionState.WATER_MOVING
+            )
+        }
     }
 
     // 🎮 BLOCK 4 — MODE-AWARE MAP TAP ROUTING
@@ -420,6 +438,11 @@ fun MapScreen(
                                 .zoom(initialZoom)
                                 .build()
                             applyMapMode(map, activeMode)
+                            applyLayerVisibility(
+                                map = map,
+                                preferences = displayPreferences,
+                                isMovingWater = interactionState == InteractionState.WATER_MOVING
+                            )
                             pushAllOverlays(
                                 map,
                                 effectiveWaterPoints,
@@ -444,10 +467,13 @@ fun MapScreen(
             isMapRendering = isMapRendering,
             hasLoadError = hasLoadError,
             interactionState = interactionState,
+            coverageMode = displayPreferences.coverageMode,
+            pastureFillEnabled = displayPreferences.pastureFillEnabled,
             onModeSelected = { mode ->
                 activeMode = mode
                 mapInstance?.let { applyMapMode(it, mode) }
-            }
+            },
+            onLayersClick = { showLayersDialog = true }
         )
 
         if (interactionState == InteractionState.ORDINARY && selectedWater == null && selectedPasture == null) {
@@ -796,6 +822,105 @@ fun MapScreen(
             }
         )
     }
+
+    if (showLayersDialog) {
+        AlertDialog(
+            onDismissRequest = { showLayersDialog = false },
+            title = { Text("Map Layers", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Water Coverage", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            WaterCoverageMode.FULL to "Full",
+                            WaterCoverageMode.LINES_ONLY to "Lines",
+                            WaterCoverageMode.OFF to "Off"
+                        ).forEach { (mode, label) ->
+                            FilterChip(
+                                selected = displayPreferences.coverageMode == mode,
+                                onClick = {
+                                    displayPreferences = displayPreferences.copy(coverageMode = mode)
+                                    displayPreferencesRepository.saveCoverageMode(mode)
+                                },
+                                label = { Text(label, fontSize = 11.sp) },
+                                modifier = Modifier.weight(1f),
+                                colors = mapModeChipColors()
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Pasture Fill", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "Boundary lines and pasture selection remain available.",
+                                color = Color.Gray,
+                                fontSize = 11.sp
+                            )
+                        }
+                        Switch(
+                            checked = displayPreferences.pastureFillEnabled,
+                            onCheckedChange = { enabled ->
+                                displayPreferences = displayPreferences.copy(
+                                    pastureFillEnabled = enabled
+                                )
+                                displayPreferencesRepository.savePastureFillEnabled(enabled)
+                            }
+                        )
+                    }
+                    if (interactionState == InteractionState.WATER_MOVING) {
+                        Text(
+                            "Full coverage stays visible while moving water, then your setting returns.",
+                            color = Color(0xFFFFD600),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showLayersDialog = false }) { Text("Done") }
+            }
+        )
+    }
+}
+
+private fun applyLayerVisibility(
+    map: MapLibreMap,
+    preferences: DisplayPreferences,
+    isMovingWater: Boolean
+) {
+    val layerState = MapLayerVisibilityController.computeVisibility(
+        preferences = preferences,
+        isMovingWater = isMovingWater
+    )
+    map.getStyle { style ->
+        style.getLayer(MapConfig.LAYER_WATER_PREFERRED_FILL)?.setProperties(
+            visibility(if (layerState.preferredFillVisible) Property.VISIBLE else Property.NONE)
+        )
+        style.getLayer(MapConfig.LAYER_WATER_TRANSITION_FILL)?.setProperties(
+            visibility(if (layerState.transitionFillVisible) Property.VISIBLE else Property.NONE)
+        )
+        style.getLayer(MapConfig.LAYER_WATER_RINGS_LINE)?.setProperties(
+            visibility(if (layerState.ringsLineVisible) Property.VISIBLE else Property.NONE)
+        )
+        style.getLayer(MapConfig.LAYER_PASTURE_FILL)?.setProperties(
+            fillOpacity(layerState.pastureFillOpacity)
+        )
+        if (layerState.waterPinsVisible) {
+            style.getLayer(MapConfig.LAYER_WATER_POINTS_HIGHLIGHT)?.setProperties(
+                visibility(Property.VISIBLE)
+            )
+            style.getLayer(MapConfig.LAYER_WATER_POINTS)?.setProperties(
+                visibility(Property.VISIBLE)
+            )
+        }
+    }
 }
 
 @Composable
@@ -805,7 +930,10 @@ private fun MapStatusAndModeControls(
     isMapRendering: Boolean,
     hasLoadError: Boolean,
     interactionState: InteractionState,
-    onModeSelected: (ActiveMapMode) -> Unit
+    coverageMode: WaterCoverageMode,
+    pastureFillEnabled: Boolean,
+    onModeSelected: (ActiveMapMode) -> Unit,
+    onLayersClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp, start = 12.dp, end = 12.dp),
@@ -875,6 +1003,26 @@ private fun MapStatusAndModeControls(
                     colors = mapModeChipColors()
                 )
             }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            FilterChip(
+                selected = false,
+                onClick = onLayersClick,
+                label = {
+                    val coverageLabel = when (coverageMode) {
+                        WaterCoverageMode.FULL -> "Full"
+                        WaterCoverageMode.LINES_ONLY -> "Lines"
+                        WaterCoverageMode.OFF -> "Off"
+                    }
+                    Text(
+                        "Layers • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
+                        fontSize = 11.sp
+                    )
+                }
+            )
         }
     }
 }

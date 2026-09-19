@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android / Google Play Store
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.6.0
-- Version Code: 6
+- App Version: 0.6.1
+- Version Code: 7
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -48,6 +48,8 @@ RULE:
 - Water coverage engine: aggregated GeoJSON points plus Turf-generated 0-800-foot
   preferred-access disks and true 800-1,000-foot planning-transition annuli rendered
   with data-driven MapLibre Circle, Fill, and Line layers above every basemap mode
+- Display preferences: platform SharedPreferences persist Full, Lines Only, or Off water
+  coverage plus independent pasture-fill state without changing Room schema version 2
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -162,6 +164,13 @@ RULE:
       new persistence fields, migration, or external dependency.
     - Z-order remains pasture fill, water coverage, pasture boundaries, edit handles,
       selected-water halo, then water pins.
+15. Michael approved water-coverage visibility controls for RW-TX-006-WTR-REV1.
+    - Full shows coverage fills and outlines; Lines Only hides fills but keeps outlines;
+      Off hides coverage geometry while water pins remain visible and interactive.
+    - Pasture Fill is independently adjustable. Its layer stays active at zero opacity
+      when hidden so pasture tap selection continues to work; boundaries remain visible.
+    - Display choices persist outside Room. Move Location temporarily forces Full coverage
+      for placement feedback, then Cancel or Save restores the operator's chosen mode.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -209,13 +218,7 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
-10. Approved next-stage overlay-control direction (implementation not yet transmitted):
-    - Water coverage needs explicit Full, Lines Only, and Off display modes so dense
-      clusters do not obscure aerial imagery; water pins remain visible and selectable.
-    - Pasture fill may be hidden independently while its magenta boundary remains visible.
-    - The chosen display mode should survive app restart. Move Location should temporarily
-      show full tiered coverage for placement feedback, then restore the operator's mode.
-11. Proposed pasture-aware accessible-coverage model (recorded, not yet ratified):
+10. Proposed pasture-aware accessible-coverage model (recorded, not yet ratified):
     - Physical Radius continues to show complete geodesic distance geometry for planning.
     - Accessible Coverage clips derived water zones to explicitly assigned pasture polygons.
     - A water asset may serve zero, one, or multiple pastures. A split waterer may serve
@@ -475,6 +478,16 @@ EVIDENCE STATUS:
   aerial imagery. Dense overlapping zones exposed a valid follow-up need for operator
   visibility controls; that is separate polish and does not reopen this transmission.
 
+- RW-TX-006-WTR-REV1
+  Status: IMPLEMENTATION IN PREFLIGHT
+  Scope: Adds persisted Full, Lines Only, and Off coverage modes plus an independent
+  pasture-fill control while keeping water pins, pasture boundaries, and selection active.
+  Preflight corrections: Integrated against authoritative HEAD 3a7dd50 rather than the
+  proposal's stale MapScreen anchors; placed Layers on a separate phone-safe control row;
+  and hides pasture fill by opacity instead of layer visibility so tap selection survives.
+  Release identity: version 0.6.1, versionCode 7.
+  Verification status: JVM, Android persistence, APK, CI, and device checks pending.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -504,9 +517,9 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Between transmissions — overlay visibility controls are next
-- Working transmission: None
-- Implementation status: RW-TX-006-WTR CLOSED — ACCEPTED
+- Current phase: RW-TX-006-WTR-REV1 implementation and preflight
+- Working transmission: RW-TX-006-WTR-REV1
+- Implementation status: IN PREFLIGHT
 - CI status: GREEN — verified source HEAD 52fd9452a4032568afee6c7f00186dc1f8ac7303
 - Verification run: 35436011707 — JVM, Room persistence, APK, and artifact gates passed
 - Final evidence-head run: 35436234075 — SUCCESS
@@ -514,10 +527,10 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-006-WTR, RW-TX-005-REV2, RW-TX-005-REV,
   and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-006-WTR CLOSED — ACCEPTED
-- Next action: Reconcile final main HEAD and author a focused overlay-visibility-controls
-  work order. Preserve pasture-aware accessible coverage as the larger downstream model.
-- Resume point: Tiered water coverage and existing water/pasture editing are accepted
-  through RangeWater version 0.6.0.
+- Next action: Complete compiler, JVM, Android persistence, APK, and CI verification;
+  then perform the Galaxy S23 Ultra visibility-control acceptance checklist.
+- Resume point: Visibility controls are implemented for preflight on the accepted
+  version 0.6.0 tiered-coverage baseline; accessible coverage remains downstream.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
