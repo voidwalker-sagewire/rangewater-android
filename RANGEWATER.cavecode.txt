@@ -562,7 +562,7 @@ EVIDENCE STATUS:
   controls, persistence, and established map interactions are accepted as released.
 
 - RW-TX-007B
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CONTRAST CORRECTION IN PROGRESS
+  Status: IMPLEMENTED — BUILD VERIFIED — CONTRAST-CORRECTED DEVICE BUILD PENDING
   Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
   and percentage metrics with assignment filtering, overlap union, and strict precedence.
   Release identity: version 0.8.0, versionCode 9.
@@ -581,6 +581,9 @@ EVIDENCE STATUS:
   Correction: use MaterialTheme.colorScheme.onSurfaceVariant so the helper text maintains
   readable secondary-text contrast in both light and dark themes. Geometry, analytics,
   persistence, and Room version 3 remain unchanged.
+  Contrast correction commit: 13b93210386976a32426f18096bd787dbce6c815.
+  Verified CI run 35474920468: SUCCESS — JVM tests, Android instrumentation tests,
+  debug APK assembly, and artifact upload all passed.
   Remaining gate: verify the contrast-corrected build on the Galaxy S23 Ultra.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
@@ -614,18 +617,18 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-007B physical-device contrast correction
 - Working transmission: RW-TX-007B
-- Implementation status: CONTRAST CORRECTION APPLIED — CI AND DEVICE RECHECK PENDING
+- Implementation status: CONTRAST CORRECTION BUILD VERIFIED — DEVICE RECHECK PENDING
 - Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
 - Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
-- CI status: GREEN — run 35471751745
+- CI status: GREEN — contrast-corrected run 35474920468
 - Build artifact: RangeWater-Debug-APK version 0.8.0 (versionCode 9)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Build the contrast correction, then confirm the Assign Pastures helper text
-  is clearly readable on the Galaxy S23 Ultra before completing the remaining analytics checks.
-- Resume point: RW-TX-007B mathematics and persistence remain compile/test verified. The
-  only open correction is Assign Pastures helper-text contrast. Room remains version 3.
+- Next action: Install the run 35474920468 debug APK and confirm the Assign Pastures helper
+  text is clearly readable on the Galaxy S23 Ultra before completing the remaining checks.
+- Resume point: RW-TX-007B mathematics, persistence, and contrast correction are build
+  verified. Physical confirmation of the helper text remains open. Room remains version 3.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
