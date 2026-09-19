@@ -404,8 +404,8 @@ EVIDENCE STATUS:
   a full swipe-close and cold reopen. Screenshot evidence supplied September 18, 2026.
 
 - RW-TX-005-REV2
-  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM PERSISTENCE TEST PASSED
-  — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: CLOSED — ACCEPTED — JVM TESTS PASSED — ROOM PERSISTENCE TEST PASSED
+  — BUILD VERIFIED — PHYSICAL DEVICE VERIFIED
   Scope: Adds explicit relocation of an existing water asset with a zero-write in-memory
   pin/ring preview, repeatable candidate taps, Cancel rollback, and coordinate-only Save.
   Preflight corrections: Integrated the delta into authoritative HEAD 3ae1ceb rather than
@@ -423,6 +423,11 @@ EVIDENCE STATUS:
   Result: SUCCESS — JVM spatial and preview tests passed; Android API 35 migration, DAO,
   and file-backed close/reopen movement tests passed; the version 0.5.2 debug APK compiled
   and uploaded.
+  Device result: PASSED — Michael confirmed the complete Move Location acceptance sequence
+  on physical Android hardware, including repeatable pin/ring previews, Cancel rollback,
+  coordinate-only Save, retained asset metadata, unaffected pasture and water records,
+  and restoration of the moved location after a full swipe-close and cold reopen on
+  September 19, 2026.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -453,17 +458,17 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-005-REV2 water-location correction
-- Working transmission: RW-TX-005-REV2 — explicit move preview, Cancel, and Save
-- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
+- Current phase: Between transmissions — tiered water-coverage design is next
+- Working transmission: None
+- Implementation status: RW-TX-005-REV2 CLOSED — ACCEPTED
 - CI status: GREEN — verified source HEAD 024bf0aa95acd9319c21a5962d7f277b0908deed
 - Verification run: 35410208009 — JVM, Room persistence, APK, and artifact gates passed
 - Build artifact: RangeWater-Debug-APK version 0.5.2 (versionCode 5)
-- Functional device verification: RW-TX-005-REV PASSED; RW-TX-004 remains accepted.
-- Previous transmission status: RW-TX-005-REV CLOSED — ACCEPTED
-- Next action: Michael installs run 35410208009 and physically verifies repeatable preview
-  taps, Cancel rollback, Save, metadata retention, and cold restoration.
-- Resume point: RW-TX-005-REV2 is build verified; physical-device acceptance remains.
+- Functional device verification: RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
+- Previous transmission status: RW-TX-005-REV2 CLOSED — ACCEPTED
+- Next action: Reconcile the 0–800-foot preferred zone and 800–1,000-foot warning-annulus
+  design before authoring its focused work order; animal-specific profiles remain deferred.
+- Resume point: Durable water and pasture editing are accepted through version 0.5.2.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
