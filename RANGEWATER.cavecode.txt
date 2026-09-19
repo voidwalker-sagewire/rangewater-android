@@ -518,7 +518,8 @@ EVIDENCE STATUS:
   Galaxy S23 Ultra. RW-TX-006-WTR-REV1 is closed without reopening its accepted behavior.
 
 - RW-TX-007A
-  Status: IMPLEMENTED — BUILD VERIFIED — PHYSICAL DEVICE VERIFICATION PENDING
+  Status: CLOSED — ACCEPTED — JVM TESTS PASSED — ROOM TESTS PASSED
+  — BUILD VERIFIED — PHYSICAL DEVICE VERIFIED
   Scope: Adds explicit many-to-many water-to-pasture assignments, Physical Radius versus
   Accessible Coverage display scope, JTS-based clipping of both tiered zones against the
   union of assigned pasture fences, a two-row water action card, and assignment UI.
@@ -538,7 +539,12 @@ EVIDENCE STATUS:
   Corrected source commit: 913c8c501ab58a62af4d2aed3507cade15e3b416.
   Corrected CI run 35462655429: SUCCESS — JVM geometry/preference tests, Android API 35
   migration/assignment/persistence tests, debug APK assembly, and artifact upload passed.
-  Remaining gate: physical Galaxy S23 Ultra acceptance.
+  Evidence-record HEAD: b92fbb3ff69cafda71f56367f0db35940951ead5.
+  Evidence-record CI run 35462861291: SUCCESS.
+  Device result: PASSED — Michael confirmed on September 19, 2026 that RW-TX-007A worked
+  perfectly on the Galaxy S23 Ultra. Explicit pasture assignment, Physical Radius versus
+  Accessible Coverage, fence-clipped tiered geometry, shared-waterer behavior, display
+  controls, persistence, and established map interactions are accepted as released.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -569,20 +575,21 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-007A physical-device acceptance
-- Working transmission: RW-TX-007A
-- Implementation status: SOURCE COMPLETE — BUILD VERIFIED — DEVICE PENDING
+- Current phase: Between transmissions — RW-TX-007A closed
+- Working transmission: None
+- Implementation status: RW-TX-007A EXECUTED & ACCEPTED
 - Authoritative baseline: 7c36fff75308357f3fadc1e102310d08fef68c01
 - Verified implementation commit: 913c8c501ab58a62af4d2aed3507cade15e3b416
-- CI status: GREEN — run 35462655429
+- Final evidence HEAD: b92fbb3ff69cafda71f56367f0db35940951ead5
+- CI status: GREEN — final evidence run 35462861291
 - Build artifact: RangeWater-Debug-APK version 0.7.0 (versionCode 8)
-- Functional device verification: RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-005-REV2,
-  RW-TX-005-REV, and RW-TX-004 PASSED.
-- Previous transmission status: RW-TX-006-WTR-REV1 CLOSED — ACCEPTED
-- Next action: Install the run 35462655429 debug APK and perform the assignment, clipping,
-  shared-waterer, move-preview, visibility, and restart checklist on Galaxy S23 Ultra.
-- Resume point: RW-TX-007A is compile/test verified. Record physical acceptance or any
-  exact device finding before closing the transmission. RW-TX-007B analytics remain deferred.
+- Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
+  RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
+- Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
+- Next action: Reconcile the next approved transmission. RW-TX-007B pasture coverage
+  acreage and percentage analytics remain the named downstream candidate.
+- Resume point: RangeWater version 0.7.0 pasture-aware Accessible Coverage is accepted on
+  physical hardware; all prior water, pasture, imagery, and layer behavior remains intact.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
