@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android / Google Play Store
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.7.0
-- Version Code: 8
+- App Version: 0.8.0
+- Version Code: 9
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -54,6 +54,8 @@ RULE:
   coverage, Physical Radius or Accessible Coverage scope, and independent pasture-fill state
 - Water-pasture access model: an explicit many-to-many assignment table links each water
   source to zero, one, or multiple accessible pastures; clipped coverage remains derived
+- Coverage analytics: each pasture is partitioned on demand into mutually exclusive
+  preferred, transition-only, and beyond-planned acreage and percentage categories
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -189,6 +191,19 @@ RULE:
       zone vertices. JTS coordinates are not used to calculate displayed pasture acreage.
     - The new dependency's repository evidence identifies EPL-2.0 and Eclipse Distribution
       License 1.0 terms; the packaged jar is approximately 1.24 MB.
+17. Michael approved pasture water-coverage acreage analytics in RW-TX-007B.
+    - Only water sources explicitly assigned to a pasture contribute to its metrics.
+    - Assigned preferred disks are unioned before measurement so overlapping sources never
+      count the same acre more than once.
+    - Preferred coverage takes precedence over every overlapping transition zone.
+    - Transition-only is the unioned 1,000-foot coverage inside the pasture after removing
+      all unioned preferred coverage; beyond planned coverage is the remaining pasture.
+    - The three categories are disjoint and exhaustive and must reconcile to the pasture's
+      Turf-derived total acreage within a 0.5% numerical tolerance.
+    - Metrics remain derived from Room version 3 boundaries, assignments, and water
+      coordinates. RW-TX-007B introduces no schema change or additional dependency.
+    - The pasture card retains Details, Boundary, and Delete while adding phone-safe
+      acreage and percentage rows using established green, amber, and gray terminology.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -546,6 +561,20 @@ EVIDENCE STATUS:
   Accessible Coverage, fence-clipped tiered geometry, shared-waterer behavior, display
   controls, persistence, and established map interactions are accepted as released.
 
+- RW-TX-007B
+  Status: IMPLEMENTED — ASH PREFLIGHT IN PROGRESS — CI VERIFICATION PENDING
+  Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
+  and percentage metrics with assignment filtering, overlap union, and strict precedence.
+  Release identity: version 0.8.0, versionCode 9.
+  Target baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19.
+  Database delta: None. Room version 3 and all accepted migrations remain unchanged.
+  Preflight corrections: integrated into the actual reusable PastureInspectionCard;
+  preserved all three existing pasture actions; corrected entity constructors and enum
+  types in tests; deduplicates assigned entity IDs; and uses OverlayNGRobust for every
+  union, intersection, and difference operation.
+  Verification gate: JVM partition mathematics, Android runtime geometry, existing Room
+  tests, debug APK assembly, and Galaxy S23 Ultra physical acceptance remain pending.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -575,21 +604,18 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Between transmissions — RW-TX-007A closed
-- Working transmission: None
-- Implementation status: RW-TX-007A EXECUTED & ACCEPTED
-- Authoritative baseline: 7c36fff75308357f3fadc1e102310d08fef68c01
-- Verified implementation commit: 913c8c501ab58a62af4d2aed3507cade15e3b416
-- Final evidence HEAD: b92fbb3ff69cafda71f56367f0db35940951ead5
-- CI status: GREEN — final evidence run 35462861291
-- Build artifact: RangeWater-Debug-APK version 0.7.0 (versionCode 8)
+- Current phase: RW-TX-007B implementation and preflight
+- Working transmission: RW-TX-007B
+- Implementation status: SOURCE COMPLETE — CI VERIFICATION PENDING
+- Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
+- CI status: PENDING for version 0.8.0 (versionCode 9)
+- Build artifact: Pending RangeWater-Debug-APK version 0.8.0 (versionCode 9)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Reconcile the next approved transmission. RW-TX-007B pasture coverage
-  acreage and percentage analytics remain the named downstream candidate.
-- Resume point: RangeWater version 0.7.0 pasture-aware Accessible Coverage is accepted on
-  physical hardware; all prior water, pasture, imagery, and layer behavior remains intact.
+- Next action: Publish the audited RW-TX-007B source, require green GitHub Actions, then
+  verify the pasture analytics card and live coordinate/assignment recalculation on device.
+- Resume point: RW-TX-007B source is implemented against 4d4e71b; Room remains version 3.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

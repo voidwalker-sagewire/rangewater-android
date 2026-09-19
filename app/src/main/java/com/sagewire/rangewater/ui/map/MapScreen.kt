@@ -69,6 +69,8 @@ import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.spatial.AcreageCalculator
 import com.sagewire.rangewater.spatial.GeometryValidator
+import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
+import com.sagewire.rangewater.spatial.PastureCoverageMetrics
 import com.sagewire.rangewater.spatial.PastureFeatureConverter
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
@@ -168,6 +170,14 @@ fun MapScreen(
 
     val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
+    val selectedPastureMetrics = remember(selectedPasture, waterPoints, assignmentMap) {
+        selectedPasture?.let { pasture ->
+            val assignedWater = waterPoints.filter { point ->
+                pasture.pasture.id in assignmentMap[point.id].orEmpty()
+            }
+            PastureAnalyticsCalculator.computeMetrics(pasture, assignedWater)
+        }
+    }
     val effectiveWaterPoints = applyWaterMovePreview(
         waterPoints = waterPoints,
         movingWaterPoint = movingWaterPoint,
@@ -655,6 +665,7 @@ fun MapScreen(
             if (interactionState == InteractionState.ORDINARY) {
                 PastureInspectionCard(
                     pasture = pasture,
+                    metrics = selectedPastureMetrics ?: return@let,
                     onClose = { selectedPastureId = null },
                     onEditDetails = {
                         pastureEditName = pasture.pasture.name
@@ -1442,12 +1453,12 @@ private fun BoxScope.WaterMoveControls(
 @Composable
 private fun BoxScope.PastureInspectionCard(
     pasture: PastureWithVertices,
+    metrics: PastureCoverageMetrics,
     onClose: () -> Unit,
     onEditDetails: () -> Unit,
     onEditBoundary: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val acres = AcreageCalculator.calculateAcres(pasture.orderedCoordinates())
     Surface(
         modifier = Modifier
             .align(Alignment.BottomCenter)
@@ -1461,23 +1472,88 @@ private fun BoxScope.PastureInspectionCard(
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Column {
                     Text(pasture.pasture.name, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text(String.format(Locale.US, "%.1f acres • Map estimate", acres), color = Color(0xFFFF2D95), fontSize = 12.sp)
+                    Text(
+                        String.format(Locale.US, "%.1f acres • Map estimate", metrics.totalAcreage),
+                        color = Color(0xFFFF2D95),
+                        fontSize = 12.sp
+                    )
                 }
                 TextButton(onClick = onClose) { Text("Close", color = Color.LightGray) }
             }
             if (pasture.pasture.notes.isNotBlank()) {
                 Text(pasture.pasture.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OutlinedButton(onClick = onEditDetails) { Text("Details") }
-                Spacer(Modifier.width(6.dp))
-                OutlinedButton(onClick = onEditBoundary) { Text("Boundary") }
-                Spacer(Modifier.width(6.dp))
-                Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+            Text(
+                if (metrics.assignedWaterCount == 0) {
+                    "Water Coverage: No sources assigned"
+                } else {
+                    "Water Coverage: ${metrics.assignedWaterCount} ${if (metrics.assignedWaterCount == 1) "source" else "sources"} assigned"
+                },
+                color = if (metrics.assignedWaterCount == 0) Color(0xFFFFD600) else Color(0xFF00E5FF),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            CoverageMetricRow(
+                label = "Preferred (0–800 ft)",
+                color = Color(0xFF81C784),
+                acreage = metrics.preferredAcreage,
+                percentage = metrics.preferredPercentage
+            )
+            CoverageMetricRow(
+                label = "Transition only (800–1,000 ft)",
+                color = Color(0xFFFFD54F),
+                acreage = metrics.transitionOnlyAcreage,
+                percentage = metrics.transitionOnlyPercentage
+            )
+            CoverageMetricRow(
+                label = "Beyond planned coverage",
+                color = Color(0xFFB0BEC5),
+                acreage = metrics.beyondAcreage,
+                percentage = metrics.beyondPercentage
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onEditDetails,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                ) { Text("Details") }
+                OutlinedButton(
+                    onClick = onEditBoundary,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                ) { Text("Boundary") }
+                Button(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) {
                     Text("Delete")
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CoverageMetricRow(
+    label: String,
+    color: Color,
+    acreage: Double,
+    percentage: Double
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("● $label", color = color, fontSize = 10.sp)
+        Text(
+            String.format(Locale.US, "%.1f ac (%.1f%%)", acreage, percentage),
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
