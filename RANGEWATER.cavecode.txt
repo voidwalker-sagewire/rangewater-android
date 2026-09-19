@@ -530,6 +530,11 @@ EVIDENCE STATUS:
   overlay, and Compose component APIs; retained the unique ordered-vertex index; uses
   atomic ABORT inserts rather than replacement-conflict writes; and records the actual
   JTS artifact size and license evidence.
+  Initial CI run 35462516158 compiled the application and all JVM tests, then correctly
+  failed one new converter assertion because its fixture pasture was entirely inside the
+  800-foot preferred zone and therefore could not intersect the transition annulus. The
+  fixture was widened into a fence-straddling pasture that intersects both derived zones;
+  production geometry and persistence code were unchanged by this test-only correction.
   Verification gate: JVM geometry/preference tests, Android migration/assignment tests,
   APK assembly, and physical Galaxy S23 Ultra acceptance remain pending.
 

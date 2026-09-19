@@ -193,10 +193,10 @@ class WaterFeatureConverterTest {
             updatedAt = 2_000L
         ),
         vertices = listOf(
-            PastureVertexEntity(1, 11, 0, 40.3590, -80.6310),
-            PastureVertexEntity(2, 11, 1, 40.3610, -80.6310),
-            PastureVertexEntity(3, 11, 2, 40.3610, -80.6290),
-            PastureVertexEntity(4, 11, 3, 40.3590, -80.6290)
+            PastureVertexEntity(1, 11, 0, 40.3560, -80.6300),
+            PastureVertexEntity(2, 11, 1, 40.3640, -80.6300),
+            PastureVertexEntity(3, 11, 2, 40.3640, -80.6250),
+            PastureVertexEntity(4, 11, 3, 40.3560, -80.6250)
         )
     )
 
