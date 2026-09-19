@@ -1008,21 +1008,27 @@ private fun MapStatusAndModeControls(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
-            FilterChip(
-                selected = false,
+            Button(
                 onClick = onLayersClick,
-                label = {
-                    val coverageLabel = when (coverageMode) {
-                        WaterCoverageMode.FULL -> "Full"
-                        WaterCoverageMode.LINES_ONLY -> "Lines"
-                        WaterCoverageMode.OFF -> "Off"
-                    }
-                    Text(
-                        "Layers • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
-                        fontSize = 11.sp
-                    )
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black.copy(alpha = 0.82f),
+                    contentColor = Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                val coverageLabel = when (coverageMode) {
+                    WaterCoverageMode.FULL -> "Full"
+                    WaterCoverageMode.LINES_ONLY -> "Lines"
+                    WaterCoverageMode.OFF -> "Off"
                 }
-            )
+                Text(
+                    "Layers • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

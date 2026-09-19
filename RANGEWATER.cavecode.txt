@@ -479,7 +479,7 @@ EVIDENCE STATUS:
   visibility controls; that is separate polish and does not reopen this transmission.
 
 - RW-TX-006-WTR-REV1
-  Status: BUILD VERIFIED — PHYSICAL DEVICE ACCEPTANCE PENDING
+  Status: PHYSICAL DEVICE POLISH FIX IN PREFLIGHT
   Scope: Adds persisted Full, Lines Only, and Off coverage modes plus an independent
   pasture-fill control while keeping water pins, pasture boundaries, and selection active.
   Preflight corrections: Integrated against authoritative HEAD 3a7dd50 rather than the
@@ -488,7 +488,12 @@ EVIDENCE STATUS:
   Release identity: version 0.6.1, versionCode 7.
   Source commit: b6b737fe5a08461a15ec2b42a37978a8d1f8edb6.
   CI run 35439290731: SUCCESS — JVM tests, Android emulator persistence/database
-  tests, debug APK assembly, and artifact upload passed. Physical device checks pending.
+  tests, debug APK assembly, and artifact upload passed.
+  Physical evidence: Full/Lines/Off, Pasture Fill Off, retained pasture selection,
+  water/pasture independence, and map geometry behaved as designed on Galaxy S23 Ultra.
+  Finding: the second-row Layers FilterChip inherited a transparent unselected style,
+  producing low-contrast dark text over aerial imagery. Approved correction replaces it
+  with an 82%-opaque black button with bold white status text; geometry is unchanged.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -521,7 +526,7 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-006-WTR-REV1 implementation and preflight
 - Working transmission: RW-TX-006-WTR-REV1
-- Implementation status: BUILD VERIFIED — PHYSICAL DEVICE ACCEPTANCE PENDING
+- Implementation status: PHYSICAL DEVICE POLISH FIX IN PREFLIGHT
 - CI status: GREEN — verified source HEAD b6b737fe5a08461a15ec2b42a37978a8d1f8edb6
 - Verification run: 35439290731 — JVM, SharedPreferences/Room persistence, APK,
   and artifact gates passed
@@ -529,10 +534,10 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-006-WTR, RW-TX-005-REV2, RW-TX-005-REV,
   and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-006-WTR CLOSED — ACCEPTED
-- Next action: Perform the Galaxy S23 Ultra visibility-control acceptance checklist;
-  record the result before closing RW-TX-006-WTR-REV1.
-- Resume point: Version 0.6.1 visibility controls are build-verified; accessible
-  coverage remains a separate downstream model.
+- Next action: Build-verify the Layers contrast correction, then confirm the replacement
+  control is readable on the Galaxy S23 Ultra before closing RW-TX-006-WTR-REV1.
+- Resume point: Version 0.6.1 behavior passed physical inspection; one outdoor-contrast
+  correction remains under preflight. Accessible coverage remains downstream.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
