@@ -209,6 +209,23 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
+10. Approved next-stage overlay-control direction (implementation not yet transmitted):
+    - Water coverage needs explicit Full, Lines Only, and Off display modes so dense
+      clusters do not obscure aerial imagery; water pins remain visible and selectable.
+    - Pasture fill may be hidden independently while its magenta boundary remains visible.
+    - The chosen display mode should survive app restart. Move Location should temporarily
+      show full tiered coverage for placement feedback, then restore the operator's mode.
+11. Proposed pasture-aware accessible-coverage model (recorded, not yet ratified):
+    - Physical Radius continues to show complete geodesic distance geometry for planning.
+    - Accessible Coverage clips derived water zones to explicitly assigned pasture polygons.
+    - A water asset may serve zero, one, or multiple pastures. A split waterer may serve
+      adjoining fields; a shared pond or trough may serve several assigned fields.
+    - Unassigned water remains in Physical Radius view so the app does not invent access.
+    - Permanent versus portable describes water-asset mobility and remains separate from
+      the Serves Pastures relationship that describes livestock access.
+    - Future pasture percentages must intersect assigned water zones with the pasture and
+      union overlaps before measuring area, preventing the same acre from being counted
+      more than once. Schema, clipping engine, assignment UI, and migration remain open.
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -435,8 +452,8 @@ EVIDENCE STATUS:
   September 19, 2026.
 
 - RW-TX-006-WTR
-  Status: IMPLEMENTED — JVM TESTS PASSED — ROOM TESTS PASSED
-  — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: CLOSED — ACCEPTED — JVM TESTS PASSED — ROOM TESTS PASSED
+  — BUILD VERIFIED — PHYSICAL DEVICE VERIFIED
   Scope: Replaces the single cyan 800-foot disk with a green 0-800-foot preferred-access
   disk and a yellow 800-1,000-foot planning-transition annulus. Adds a white selected-pin
   halo while preserving live move preview, cancellation rollback, Room v2, and all
@@ -451,8 +468,12 @@ EVIDENCE STATUS:
   Result: SUCCESS — JVM geometry, true-annulus area/hole, selection, and move-preview
   tests passed; Android API 35 Room migration and persistence tests passed; the version
   0.6.0 debug APK compiled and uploaded.
-  Device result: PENDING — physical verification of color separation, hole rendering,
-  overlapping zones, selected halo, live movement, rollback, and cold restart remains.
+  Device result: PASSED — Michael reported that version 0.6.0 worked as expected on
+  physical Android hardware. Screenshot evidence supplied September 19, 2026 confirmed
+  distinct green preferred-access centers, true yellow outer transition bands, multiple
+  overlapping water zones, intact cyan pins, pasture-boundary ordering, and readable
+  aerial imagery. Dense overlapping zones exposed a valid follow-up need for operator
+  visibility controls; that is separate polish and does not reopen this transmission.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -483,18 +504,20 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-006-WTR physical-device verification
-- Working transmission: RW-TX-006-WTR
-- Implementation status: COMMITTED TO MAIN — BUILD VERIFIED — DEVICE CHECK PENDING
+- Current phase: Between transmissions — overlay visibility controls are next
+- Working transmission: None
+- Implementation status: RW-TX-006-WTR CLOSED — ACCEPTED
 - CI status: GREEN — verified source HEAD 52fd9452a4032568afee6c7f00186dc1f8ac7303
 - Verification run: 35436011707 — JVM, Room persistence, APK, and artifact gates passed
+- Final evidence-head run: 35436234075 — SUCCESS
 - Build artifact: RangeWater-Debug-APK version 0.6.0 (versionCode 6)
-- Functional device verification: RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
-- Previous transmission status: RW-TX-005-REV2 CLOSED — ACCEPTED
-- Next action: Michael installs run 35436011707 and performs the RW-TX-006-WTR
-  physical-device acceptance checklist; animal-specific profiles remain deferred.
-- Resume point: Tiered water coverage is build verified; physical-device acceptance
-  remains before RW-TX-006-WTR can close.
+- Functional device verification: RW-TX-006-WTR, RW-TX-005-REV2, RW-TX-005-REV,
+  and RW-TX-004 PASSED.
+- Previous transmission status: RW-TX-006-WTR CLOSED — ACCEPTED
+- Next action: Reconcile final main HEAD and author a focused overlay-visibility-controls
+  work order. Preserve pasture-aware accessible coverage as the larger downstream model.
+- Resume point: Tiered water coverage and existing water/pasture editing are accepted
+  through RangeWater version 0.6.0.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
