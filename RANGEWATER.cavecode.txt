@@ -220,6 +220,17 @@ RULE:
     - Shared moves preview every connected pasture and Accessible Coverage geometry.
       Save validates every affected ring and commits moves, references, timestamps, and
       orphan cleanup atomically; Undo and Cancel discard all in-memory movement state.
+19. Michael ratified the RangeWater distribution and device-support boundary.
+    - The native Google Play release supports compatible Android phones and tablets
+      running Android 7.0 (API 24) or newer as its primary device classes.
+    - Compatible Chromebooks with Google Play are a supported secondary large-screen
+      class. RangeWater must accommodate resizable windows plus mouse and trackpad input,
+      and must not require touchscreen hardware for Play compatibility.
+    - Windows, macOS, iPhone, and iPad are outside the native Android release promise.
+      Supporting those platforms would require a separately approved application path.
+    - Google Play compatibility filtering, automated phone/tablet/large-screen profiles,
+      and physical-device evidence together define release confidence. Emulator success
+      supplements but does not replace device-specific field testing.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -645,6 +656,11 @@ EVIDENCE STATUS:
 - USDA FPAC NAIP exportImage is a live dynamic service and was visibly slower during
   Michael's browser test. The 512-pixel request strategy is implemented but its real
   device performance and service behavior remain acceptance-test items.
+- RangeWater 0.9.0 physical testing found that shared fence junctions appeared to operate
+  correctly on both the Galaxy S23 Ultra and Samsung Tab S7. The Tab S7 exposed a separate
+  aerial-imagery defect: USGS overview remains visible through zoom 15.0, but the map turns
+  black at zoom 15.1 and above when the USDA detail layer becomes authoritative. This
+  device-specific imagery transition remains open and blocks full 0.9.0 acceptance.
 - Device testing confirmed that zoom 22 enlarged source pixels without adding ground
   detail. REV3's mode-specific zoom limits passed physical-device acceptance.
 - RW-TX-004 stores water assets locally, but the database remains device-specific and is
@@ -666,8 +682,9 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
-- Next action: Install the run 35503420615 artifact, then perform Galaxy S23 Ultra
-  migration, snapping, shared-preview, merge, removal, and cold-restart acceptance.
+- Next action: Correct the Tab S7 USDA-detail transition with a resilient USGS fallback,
+  complete the shared-junction checklist, and add the ratified Android/ChromeOS
+  compatibility declarations and automated screen/input profiles before release.
 - Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
   and APK-build verified. Physical shared-junction behavior remains unaccepted until the
   target-device checklist passes.
