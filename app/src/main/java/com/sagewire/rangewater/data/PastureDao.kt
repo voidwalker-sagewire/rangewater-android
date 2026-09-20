@@ -76,17 +76,17 @@ interface PastureDao {
 
     @Query(
         """
-        SELECT DISTINCT first.pastureId
-        FROM pasture_vertices AS first
-        JOIN pasture_vertices AS second ON first.pastureId = second.pastureId
-        WHERE first.pastureId != :excludedPastureId
-          AND ((first.junctionId = :junctionAId AND second.junctionId = :junctionBId)
-            OR (first.junctionId = :junctionBId AND second.junctionId = :junctionAId))
+        SELECT DISTINCT pv1.pastureId
+        FROM pasture_vertices AS pv1
+        JOIN pasture_vertices AS pv2 ON pv1.pastureId = pv2.pastureId
+        WHERE pv1.pastureId != :excludedPastureId
+          AND ((pv1.junctionId = :junctionAId AND pv2.junctionId = :junctionBId)
+            OR (pv1.junctionId = :junctionBId AND pv2.junctionId = :junctionAId))
           AND (
-            ABS(first.sequence - second.sequence) = 1
-            OR ABS(first.sequence - second.sequence) = (
-              SELECT COUNT(*) - 1 FROM pasture_vertices AS vertex
-              WHERE vertex.pastureId = first.pastureId
+            ABS(pv1.sequence - pv2.sequence) = 1
+            OR ABS(pv1.sequence - pv2.sequence) = (
+              SELECT COUNT(*) - 1 FROM pasture_vertices AS pv3
+              WHERE pv3.pastureId = pv1.pastureId
             )
           )
         """
