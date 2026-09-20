@@ -58,6 +58,7 @@ object MapConfig {
     const val SOURCE_PASTURES = "source-pastures"
     const val SOURCE_PASTURE_DRAFT = "source-pasture-draft"
     const val SOURCE_PASTURE_HANDLES = "source-pasture-handles"
+    const val SOURCE_SNAPPED_JUNCTION = "source-snapped-junction"
     const val LAYER_PASTURE_FILL = "layer-pasture-fill"
     const val LAYER_PASTURE_CASING = "layer-pasture-casing"
     const val LAYER_PASTURE_LINE = "layer-pasture-line"
@@ -65,6 +66,7 @@ object MapConfig {
     const val LAYER_PASTURE_DRAFT_CASING = "layer-pasture-draft-casing"
     const val LAYER_PASTURE_DRAFT_LINE = "layer-pasture-draft-line"
     const val LAYER_PASTURE_HANDLES = "layer-pasture-handles"
+    const val LAYER_SNAPPED_JUNCTION = "layer-snapped-junction"
     const val LAYER_WATER_TRANSITION_FILL = "layer-water-transition-fill"
     const val LAYER_WATER_PREFERRED_FILL = "layer-water-preferred-fill"
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
@@ -120,6 +122,10 @@ object MapConfig {
               "data": { "type": "FeatureCollection", "features": [] }
             },
             "$SOURCE_PASTURE_HANDLES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_SNAPPED_JUNCTION": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
             }
@@ -231,6 +237,18 @@ object MapConfig {
               "paint": { "line-color": "#FF2D95", "line-width": 2.0 }
             },
             {
+              "id": "$LAYER_SNAPPED_JUNCTION",
+              "type": "circle",
+              "source": "$SOURCE_SNAPPED_JUNCTION",
+              "paint": {
+                "circle-radius": 14.0,
+                "circle-color": "#FFD600",
+                "circle-opacity": 0.45,
+                "circle-stroke-color": "#FFD600",
+                "circle-stroke-width": 3.0
+              }
+            },
+            {
               "id": "$LAYER_PASTURE_HANDLES",
               "type": "circle",
               "source": "$SOURCE_PASTURE_HANDLES",
@@ -239,7 +257,10 @@ object MapConfig {
                   "case", ["get", "selected"], 10.0, 8.0
                 ],
                 "circle-color": [
-                  "case", ["get", "selected"], "#FFD600", "#FFFFFF"
+                  "case",
+                  ["get", "selected"], "#FFD600",
+                  ["get", "isShared"], "#00E5FF",
+                  "#FFFFFF"
                 ],
                 "circle-stroke-color": "#FF2D95",
                 "circle-stroke-width": 3.0

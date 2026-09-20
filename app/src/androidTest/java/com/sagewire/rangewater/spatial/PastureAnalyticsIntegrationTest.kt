@@ -3,6 +3,8 @@ package com.sagewire.rangewater.spatial
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.sagewire.rangewater.data.PastureEntity
 import com.sagewire.rangewater.data.PastureVertexEntity
+import com.sagewire.rangewater.data.PastureVertexWithJunction
+import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
@@ -61,11 +63,8 @@ class PastureAnalyticsIntegrationTest {
         sequence: Int,
         latitude: Double,
         longitude: Double
-    ) = PastureVertexEntity(
-        id = id,
-        pastureId = 5L,
-        sequence = sequence,
-        latitude = latitude,
-        longitude = longitude
+    ) = PastureVertexWithJunction(
+        vertex = PastureVertexEntity(id, 5L, sequence, id),
+        junction = FenceJunctionEntity(id, latitude, longitude)
     )
 }

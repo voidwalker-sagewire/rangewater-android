@@ -2,7 +2,9 @@ package com.sagewire.rangewater.spatial
 
 import com.sagewire.rangewater.data.PastureEntity
 import com.sagewire.rangewater.data.PastureVertexEntity
+import com.sagewire.rangewater.data.PastureVertexWithJunction
 import com.sagewire.rangewater.data.PastureWithVertices
+import com.sagewire.rangewater.data.FenceJunctionEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,9 +16,9 @@ class PastureFeatureConverterTest {
         val pasture = PastureWithVertices(
             pasture = PastureEntity(id = 7, name = "South Field", createdAt = 1, updatedAt = 1),
             vertices = listOf(
-                PastureVertexEntity(id = 3, pastureId = 7, sequence = 2, latitude = 40.01, longitude = -81.0),
-                PastureVertexEntity(id = 1, pastureId = 7, sequence = 0, latitude = 40.0, longitude = -81.0),
-                PastureVertexEntity(id = 2, pastureId = 7, sequence = 1, latitude = 40.0, longitude = -80.99)
+                vertex(3, 2, 40.01, -81.0),
+                vertex(1, 0, 40.0, -81.0),
+                vertex(2, 1, 40.0, -80.99)
             )
         )
 
@@ -28,4 +30,10 @@ class PastureFeatureConverterTest {
         assertEquals(7L, feature.getNumberProperty("id").toLong())
         assertTrue(feature.getBooleanProperty("selected"))
     }
+
+    private fun vertex(id: Long, sequence: Int, latitude: Double, longitude: Double) =
+        PastureVertexWithJunction(
+            vertex = PastureVertexEntity(id, 7, sequence, id),
+            junction = FenceJunctionEntity(id, latitude, longitude)
+        )
 }

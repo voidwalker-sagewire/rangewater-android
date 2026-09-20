@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -46,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,11 +66,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sagewire.rangewater.data.PastureCoordinate
 import com.sagewire.rangewater.data.PastureWithVertices
+import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.RangeWaterDatabase
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.spatial.AcreageCalculator
 import com.sagewire.rangewater.spatial.GeometryValidator
+import com.sagewire.rangewater.spatial.CornerSnappingEngine
 import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
 import com.sagewire.rangewater.spatial.PastureCoverageMetrics
 import com.sagewire.rangewater.spatial.PastureFeatureConverter
@@ -85,6 +89,9 @@ import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.fillOpacity
 import org.maplibre.android.style.layers.PropertyFactory.visibility
 import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 
 enum class ActiveMapMode { AERIAL, LABELED }
 
@@ -100,6 +107,11 @@ private enum class PastureEditMode {
     SELECT_OR_DRAG,
     ADD_CORNER
 }
+
+private data class PastureEditSnapshot(
+    val vertices: List<PastureCoordinate>,
+    val junctionMoves: Map<Long, PastureCoordinate>
+)
 
 /*
  * 🪨 BLOCK 1 — PERSISTENT WATER AND PASTURE MAP HOST
@@ -120,13 +132,27 @@ fun MapScreen(
     val database = remember(appContext) { RangeWaterDatabase.getDatabase(appContext) }
     val waterDao = remember(database) { database.waterPointDao() }
     val pastureDao = remember(database) { database.pastureDao() }
+    val junctionDao = remember(database) { database.fenceJunctionDao() }
     val assignmentDao = remember(database) { database.waterPastureAssignmentDao() }
     val waterPoints by waterDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val pastures by pastureDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val allJunctions by junctionDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val assignments by assignmentDao.observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
+    }
+    val junctionUsageMap = remember(pastures) {
+        buildMap<Long, Set<Long>> {
+            pastures.forEach { pasture ->
+                pasture.vertices.forEach { vertex ->
+                    put(
+                        vertex.junctionId,
+                        get(vertex.junctionId).orEmpty() + pasture.pasture.id
+                    )
+                }
+            }
+        }
     }
     val displayPreferencesRepository = remember(appContext) {
         DisplayPreferencesRepository(appContext)
@@ -150,8 +176,20 @@ fun MapScreen(
     var selectedVertexIndex by remember { mutableStateOf<Int?>(null) }
     var pastureEditMode by remember { mutableStateOf(PastureEditMode.SELECT_OR_DRAG) }
     val draftVertices = remember { mutableStateListOf<PastureCoordinate>() }
-    val undoSnapshots = remember { mutableStateListOf<List<PastureCoordinate>>() }
+    val ephemeralJunctionMoves = remember { mutableStateMapOf<Long, PastureCoordinate>() }
+    val undoSnapshots = remember { mutableStateListOf<PastureEditSnapshot>() }
     var draftRevision by remember { mutableIntStateOf(0) }
+    var activeSnappedJunction by remember { mutableStateOf<FenceJunctionEntity?>(null) }
+    var approvedSharedMoveJunctionId by remember { mutableStateOf<Long?>(null) }
+    var pendingSharedMoveJunctionId by remember { mutableStateOf<Long?>(null) }
+    var pendingJoinJunction by remember { mutableStateOf<FenceJunctionEntity?>(null) }
+    var pendingJoinIndex by remember { mutableStateOf<Int?>(null) }
+    var pendingJoinIndependentCoordinate by remember { mutableStateOf<PastureCoordinate?>(null) }
+    var showMergeDialog by remember { mutableStateOf(false) }
+    var mergeCandidates by remember {
+        mutableStateOf<List<Pair<FenceJunctionEntity, Double>>>(emptyList())
+    }
+    var selectedMergeTargetId by remember { mutableStateOf<Long?>(null) }
 
     var showPastureNameDialog by remember { mutableStateOf(false) }
     var pastureNameInput by remember { mutableStateOf("") }
@@ -183,6 +221,9 @@ fun MapScreen(
         movingWaterPoint = movingWaterPoint,
         draftLocation = draftWaterLocation
     )
+    val effectivePastures = remember(pastures, ephemeralJunctionMoves.toMap()) {
+        applyJunctionMovePreview(pastures, ephemeralJunctionMoves)
+    }
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
 
     fun replaceDraft(vertices: List<PastureCoordinate>) {
@@ -192,13 +233,22 @@ fun MapScreen(
     }
 
     fun rememberUndoPoint() {
-        undoSnapshots.add(draftVertices.toList())
+        undoSnapshots.add(
+            PastureEditSnapshot(draftVertices.toList(), ephemeralJunctionMoves.toMap())
+        )
     }
 
     fun leaveGeometryMode() {
         interactionState = InteractionState.ORDINARY
         draftVertices.clear()
         undoSnapshots.clear()
+        ephemeralJunctionMoves.clear()
+        activeSnappedJunction = null
+        approvedSharedMoveJunctionId = null
+        pendingSharedMoveJunctionId = null
+        pendingJoinJunction = null
+        pendingJoinIndex = null
+        pendingJoinIndependentCoordinate = null
         selectedVertexIndex = null
         pastureEditMode = PastureEditMode.SELECT_OR_DRAG
         draftRevision++
@@ -264,7 +314,7 @@ fun MapScreen(
     // 🎮 BLOCK 3 — ROOM-TO-MAP SYNCHRONIZATION
     LaunchedEffect(
         effectiveWaterPoints,
-        pastures,
+        effectivePastures,
         selectedWaterId,
         selectedPastureId,
         selectedVertexIndex,
@@ -272,18 +322,21 @@ fun MapScreen(
         interactionState,
         assignmentMap,
         displayPreferences.coverageScope,
+        activeSnappedJunction,
         mapInstance
     ) {
         pushAllOverlays(
             map = mapInstance,
             waterPoints = effectiveWaterPoints,
             selectedWaterId = selectedWaterId,
-            pastures = pastures,
+            pastures = effectivePastures,
             selectedPastureId = selectedPastureId,
             draftVertices = draftVertices.toList(),
             selectedVertexIndex = selectedVertexIndex,
             coverageScope = displayPreferences.coverageScope,
-            assignments = assignmentMap
+            assignments = assignmentMap,
+            sharedJunctionIds = junctionUsageMap.filterValues { it.size > 1 }.keys,
+            activeSnappedJunction = activeSnappedJunction
         )
     }
     LaunchedEffect(waterPoints, pastures, selectedWaterId, selectedPastureId) {
@@ -302,7 +355,13 @@ fun MapScreen(
     }
 
     // 🎮 BLOCK 4 — MODE-AWARE MAP TAP ROUTING
-    DisposableEffect(mapInstance, interactionState, selectedVertexIndex, pastureEditMode) {
+    DisposableEffect(
+        mapInstance,
+        interactionState,
+        selectedVertexIndex,
+        pastureEditMode,
+        allJunctions
+    ) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
@@ -323,10 +382,39 @@ fun MapScreen(
                         }
                     }
                     InteractionState.PASTURE_DRAWING -> {
-                        rememberUndoPoint()
-                        draftVertices.add(coordinate.toPastureCoordinate())
-                        selectedVertexIndex = draftVertices.lastIndex
-                        draftRevision++
+                        val snapped = CornerSnappingEngine.findSnapJunction(
+                            coordinate,
+                            allJunctions,
+                            map.projection,
+                            32f * context.resources.displayMetrics.density
+                        )
+                        if (snapped != null && draftVertices.none { it.junctionId == snapped.id }) {
+                            rememberUndoPoint()
+                            draftVertices.add(
+                                PastureCoordinate(
+                                    latitude = snapped.latitude,
+                                    longitude = snapped.longitude,
+                                    elevationMeters = snapped.elevationMeters,
+                                    elevationSource = snapped.elevationSource,
+                                    verticalDatum = snapped.verticalDatum,
+                                    verticalAccuracyMeters = snapped.verticalAccuracyMeters,
+                                    elevationCapturedAt = snapped.elevationCapturedAt,
+                                    junctionId = snapped.id
+                                )
+                            )
+                            activeSnappedJunction = snapped
+                            Toast.makeText(context, "Snapped to shared corner", Toast.LENGTH_SHORT).show()
+                            selectedVertexIndex = draftVertices.lastIndex
+                            draftRevision++
+                        } else if (snapped != null) {
+                            Toast.makeText(context, "That corner is already in this pasture", Toast.LENGTH_SHORT).show()
+                        } else {
+                            rememberUndoPoint()
+                            draftVertices.add(coordinate.toPastureCoordinate())
+                            activeSnappedJunction = null
+                            selectedVertexIndex = draftVertices.lastIndex
+                            draftRevision++
+                        }
                     }
                     InteractionState.PASTURE_EDITING -> {
                         val screenPoint = map.projection.toScreenLocation(coordinate)
@@ -334,7 +422,7 @@ fun MapScreen(
                             val lineHit = queryFeaturesNear(
                                 map,
                                 screenPoint,
-                                28f,
+                                28f * context.resources.displayMetrics.density,
                                 MapConfig.LAYER_PASTURE_DRAFT_LINE
                             ).isNotEmpty()
                             val projection = GeometryValidator.projectOntoClosestSegment(
@@ -348,12 +436,42 @@ fun MapScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
-                                rememberUndoPoint()
-                                draftVertices.add(projection.insertionIndex, projection.coordinate)
-                                selectedVertexIndex = projection.insertionIndex
-                                pastureEditMode = PastureEditMode.SELECT_OR_DRAG
-                                draftRevision++
-                                Toast.makeText(context, "Corner added", Toast.LENGTH_SHORT).show()
+                                val snapped = CornerSnappingEngine.findSnapJunction(
+                                    coordinate,
+                                    allJunctions,
+                                    map.projection,
+                                    32f * context.resources.displayMetrics.density
+                                )
+                                when {
+                                    snapped != null && draftVertices.any { it.junctionId == snapped.id } ->
+                                        Toast.makeText(
+                                            context,
+                                            "Cannot join: that corner is already in this pasture",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    snapped != null -> {
+                                        pendingJoinJunction = snapped
+                                        pendingJoinIndex = projection.insertionIndex
+                                        pendingJoinIndependentCoordinate = projection.coordinate
+                                        activeSnappedJunction = snapped
+                                    }
+                                    else -> {
+                                        val candidate = draftVertices.toMutableList().apply {
+                                            add(projection.insertionIndex, projection.coordinate)
+                                        }
+                                        val error = GeometryValidator.validationError(candidate)
+                                        if (error != null) {
+                                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                        } else {
+                                            rememberUndoPoint()
+                                            draftVertices.add(projection.insertionIndex, projection.coordinate)
+                                            selectedVertexIndex = projection.insertionIndex
+                                            pastureEditMode = PastureEditMode.SELECT_OR_DRAG
+                                            draftRevision++
+                                            Toast.makeText(context, "Corner added", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
                         } else {
                             val hit = queryFeaturesNear(
@@ -394,7 +512,15 @@ fun MapScreen(
     }
 
     // 🎮 BLOCK 5 — EXPLICIT VERTEX DRAGGING
-    DisposableEffect(mapView, mapInstance, interactionState, pastureEditMode) {
+    DisposableEffect(
+        mapView,
+        mapInstance,
+        interactionState,
+        pastureEditMode,
+        allJunctions,
+        junctionUsageMap,
+        approvedSharedMoveJunctionId
+    ) {
         val map = mapInstance
         if (map == null || interactionState != InteractionState.PASTURE_EDITING ||
             pastureEditMode != PastureEditMode.SELECT_OR_DRAG
@@ -414,11 +540,19 @@ fun MapScreen(
                         if (hit == null) {
                             false
                         } else {
-                            dragIndex = hit.getNumberProperty("index").toInt()
-                            selectedVertexIndex = dragIndex
-                            rememberUndoPoint()
-                            map.uiSettings.isScrollGesturesEnabled = false
-                            true
+                            val index = hit.getNumberProperty("index").toInt()
+                            val junctionId = draftVertices.getOrNull(index)?.junctionId
+                            val sharedCount = junctionId?.let { junctionUsageMap[it]?.size } ?: 0
+                            selectedVertexIndex = index
+                            if (sharedCount > 1 && approvedSharedMoveJunctionId != junctionId) {
+                                pendingSharedMoveJunctionId = junctionId
+                                true
+                            } else {
+                                dragIndex = index
+                                rememberUndoPoint()
+                                map.uiSettings.isScrollGesturesEnabled = false
+                                true
+                            }
                         }
                     }
                     MotionEvent.ACTION_MOVE -> {
@@ -427,7 +561,13 @@ fun MapScreen(
                             false
                         } else {
                             val moved = map.projection.fromScreenLocation(PointF(event.x, event.y))
-                            draftVertices[index] = moved.toPastureCoordinate()
+                            val existing = draftVertices[index]
+                            val movedCoordinate = existing.copy(
+                                latitude = moved.latitude,
+                                longitude = moved.longitude
+                            )
+                            draftVertices[index] = movedCoordinate
+                            existing.junctionId?.let { ephemeralJunctionMoves[it] = movedCoordinate }
                             draftRevision++
                             true
                         }
@@ -436,7 +576,24 @@ fun MapScreen(
                         if (dragIndex == null) {
                             false
                         } else {
+                            val completedIndex = dragIndex
+                            val completed = completedIndex?.let { draftVertices.getOrNull(it) }
+                            if (completedIndex != null && completed != null && completed.junctionId == null) {
+                                val snap = CornerSnappingEngine.findSnapJunction(
+                                    completed.toLatLng(),
+                                    allJunctions,
+                                    map.projection,
+                                    32f * context.resources.displayMetrics.density
+                                )
+                                if (snap != null && draftVertices.none { it.junctionId == snap.id }) {
+                                    pendingJoinJunction = snap
+                                    pendingJoinIndex = completedIndex
+                                    pendingJoinIndependentCoordinate = completed
+                                    activeSnappedJunction = snap
+                                }
+                            }
                             dragIndex = null
+                            approvedSharedMoveJunctionId = null
                             map.uiSettings.isScrollGesturesEnabled = true
                             true
                         }
@@ -480,7 +637,9 @@ fun MapScreen(
                                 draftVertices.toList(),
                                 selectedVertexIndex,
                                 displayPreferences.coverageScope,
-                                assignmentMap
+                                assignmentMap,
+                                junctionUsageMap.filterValues { it.size > 1 }.keys,
+                                activeSnappedJunction
                             )
                         }
                         map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
@@ -589,7 +748,10 @@ fun MapScreen(
                 selectedCorner = selectedVertexIndex?.plus(1),
                 onUndo = {
                     if (undoSnapshots.isNotEmpty()) {
-                        replaceDraft(undoSnapshots.removeAt(undoSnapshots.lastIndex))
+                        val previous = undoSnapshots.removeAt(undoSnapshots.lastIndex)
+                        replaceDraft(previous.vertices)
+                        ephemeralJunctionMoves.clear()
+                        ephemeralJunctionMoves.putAll(previous.junctionMoves)
                         selectedVertexIndex = null
                         pastureEditMode = PastureEditMode.SELECT_OR_DRAG
                     }
@@ -600,6 +762,41 @@ fun MapScreen(
                     } else {
                         selectedVertexIndex = null
                         PastureEditMode.ADD_CORNER
+                    }
+                },
+                onMove = {
+                    val junctionId = selectedVertexIndex?.let { draftVertices.getOrNull(it)?.junctionId }
+                    val sharedCount = junctionId?.let { junctionUsageMap[it]?.size } ?: 0
+                    if (junctionId != null && sharedCount > 1) {
+                        pendingSharedMoveJunctionId = junctionId
+                    } else {
+                        approvedSharedMoveJunctionId = junctionId
+                        Toast.makeText(context, "Drag the selected corner to move it", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onMerge = {
+                    val coordinate = selectedVertexIndex?.let { draftVertices.getOrNull(it) }
+                    when {
+                        coordinate?.junctionId == null -> Toast.makeText(
+                            context,
+                            "Save this corner before merging",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        undoSnapshots.isNotEmpty() || ephemeralJunctionMoves.isNotEmpty() -> Toast.makeText(
+                            context,
+                            "Save or cancel the current boundary changes before merging",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        else -> {
+                            mergeCandidates = CornerSnappingEngine.findNearbyJunctions(
+                                coordinate.toLatLng(),
+                                allJunctions,
+                                coordinate.junctionId,
+                                50.0
+                            )
+                            selectedMergeTargetId = null
+                            showMergeDialog = true
+                        }
                     }
                 },
                 onRemove = {
@@ -623,8 +820,25 @@ fun MapScreen(
                     } else {
                         val pastureId = selectedPastureId
                         if (pastureId != null) {
+                            val invalidConnected = effectivePastures.firstOrNull { pasture ->
+                                pasture.pasture.id != pastureId &&
+                                    pasture.vertices.any { it.junctionId in ephemeralJunctionMoves.keys } &&
+                                    GeometryValidator.validationError(pasture.orderedCoordinates()) != null
+                            }
+                            if (invalidConnected != null) {
+                                Toast.makeText(
+                                    context,
+                                    "Invalid: moving this corner breaks ${invalidConnected.pasture.name}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@PastureGeometryControls
+                            }
                             scope.launch {
-                                pastureDao.replaceVertices(pastureId, draftVertices.toList())
+                                pastureDao.savePastureBoundaryWithJunctions(
+                                    pastureId = pastureId,
+                                    vertices = draftVertices.toList(),
+                                    junctionMoves = ephemeralJunctionMoves.toMap()
+                                )
                                 leaveGeometryMode()
                             }
                         }
@@ -676,6 +890,7 @@ fun MapScreen(
                         interactionState = InteractionState.PASTURE_EDITING
                         replaceDraft(pasture.orderedCoordinates())
                         undoSnapshots.clear()
+                        ephemeralJunctionMoves.clear()
                         selectedVertexIndex = null
                         pastureEditMode = PastureEditMode.SELECT_OR_DRAG
                     },
@@ -685,6 +900,211 @@ fun MapScreen(
         }
 
         ActiveAttribution(activeMode, currentZoom)
+    }
+
+    pendingSharedMoveJunctionId?.let { junctionId ->
+        val count = junctionUsageMap[junctionId]?.size ?: 1
+        AlertDialog(
+            onDismissRequest = { pendingSharedMoveJunctionId = null },
+            title = { Text("Move Shared Corner?") },
+            text = {
+                Text(
+                    "This corner is shared by $count pastures. Moving it changes every connected boundary. Proceed?"
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    approvedSharedMoveJunctionId = junctionId
+                    pendingSharedMoveJunctionId = null
+                    Toast.makeText(context, "Drag the corner to its new location", Toast.LENGTH_SHORT).show()
+                }) { Text("Proceed") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingSharedMoveJunctionId = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    pendingJoinJunction?.let { target ->
+        AlertDialog(
+            onDismissRequest = {
+                pendingJoinJunction = null
+                pendingJoinIndex = null
+                pendingJoinIndependentCoordinate = null
+                activeSnappedJunction = null
+            },
+            title = { Text("Join Shared Corner?") },
+            text = {
+                Text(
+                    "Join this fence corner to junction #${target.id}? The connected pastures will use the same permanent corner."
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val index = pendingJoinIndex
+                    if (index != null) {
+                        val targetCoordinate = PastureCoordinate(
+                            latitude = target.latitude,
+                            longitude = target.longitude,
+                            elevationMeters = target.elevationMeters,
+                            elevationSource = target.elevationSource,
+                            verticalDatum = target.verticalDatum,
+                            verticalAccuracyMeters = target.verticalAccuracyMeters,
+                            elevationCapturedAt = target.elevationCapturedAt,
+                            junctionId = target.id
+                        )
+                        val candidate = draftVertices.toMutableList()
+                        if (pastureEditMode == PastureEditMode.ADD_CORNER) {
+                            candidate.add(index, targetCoordinate)
+                        } else if (index in candidate.indices) {
+                            candidate[index] = targetCoordinate
+                        }
+                        val error = GeometryValidator.validationError(candidate)
+                        if (error != null) {
+                            Toast.makeText(context, "Cannot join: $error", Toast.LENGTH_LONG).show()
+                        } else {
+                            rememberUndoPoint()
+                            replaceDraft(candidate)
+                            selectedVertexIndex = index
+                            pastureEditMode = PastureEditMode.SELECT_OR_DRAG
+                            Toast.makeText(context, "Joined to shared corner", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    pendingJoinJunction = null
+                    pendingJoinIndex = null
+                    pendingJoinIndependentCoordinate = null
+                    activeSnappedJunction = null
+                }) { Text("Confirm Join") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    val index = pendingJoinIndex
+                    val independent = pendingJoinIndependentCoordinate
+                    if (
+                        pastureEditMode == PastureEditMode.ADD_CORNER &&
+                        index != null && independent != null
+                    ) {
+                        val candidate = draftVertices.toMutableList().apply { add(index, independent) }
+                        val error = GeometryValidator.validationError(candidate)
+                        if (error == null) {
+                            rememberUndoPoint()
+                            replaceDraft(candidate)
+                            selectedVertexIndex = index
+                        } else {
+                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    pendingJoinJunction = null
+                    pendingJoinIndex = null
+                    pendingJoinIndependentCoordinate = null
+                    activeSnappedJunction = null
+                    pastureEditMode = PastureEditMode.SELECT_OR_DRAG
+                }) { Text("Keep Independent") }
+            }
+        )
+    }
+
+    if (showMergeDialog) {
+        val source = selectedVertexIndex?.let { draftVertices.getOrNull(it) }
+        val sourceId = source?.junctionId
+        AlertDialog(
+            onDismissRequest = { showMergeDialog = false },
+            title = { Text("Merge Nearby Corners") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Choose the surviving corner within 50 meters.", fontSize = 12.sp)
+                    if (mergeCandidates.isEmpty()) {
+                        Text("No nearby corners found.", color = Color.Gray)
+                    } else {
+                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
+                            items(mergeCandidates) { (candidate, distance) ->
+                                val pastureNames = junctionUsageMap[candidate.id].orEmpty().mapNotNull { id ->
+                                    pastures.firstOrNull { it.pasture.id == id }?.pasture?.name
+                                }
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 3.dp)
+                                        .clickable { selectedMergeTargetId = candidate.id },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (selectedMergeTargetId == candidate.id) {
+                                        Color(0xFF1E3A5F)
+                                    } else {
+                                        Color(0xFF2C2C2C)
+                                    }
+                                ) {
+                                    Column(Modifier.padding(8.dp)) {
+                                        Text(
+                                            "Corner #${candidate.id} • ${String.format(Locale.US, "%.1f m", distance)}",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            "Pastures: ${pastureNames.ifEmpty { listOf("None") }.joinToString()}",
+                                            color = Color.LightGray,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = sourceId != null && selectedMergeTargetId != null,
+                    onClick = {
+                        val targetId = selectedMergeTargetId
+                        val target = allJunctions.firstOrNull { it.id == targetId }
+                        val sourcePastureIds = sourceId?.let { junctionUsageMap[it].orEmpty() }.orEmpty()
+                        val targetPastureIds = targetId?.let { junctionUsageMap[it].orEmpty() }.orEmpty()
+                        when {
+                            sourceId == null || targetId == null || target == null -> Unit
+                            sourcePastureIds.intersect(targetPastureIds).isNotEmpty() -> Toast.makeText(
+                                context,
+                                "Cannot merge: a pasture already uses both corners",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            else -> {
+                                val invalid = pastures.firstOrNull { pasture ->
+                                    pasture.pasture.id in sourcePastureIds &&
+                                        GeometryValidator.validationError(
+                                            pasture.orderedCoordinates().map { coordinate ->
+                                                if (coordinate.junctionId == sourceId) {
+                                                    coordinate.copy(
+                                                        latitude = target.latitude,
+                                                        longitude = target.longitude,
+                                                        junctionId = target.id
+                                                    )
+                                                } else coordinate
+                                            }
+                                        ) != null
+                                }
+                                if (invalid != null) {
+                                    Toast.makeText(
+                                        context,
+                                        "Cannot merge: ${invalid.pasture.name} would become invalid",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    scope.launch {
+                                        pastureDao.mergeJunctions(sourceId, targetId)
+                                        showMergeDialog = false
+                                        selectedMergeTargetId = null
+                                        leaveGeometryMode()
+                                        Toast.makeText(context, "Corners merged", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ) { Text("Confirm Merge") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMergeDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showPastureNameDialog) {
@@ -1217,6 +1637,8 @@ private fun BoxScope.PastureGeometryControls(
     selectedCorner: Int?,
     onUndo: () -> Unit,
     onAddCorner: () -> Unit,
+    onMove: () -> Unit,
+    onMerge: () -> Unit,
     onRemove: () -> Unit,
     onCancel: () -> Unit,
     onFinish: () -> Unit
@@ -1260,10 +1682,25 @@ private fun BoxScope.PastureGeometryControls(
                         )
                     ) { Text(if (addCornerArmed) "Cancel Add" else "Add Corner", fontSize = 12.sp) }
                     OutlinedButton(
+                        onClick = onMove,
+                        enabled = selectedCorner != null,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Move", fontSize = 12.sp) }
+                    OutlinedButton(
                         onClick = onRemove,
                         enabled = canRemove,
                         modifier = Modifier.weight(1f)
                     ) { Text("Remove", fontSize = 12.sp) }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onMerge,
+                        enabled = selectedCorner != null,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Merge Nearby", fontSize = 12.sp) }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1590,7 +2027,9 @@ private fun pushAllOverlays(
     draftVertices: List<PastureCoordinate>,
     selectedVertexIndex: Int?,
     coverageScope: SpatialCoverageScope,
-    assignments: Map<Long, List<Long>>
+    assignments: Map<Long, List<Long>>,
+    sharedJunctionIds: Set<Long>,
+    activeSnappedJunction: FenceJunctionEntity?
 ) {
     map?.getStyle { style ->
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
@@ -1610,7 +2049,38 @@ private fun pushAllOverlays(
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)
             ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)
-            ?.setGeoJson(PastureFeatureConverter.handleFeatures(draftVertices, selectedVertexIndex))
+            ?.setGeoJson(
+                PastureFeatureConverter.handleFeatures(
+                    draftVertices,
+                    selectedVertexIndex,
+                    sharedJunctionIds
+                )
+            )
+        val snapFeatures = activeSnappedJunction?.let { junction ->
+            listOf(Feature.fromGeometry(Point.fromLngLat(junction.longitude, junction.latitude)))
+        }.orEmpty()
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_SNAPPED_JUNCTION)
+            ?.setGeoJson(FeatureCollection.fromFeatures(snapFeatures))
+    }
+}
+
+internal fun applyJunctionMovePreview(
+    pastures: List<PastureWithVertices>,
+    moves: Map<Long, PastureCoordinate>
+): List<PastureWithVertices> {
+    if (moves.isEmpty()) return pastures
+    return pastures.map { pasture ->
+        pasture.copy(
+            vertices = pasture.vertices.map { vertex ->
+                val move = moves[vertex.junctionId]
+                if (move == null) vertex else vertex.copy(
+                    junction = vertex.junction.copy(
+                        latitude = move.latitude,
+                        longitude = move.longitude
+                    )
+                )
+            }
+        )
     }
 }
 

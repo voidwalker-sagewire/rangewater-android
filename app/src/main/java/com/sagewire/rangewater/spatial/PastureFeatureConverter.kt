@@ -40,7 +40,8 @@ object PastureFeatureConverter {
 
     fun handleFeatures(
         vertices: List<PastureCoordinate>,
-        selectedVertexIndex: Int?
+        selectedVertexIndex: Int?,
+        sharedJunctionIds: Set<Long> = emptySet()
     ): FeatureCollection {
         val features = vertices.mapIndexed { index, coordinate ->
             Feature.fromGeometry(
@@ -49,6 +50,11 @@ object PastureFeatureConverter {
                     addProperty("index", index)
                     addProperty("handleType", "vertex")
                     addProperty("selected", index == selectedVertexIndex)
+                    addProperty(
+                        "isShared",
+                        coordinate.junctionId != null && coordinate.junctionId in sharedJunctionIds
+                    )
+                    coordinate.junctionId?.let { addProperty("junctionId", it) }
                 }
             )
         }
@@ -66,7 +72,8 @@ object PastureFeatureConverter {
                 elevationSource = it.elevationSource,
                 verticalDatum = it.verticalDatum,
                 verticalAccuracyMeters = it.verticalAccuracyMeters,
-                elevationCapturedAt = it.elevationCapturedAt
+                elevationCapturedAt = it.elevationCapturedAt,
+                junctionId = it.junctionId
             )
         }
 

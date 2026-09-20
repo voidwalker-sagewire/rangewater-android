@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android / Google Play Store
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.8.0
-- Version Code: 9
+- App Version: 0.9.0
+- Version Code: 10
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -39,7 +39,7 @@ RULE:
 - Map Engine: MapLibre Native Android SDK 11.5.1
 - Spatial Math: MapLibre Turf Java 6.0.1 plus JTS Core 1.20.0 for robust
   polygon union and intersection topology
-- Persistence: Android Room 2.8.5 database version 3 with local SQLite,
+- Persistence: Android Room 2.8.5 database version 4 with local SQLite,
   Flow-backed reads, and SharedPreferences-backed display settings
 - CI: GitHub Actions runs JVM geometry tests, Android Room instrumentation tests,
   and builds a debug APK with the committed Gradle wrapper
@@ -56,6 +56,9 @@ RULE:
   source to zero, one, or multiple accessible pastures; clipped coverage remains derived
 - Coverage analytics: each pasture is partitioned on demand into mutually exclusive
   preferred, transition-only, and beyond-planned acreage and percentage categories
+- Shared fence junctions: canonical physical corners can be referenced by multiple
+  ordered pasture boundaries, snapped in screen space, previewed together, and moved
+  or explicitly merged through validated atomic transactions
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -205,6 +208,18 @@ RULE:
     - The pasture card retains Details, Edit, and Delete while adding phone-safe acreage
       and percentage rows using established green, amber, and gray terminology.
     - Details and Edit use bold white labels; Edit opens the pasture-boundary editor.
+18. Michael approved shared permanent fence junctions in RW-TX-008-JCT-REV2.
+    - Room version 4 normalizes fence coordinates into canonical FenceJunctionEntity
+      rows referenced by ordered pasture-vertex links.
+    - Migration(3, 4) preserves every historical vertex one-to-one; it does not silently
+      merge old corners that merely happen to be near one another.
+    - Junction foreign keys use NO ACTION, inserts use ABORT, and unique pasture/sequence
+      and pasture/junction indices protect ordered topology.
+    - New pasture drawing snaps within 32 dp. Editing requires explicit confirmation
+      before joining, moving a shared junction, or committing a nearby-corner merge.
+    - Shared moves preview every connected pasture and Accessible Coverage geometry.
+      Save validates every affected ring and commits moves, references, timestamps, and
+      orphan cleanup atomically; Undo and Cancel discard all in-memory movement state.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -252,13 +267,6 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
-10. Shared pasture fence junctions remain deferred to the next dedicated transmission.
-    - Corners representing the same physical fence junction must share one persistent node,
-      not merely occupy nearby coordinates.
-    - Drawing near an existing junction must snap to that exact node; editing it must update
-      every connected pasture after clearly warning the operator about the shared change.
-    - Existing near-duplicate corners require a deliberate merge path that preserves all
-      connected pasture boundaries and prevents geometry gaps, overlaps, and slivers.
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -601,6 +609,20 @@ EVIDENCE STATUS:
   field with one assigned source reported 11.5 preferred acres (57.0%), 2.9 transition-only
   acres (14.3%), and 5.8 beyond-planned acres (28.7%), reconciling to exactly 100.0%.
 
+- RW-TX-008-JCT-REV2
+  Status: IMPLEMENTED — LOCAL VERIFICATION IN PROGRESS
+  Scope: Room v4 canonical fence junctions, 32-dp corner snapping, shared-corner move
+  confirmation and multi-pasture preview, atomic boundary persistence, orphan cleanup,
+  and explicit validated near-corner merging.
+  Target baseline: bae20082447b9da01288a9786f14307f47a3db01.
+  Preflight correction: retained the accepted MapScreen and DAO contracts rather than
+  replacing them with the incompatible work-order screen; the implementation uses the
+  existing water enums, assignment API, lifecycle bridge, controls, and overlay pipeline.
+  Static verification correction: completed the initial-style overlay call with the new
+  shared-junction and snap-preview inputs, and strengthened migration coverage to assert
+  exact coordinates, junction identity, and retained elevation provenance.
+  Release identity: version 0.9.0, versionCode 10, Room version 4.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -630,20 +652,20 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-007B closed; shared fence-junction design queued
-- Working transmission: None — awaiting next reconciled work order
-- Implementation status: RW-TX-007B EXECUTED — PHYSICALLY VERIFIED — ACCEPTED
-- Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
-- Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
-- CI status: GREEN — final polish run 35477800549
-- Build artifact: RangeWater-Debug-APK version 0.8.0 (versionCode 9)
+- Current phase: RW-TX-008-JCT-REV2 implementation and verification
+- Working transmission: RW-TX-008-JCT-REV2
+- Implementation status: CODE COMPLETE — COMPILER/CI VERIFICATION PENDING
+- Authoritative baseline: bae20082447b9da01288a9786f14307f47a3db01
+- Verified implementation commit: Pending
+- CI status: Pending
+- Build artifact: Pending — target version 0.9.0 (versionCode 10)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
-- Next action: Synchronize with Gemini for a dedicated shared persistent fence-junction
-  work order covering snap-to-node, shared editing, warnings, and near-duplicate merging.
-- Resume point: RangeWater 0.8.0 (versionCode 9) is accepted through RW-TX-007B. Room
-  remains version 3. Shared fence junctions are the next approved design target.
+- Next action: Compile, run JVM and Room instrumentation suites, then perform Galaxy S23
+  Ultra migration, snapping, shared-preview, merge, removal, and cold-restart acceptance.
+- Resume point: RangeWater 0.9.0 implementation is staged from the accepted 0.8.0
+  baseline. Room v4 and physical shared-junction behavior remain unaccepted until tests pass.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

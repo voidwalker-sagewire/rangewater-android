@@ -54,7 +54,8 @@ class DatabaseMigrationTest {
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_1_2,
-                RangeWaterDatabase.MIGRATION_2_3
+                RangeWaterDatabase.MIGRATION_2_3,
+                RangeWaterDatabase.MIGRATION_3_4
             )
             .allowMainThreadQueries()
             .build()
@@ -148,7 +149,12 @@ class DatabaseMigrationTest {
                 "INSERT INTO pastures VALUES (10, 'North Meadow', '', 300, 400)"
             )
             database.execSQL(
-                "INSERT INTO pasture_vertices (id, pastureId, sequence, latitude, longitude) VALUES (1, 10, 0, 40.0, -100.0)"
+                """
+                INSERT INTO pasture_vertices
+                    (id, pastureId, sequence, latitude, longitude, elevationMeters,
+                     elevationSource, verticalDatum, verticalAccuracyMeters, elevationCapturedAt)
+                VALUES (1, 10, 0, 40.0, -100.0, 310.5, 'USGS_3DEP', 'NAVD88', 1.5, 1700000000000)
+                """.trimIndent()
             )
             database.execSQL(
                 "INSERT INTO pasture_vertices (id, pastureId, sequence, latitude, longitude) VALUES (2, 10, 1, 40.1, -100.0)"
@@ -160,7 +166,10 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_2_3)
+            .addMigrations(
+                RangeWaterDatabase.MIGRATION_2_3,
+                RangeWaterDatabase.MIGRATION_3_4
+            )
             .allowMainThreadQueries()
             .build()
         try {
@@ -168,6 +177,15 @@ class DatabaseMigrationTest {
             val pasture = migrated.pastureDao().getById(10L)
             assertEquals("North Meadow", pasture?.pasture?.name)
             assertEquals(listOf(0, 1, 2), pasture?.vertices?.sortedBy { it.sequence }?.map { it.sequence })
+            val firstVertex = pasture?.vertices?.first { it.sequence == 0 }
+            assertEquals(1L, firstVertex?.junctionId)
+            assertEquals(40.0, firstVertex?.latitude ?: Double.NaN, 0.0)
+            assertEquals(-100.0, firstVertex?.longitude ?: Double.NaN, 0.0)
+            assertEquals(310.5, firstVertex?.elevationMeters ?: Double.NaN, 0.0)
+            assertEquals("USGS_3DEP", firstVertex?.elevationSource)
+            assertEquals("NAVD88", firstVertex?.verticalDatum)
+            assertEquals(1.5, firstVertex?.verticalAccuracyMeters ?: Double.NaN, 0.0)
+            assertEquals(1700000000000L, firstVertex?.elevationCapturedAt)
 
             migrated.waterPastureAssignmentDao().replaceForWaterPoint(
                 waterPointId = 5L,

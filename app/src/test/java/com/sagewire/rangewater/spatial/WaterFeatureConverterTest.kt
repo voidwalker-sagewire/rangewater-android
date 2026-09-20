@@ -4,6 +4,8 @@ import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.data.PastureEntity
 import com.sagewire.rangewater.data.PastureVertexEntity
+import com.sagewire.rangewater.data.PastureVertexWithJunction
+import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.ui.map.MapConfig
 import com.sagewire.rangewater.ui.map.SpatialCoverageScope
@@ -193,12 +195,18 @@ class WaterFeatureConverterTest {
             updatedAt = 2_000L
         ),
         vertices = listOf(
-            PastureVertexEntity(1, 11, 0, 40.3560, -80.6300),
-            PastureVertexEntity(2, 11, 1, 40.3640, -80.6300),
-            PastureVertexEntity(3, 11, 2, 40.3640, -80.6250),
-            PastureVertexEntity(4, 11, 3, 40.3560, -80.6250)
+            vertex(1, 0, 40.3560, -80.6300),
+            vertex(2, 1, 40.3640, -80.6300),
+            vertex(3, 2, 40.3640, -80.6250),
+            vertex(4, 3, 40.3560, -80.6250)
         )
     )
+
+    private fun vertex(id: Long, sequence: Int, latitude: Double, longitude: Double) =
+        PastureVertexWithJunction(
+            PastureVertexEntity(id, 11, sequence, id),
+            FenceJunctionEntity(id, latitude, longitude)
+        )
 
     private fun signedArea(ring: List<Point>): Double = ring.zipWithNext().sumOf { (a, b) ->
         (a.longitude() * b.latitude()) - (b.longitude() * a.latitude())

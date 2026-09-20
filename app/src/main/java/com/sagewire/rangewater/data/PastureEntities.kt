@@ -30,11 +30,19 @@ data class PastureEntity(
             parentColumns = ["id"],
             childColumns = ["pastureId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = FenceJunctionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["junctionId"],
+            onDelete = ForeignKey.NO_ACTION
         )
     ],
     indices = [
         Index(value = ["pastureId"]),
-        Index(value = ["pastureId", "sequence"], unique = true)
+        Index(value = ["junctionId"]),
+        Index(value = ["pastureId", "sequence"], unique = true),
+        Index(value = ["pastureId", "junctionId"], unique = true)
     ]
 )
 data class PastureVertexEntity(
@@ -42,28 +50,33 @@ data class PastureVertexEntity(
     val id: Long = 0,
     val pastureId: Long,
     val sequence: Int,
-    val latitude: Double,
-    val longitude: Double,
-    val elevationMeters: Double? = null,
-    val elevationSource: String? = null,
-    val verticalDatum: String? = null,
-    val verticalAccuracyMeters: Double? = null,
-    val elevationCapturedAt: Long? = null
+    val junctionId: Long
 )
+
+data class PastureVertexWithJunction(
+    @Embedded val vertex: PastureVertexEntity,
+    @Relation(parentColumn = "junctionId", entityColumn = "id")
+    val junction: FenceJunctionEntity
+) {
+    val id: Long get() = vertex.id
+    val pastureId: Long get() = vertex.pastureId
+    val sequence: Int get() = vertex.sequence
+    val junctionId: Long get() = vertex.junctionId
+    val latitude: Double get() = junction.latitude
+    val longitude: Double get() = junction.longitude
+    val elevationMeters: Double? get() = junction.elevationMeters
+    val elevationSource: String? get() = junction.elevationSource
+    val verticalDatum: String? get() = junction.verticalDatum
+    val verticalAccuracyMeters: Double? get() = junction.verticalAccuracyMeters
+    val elevationCapturedAt: Long? get() = junction.elevationCapturedAt
+}
 
 data class PastureWithVertices(
     @Embedded val pasture: PastureEntity,
-    @Relation(parentColumn = "id", entityColumn = "pastureId")
-    val vertices: List<PastureVertexEntity>
-)
-
-/** In-memory geometry input. Elevation remains nullable until a later terrain milestone. */
-data class PastureCoordinate(
-    val latitude: Double,
-    val longitude: Double,
-    val elevationMeters: Double? = null,
-    val elevationSource: String? = null,
-    val verticalDatum: String? = null,
-    val verticalAccuracyMeters: Double? = null,
-    val elevationCapturedAt: Long? = null
+    @Relation(
+        entity = PastureVertexEntity::class,
+        parentColumn = "id",
+        entityColumn = "pastureId"
+    )
+    val vertices: List<PastureVertexWithJunction>
 )

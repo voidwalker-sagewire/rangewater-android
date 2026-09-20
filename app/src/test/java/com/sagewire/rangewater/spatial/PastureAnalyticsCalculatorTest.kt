@@ -2,6 +2,8 @@ package com.sagewire.rangewater.spatial
 
 import com.sagewire.rangewater.data.PastureEntity
 import com.sagewire.rangewater.data.PastureVertexEntity
+import com.sagewire.rangewater.data.PastureVertexWithJunction
+import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
@@ -161,11 +163,8 @@ class PastureAnalyticsCalculatorTest {
         sequence: Int,
         latitude: Double,
         longitude: Double
-    ) = PastureVertexEntity(
-        id = id,
-        pastureId = pastureId,
-        sequence = sequence,
-        latitude = latitude,
-        longitude = longitude
+    ) = PastureVertexWithJunction(
+        vertex = PastureVertexEntity(id, pastureId, sequence, id),
+        junction = FenceJunctionEntity(id, latitude, longitude)
     )
 }

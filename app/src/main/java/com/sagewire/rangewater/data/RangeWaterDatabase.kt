@@ -16,15 +16,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         WaterPointEntity::class,
         PastureEntity::class,
+        FenceJunctionEntity::class,
         PastureVertexEntity::class,
         WaterPastureAssignmentEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun waterPointDao(): WaterPointDao
     abstract fun pastureDao(): PastureDao
+    abstract fun fenceJunctionDao(): FenceJunctionDao
     abstract fun waterPastureAssignmentDao(): WaterPastureAssignmentDao
 
     companion object {
@@ -100,13 +102,78 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `fence_junctions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `latitude` REAL NOT NULL,
+                        `longitude` REAL NOT NULL,
+                        `elevationMeters` REAL,
+                        `elevationSource` TEXT,
+                        `verticalDatum` TEXT,
+                        `verticalAccuracyMeters` REAL,
+                        `elevationCapturedAt` INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `fence_junctions`
+                        (`id`, `latitude`, `longitude`, `elevationMeters`, `elevationSource`,
+                         `verticalDatum`, `verticalAccuracyMeters`, `elevationCapturedAt`)
+                    SELECT `id`, `latitude`, `longitude`, `elevationMeters`, `elevationSource`,
+                           `verticalDatum`, `verticalAccuracyMeters`, `elevationCapturedAt`
+                    FROM `pasture_vertices`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE `pasture_vertices_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `sequence` INTEGER NOT NULL,
+                        `junctionId` INTEGER NOT NULL,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`)
+                            ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`junctionId`) REFERENCES `fence_junctions`(`id`)
+                            ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `pasture_vertices_new` (`id`, `pastureId`, `sequence`, `junctionId`)
+                    SELECT `id`, `pastureId`, `sequence`, `id` FROM `pasture_vertices`
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE `pasture_vertices`")
+                db.execSQL("ALTER TABLE `pasture_vertices_new` RENAME TO `pasture_vertices`")
+                db.execSQL(
+                    "CREATE INDEX `index_pasture_vertices_pastureId` ON `pasture_vertices` (`pastureId`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX `index_pasture_vertices_junctionId` ON `pasture_vertices` (`junctionId`)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_sequence` " +
+                        "ON `pasture_vertices` (`pastureId`, `sequence`)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_junctionId` " +
+                        "ON `pasture_vertices` (`pastureId`, `junctionId`)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     RangeWaterDatabase::class.java,
                     "rangewater_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }
