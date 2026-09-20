@@ -5,7 +5,7 @@ name: Build RangeWater Debug APK
 
 on:
   push:
-    branches: [ "main", "codex/rw-tx-008-jct-rev2" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
