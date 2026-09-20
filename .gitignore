@@ -9,6 +9,8 @@
 /captures
 .externalNativeBuild
 .cxx
+/imagery-gateway/node_modules/
+/imagery-gateway/.wrangler/
 
 # 🪨 BLOCK 2 — GRADLE WRAPPER PRESERVATION
 !gradle/wrapper/gradle-wrapper.jar

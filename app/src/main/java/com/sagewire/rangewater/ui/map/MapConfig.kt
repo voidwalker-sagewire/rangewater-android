@@ -36,11 +36,11 @@ object MapConfig {
     const val USGS_IMAGERY_TOPO_TILE_URL =
         "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
 
-    // 🪨 Verified USDA NAIP dynamic request. MapLibre substitutes each tile's
-    // Web Mercator bounds into {bbox-epsg-3857}. Plain 256 px JPEG responses keep
-    // decoding and texture use conservative across compatible Android devices.
+    // 🪨 RangeWater's cache gateway converts XYZ coordinates to USDA NAIP
+    // exportImage requests. The gateway avoids device-specific TLS/routing failures,
+    // while the USGS overview remains visible underneath if detail is unavailable.
     const val USDA_NAIP_EXPORT_URL =
-        "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer/exportImage?f=image&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256%2C256&format=jpg"
+        "https://imagery.sagewire.dev/naip/{z}/{x}/{y}.jpg"
 
     const val LAYER_AERIAL_OVERVIEW = "layer-aerial-overview"
     const val LAYER_AERIAL_DETAIL = "layer-aerial-detail"

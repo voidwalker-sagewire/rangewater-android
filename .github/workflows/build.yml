@@ -9,6 +9,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  imagery-gateway-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: imagery-gateway/package-lock.json
+
+      - name: Install Gateway Dependencies
+        working-directory: imagery-gateway
+        run: npm ci
+
+      - name: Test Imagery Gateway
+        working-directory: imagery-gateway
+        run: npm test
+
   build:
     runs-on: ubuntu-latest
 

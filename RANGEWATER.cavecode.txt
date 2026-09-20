@@ -656,6 +656,12 @@ EVIDENCE STATUS:
 - USDA FPAC NAIP exportImage is a live dynamic service and was visibly slower during
   Michael's browser test. The 512-pixel request strategy is implemented but its real
   device performance and service behavior remain acceptance-test items.
+- The Tab S7 diagnostic build proved that its direct request to the USDA FPAC host
+  times out while connecting on port 443. RangeWater now routes close-detail tiles
+  through a dedicated, cacheable imagery.sagewire.dev gateway design. The gateway
+  validates XYZ coordinates, forwards only fixed USDA NAIP export parameters, retries
+  transient upstream failures, and caches valid imagery. Deployment and target-device
+  acceptance remain pending; the USGS overzoom layer stays visible as a safe fallback.
 - RangeWater 0.9.0 physical testing found that shared fence junctions appeared to operate
   correctly on both the Galaxy S23 Ultra and Samsung Tab S7. The Tab S7 exposed a separate
   aerial-imagery defect: USGS overview remains visible through zoom 15.0, but the map turns
@@ -682,9 +688,9 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
-- Next action: Correct the Tab S7 USDA-detail transition with a resilient USGS fallback,
-  complete the shared-junction checklist, and add the ratified Android/ChromeOS
-  compatibility declarations and automated screen/input profiles before release.
+- Next action: Deploy and verify the dedicated USDA imagery gateway, run the resulting
+  Android build on the Galaxy S23 Ultra and Tab S7, complete the shared-junction
+  checklist, and finish Play release signing, store assets, and policy declarations.
 - Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
   and APK-build verified. Physical shared-junction behavior remains unaccepted until the
   target-device checklist passes.

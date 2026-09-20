@@ -2,7 +2,6 @@ package com.sagewire.rangewater.ui.map
 
 import android.content.ComponentCallbacks2
 import android.content.res.Configuration
-import android.graphics.BitmapFactory
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.Bundle
@@ -79,12 +78,8 @@ import com.sagewire.rangewater.spatial.PastureCoverageMetrics
 import com.sagewire.rangewater.spatial.PastureFeatureConverter
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -97,11 +92,6 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
-import kotlin.math.PI
-import kotlin.math.floor
-import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.tan
 
 enum class ActiveMapMode { AERIAL, LABELED }
 
@@ -180,7 +170,6 @@ fun MapScreen(
     var currentZoom by remember { mutableDoubleStateOf(initialZoom) }
     var isMapRendering by remember { mutableStateOf(true) }
     var hasLoadError by remember { mutableStateOf(false) }
-    var imageryDiagnostic by remember { mutableStateOf<String?>(null) }
 
     var selectedWaterId by remember { mutableStateOf<Long?>(null) }
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
@@ -655,21 +644,7 @@ fun MapScreen(
                         }
                         map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
                         map.addOnCameraIdleListener {
-                            val camera = map.cameraPosition
-                            val target = camera.target
-                            currentZoom = camera.zoom
-                            if (camera.zoom >= MapConfig.DETAIL_TRANSITION_ZOOM && target != null) {
-                                imageryDiagnostic = "USDA probe: checking…"
-                                scope.launch {
-                                    imageryDiagnostic = probeUsdaImagery(
-                                        latitude = target.latitude,
-                                        longitude = target.longitude,
-                                        zoom = camera.zoom
-                                    )
-                                }
-                            } else {
-                                imageryDiagnostic = null
-                            }
+                            currentZoom = map.cameraPosition.zoom
                         }
                     }
                 }
@@ -682,7 +657,6 @@ fun MapScreen(
             currentZoom = currentZoom,
             isMapRendering = isMapRendering,
             hasLoadError = hasLoadError,
-            imageryDiagnostic = imageryDiagnostic,
             interactionState = interactionState,
             coverageMode = displayPreferences.coverageMode,
             coverageScope = displayPreferences.coverageScope,
@@ -1545,7 +1519,6 @@ private fun MapStatusAndModeControls(
     currentZoom: Double,
     isMapRendering: Boolean,
     hasLoadError: Boolean,
-    imageryDiagnostic: String?,
     interactionState: InteractionState,
     coverageMode: WaterCoverageMode,
     coverageScope: SpatialCoverageScope,
@@ -1619,19 +1592,6 @@ private fun MapStatusAndModeControls(
                     onClick = { onModeSelected(ActiveMapMode.LABELED) },
                     label = { Text("Labeled", fontSize = 12.sp) },
                     colors = mapModeChipColors()
-                )
-            }
-        }
-        if (imageryDiagnostic != null) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color.Black.copy(alpha = 0.82f),
-                contentColor = Color.White
-            ) {
-                Text(
-                    text = imageryDiagnostic,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    fontSize = 10.sp
                 )
             }
         }
@@ -2185,68 +2145,6 @@ private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
 
 private fun WaterSourceType.displayName(): String =
     name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }
-
-private suspend fun probeUsdaImagery(
-    latitude: Double,
-    longitude: Double,
-    zoom: Double
-): String = withContext(Dispatchers.IO) {
-    val earthRadiusMeters = 6_378_137.0
-    val worldWidthMeters = 2.0 * PI * earthRadiusMeters
-    val probeZoom = floor(zoom).coerceIn(0.0, MapConfig.MAX_AERIAL_ZOOM)
-    val halfTileMeters = worldWidthMeters / 2.0.pow(probeZoom) / 2.0
-    val safeLatitude = latitude.coerceIn(-85.05112878, 85.05112878)
-    val centerX = earthRadiusMeters * Math.toRadians(longitude)
-    val centerY = earthRadiusMeters * ln(
-        tan(PI / 4.0 + Math.toRadians(safeLatitude) / 2.0)
-    )
-    val bbox = String.format(
-        Locale.US,
-        "%.2f,%.2f,%.2f,%.2f",
-        centerX - halfTileMeters,
-        centerY - halfTileMeters,
-        centerX + halfTileMeters,
-        centerY + halfTileMeters
-    )
-    val requestUrl = MapConfig.USDA_NAIP_EXPORT_URL.replace("{bbox-epsg-3857}", bbox)
-
-    try {
-        val connection = URL(requestUrl).openConnection() as HttpURLConnection
-        try {
-            connection.requestMethod = "GET"
-            connection.instanceFollowRedirects = true
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 15_000
-            connection.setRequestProperty("Accept", "image/jpeg,image/*")
-
-            val responseCode = connection.responseCode
-            val contentType = connection.contentType ?: "unknown type"
-            val stream = if (responseCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            }
-            val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
-            val sizeLabel = "${bytes.size / 1024} KB"
-
-            if (responseCode !in 200..299) {
-                "USDA probe: HTTP $responseCode • $contentType • $sizeLabel"
-            } else {
-                val image = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                if (image == null) {
-                    "USDA probe: HTTP $responseCode • $contentType • decode failed • $sizeLabel"
-                } else {
-                    "USDA probe: HTTP $responseCode • $contentType • ${image.width}×${image.height} • $sizeLabel"
-                }
-            }
-        } finally {
-            connection.disconnect()
-        }
-    } catch (error: Exception) {
-        val detail = error.message?.take(72)?.ifBlank { null } ?: "no detail"
-        "USDA probe: ${error.javaClass.simpleName} • $detail"
-    }
-}
 
 @Composable
 private fun mapModeChipColors() = FilterChipDefaults.filterChipColors(
