@@ -37,9 +37,10 @@ object MapConfig {
         "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
 
     // 🪨 Verified USDA NAIP dynamic request. MapLibre substitutes each tile's
-    // Web Mercator bounds into {bbox-epsg-3857}; the server returns a 512 px image.
+    // Web Mercator bounds into {bbox-epsg-3857}. Plain 256 px JPEG responses keep
+    // decoding and texture use conservative across compatible Android devices.
     const val USDA_NAIP_EXPORT_URL =
-        "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer/exportImage?f=image&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512%2C512&format=jpgpng"
+        "https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer/exportImage?f=image&bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256%2C256&format=jpg"
 
     const val LAYER_AERIAL_OVERVIEW = "layer-aerial-overview"
     const val LAYER_AERIAL_DETAIL = "layer-aerial-detail"
@@ -94,7 +95,7 @@ object MapConfig {
             "source-usda-detail": {
               "type": "raster",
               "tiles": ["$USDA_NAIP_EXPORT_URL"],
-              "tileSize": 512,
+              "tileSize": 256,
               "minzoom": 15,
               "maxzoom": 20,
               "attribution": "$USDA_ATTRIBUTION"
@@ -257,47 +258,3 @@ object MapConfig {
                   "case", ["get", "selected"], 10.0, 8.0
                 ],
                 "circle-color": [
-                  "case",
-                  ["get", "selected"], "#FFD600",
-                  ["get", "isShared"], "#00E5FF",
-                  "#FFFFFF"
-                ],
-                "circle-stroke-color": "#FF2D95",
-                "circle-stroke-width": 3.0
-              }
-            },
-            {
-              "id": "$LAYER_WATER_POINTS_HIGHLIGHT",
-              "type": "circle",
-              "source": "$SOURCE_WATER_POINTS",
-              "filter": ["==", ["get", "selected"], true],
-              "paint": {
-                "circle-radius": 12.0,
-                "circle-color": "#FFFFFF",
-                "circle-opacity": 0.95
-              }
-            },
-            {
-              "id": "$LAYER_WATER_POINTS",
-              "type": "circle",
-              "source": "$SOURCE_WATER_POINTS",
-              "paint": {
-                "circle-radius": [
-                  "case", ["get", "selected"], 8.0, 6.0
-                ],
-                "circle-color": [
-                  "case", ["get", "selected"], "#FFD600", "#00E5FF"
-                ],
-                "circle-stroke-color": "#FFFFFF",
-                "circle-stroke-width": [
-                  "case", ["get", "selected"], 3.0, 2.0
-                ]
-              }
-            }
-          ]
-        }
-        """.trimIndent()
-
-    fun createStyleBuilder(): Style.Builder =
-        Style.Builder().fromJson(HYBRID_STYLE_JSON)
-}
