@@ -656,13 +656,14 @@ fun MapScreen(
                         map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
                         map.addOnCameraIdleListener {
                             val camera = map.cameraPosition
+                            val target = camera.target
                             currentZoom = camera.zoom
-                            if (camera.zoom >= MapConfig.DETAIL_TRANSITION_ZOOM) {
+                            if (camera.zoom >= MapConfig.DETAIL_TRANSITION_ZOOM && target != null) {
                                 imageryDiagnostic = "USDA probe: checking…"
                                 scope.launch {
                                     imageryDiagnostic = probeUsdaImagery(
-                                        latitude = camera.target.latitude,
-                                        longitude = camera.target.longitude,
+                                        latitude = target.latitude,
+                                        longitude = target.longitude,
                                         zoom = camera.zoom
                                     )
                                 }
