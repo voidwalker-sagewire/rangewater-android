@@ -5,6 +5,8 @@ The deployed `workers.dev` endpoint is:
 
 `https://rangewater-imagery-gateway.voidwalker.workers.dev/naip/{z}/{x}/{y}.jpg`
 
+The production health endpoint was verified on 2026-09-20.
+
 It accepts zoom levels 15–20, converts XYZ coordinates to EPSG:3857 bounds, requests
 a 256×256 JPEG from USDA FPAC, and caches valid image responses. The Android app keeps
 USGS imagery underneath the detail layer, so a gateway or upstream failure leaves a
