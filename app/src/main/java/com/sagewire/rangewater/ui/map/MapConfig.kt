@@ -258,3 +258,47 @@ object MapConfig {
                   "case", ["get", "selected"], 10.0, 8.0
                 ],
                 "circle-color": [
+                  "case",
+                  ["get", "selected"], "#FFD600",
+                  ["get", "isShared"], "#00E5FF",
+                  "#FFFFFF"
+                ],
+                "circle-stroke-color": "#FF2D95",
+                "circle-stroke-width": 3.0
+              }
+            },
+            {
+              "id": "$LAYER_WATER_POINTS_HIGHLIGHT",
+              "type": "circle",
+              "source": "$SOURCE_WATER_POINTS",
+              "filter": ["==", ["get", "selected"], true],
+              "paint": {
+                "circle-radius": 12.0,
+                "circle-color": "#FFFFFF",
+                "circle-opacity": 0.95
+              }
+            },
+            {
+              "id": "$LAYER_WATER_POINTS",
+              "type": "circle",
+              "source": "$SOURCE_WATER_POINTS",
+              "paint": {
+                "circle-radius": [
+                  "case", ["get", "selected"], 8.0, 6.0
+                ],
+                "circle-color": [
+                  "case", ["get", "selected"], "#FFD600", "#00E5FF"
+                ],
+                "circle-stroke-color": "#FFFFFF",
+                "circle-stroke-width": [
+                  "case", ["get", "selected"], 3.0, 2.0
+                ]
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+    fun createStyleBuilder(): Style.Builder =
+        Style.Builder().fromJson(HYBRID_STYLE_JSON)
+}
