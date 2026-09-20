@@ -621,7 +621,7 @@ EVIDENCE STATUS:
   acres (14.3%), and 5.8 beyond-planned acres (28.7%), reconciling to exactly 100.0%.
 
 - RW-TX-008-JCT-REV2
-  Status: IMPLEMENTED — BUILD VERIFIED — IMAGERY DEVICE ACCEPTED — JUNCTION CHECKLIST PENDING
+  Status: CLOSED — ACCEPTED — BUILD VERIFIED — PHYSICAL DEVICE VERIFIED
   Scope: Room v4 canonical fence junctions, 32-dp corner snapping, shared-corner move
   confirmation and multi-pasture preview, atomic boundary persistence, orphan cleanup,
   and explicit validated near-corner merging.
@@ -645,6 +645,12 @@ EVIDENCE STATUS:
   close-detail zoom range. The former black-screen transition above zoom 15.0 did not
   recur. Michael reported that the imagery worked extremely well and explicitly
   accepted the tablet performance.
+  Shared-junction device acceptance: PASSED — Michael confirmed on September 20,
+  2026 that moving and saving a shared fence corner moved the connected pasture
+  geometry correctly. After fully closing and reopening RangeWater, the saved shared
+  junction and connected boundaries remained correct. The complete device checklist
+  passed, including the rendered pasture geometry, acreage and accessible-coverage
+  results shown for Pastures 2, 3, and 4 on the Samsung Tab S7.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -690,26 +696,29 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RangeWater 0.9.0 release-candidate completion
-- Working transmission: RW-TX-008-JCT-REV2
-- Implementation status: GATEWAY DEPLOYED — ANDROID BUILD VERIFIED — TABLET IMAGERY ACCEPTED
+- Current phase: Google Play release preparation
+- Working transmission: RW-TX-008-JCT-REV2 CLOSED — ACCEPTED
+- Implementation status: RANGEWATER 0.9.0 RELEASE CANDIDATE DEVICE ACCEPTED
 - Authoritative baseline: bae20082447b9da01288a9786f14307f47a3db01
 - Verified implementation commit: 8dee7d784bc36919956a4cf40a006a2b6011fe41
 - CI status: GREEN — run 35526663597
 - Build artifact: RangeWater-Debug-APK version 0.9.0 (versionCode 10)
-- Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
-  RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
-- Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
+- Functional device verification: RW-TX-008-JCT-REV2, RW-TX-007A,
+  RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-007B, RW-TX-005-REV2,
+  RW-TX-005-REV, and RW-TX-004 PASSED.
+- Current transmission status: RW-TX-008-JCT-REV2 CLOSED — ACCEPTED
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
   Tab S7 and delivered satisfactory close-detail aerial performance without the former
   black-screen failure above zoom 15.0.
-- Next action: Complete the remaining shared-junction acceptance checklist, then finish
-  Play release signing, the Android App Bundle, store assets, and policy declarations.
+- Shared-junction acceptance: PASSED — shared movement saved across connected pasture
+  geometry and survived a full close and reopen on the Samsung Tab S7.
+- Next action: Finish Play release signing, the Android App Bundle, production icon,
+  store assets, policy declarations, and Play testing-track preparation.
 - Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
-  APK-build-, gateway-, and tablet-imagery-verified. Physical shared-junction behavior
-  remains unaccepted until the target-device checklist passes.
+  APK-build-, gateway-, tablet-imagery-, and shared-junction-device verified. Core 0.9.0
+  functionality is accepted; remaining work is production packaging and Play submission.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
