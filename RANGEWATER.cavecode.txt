@@ -202,8 +202,9 @@ RULE:
       Turf-derived total acreage within a 0.5% numerical tolerance.
     - Metrics remain derived from Room version 3 boundaries, assignments, and water
       coordinates. RW-TX-007B introduces no schema change or additional dependency.
-    - The pasture card retains Details, Boundary, and Delete while adding phone-safe
-      acreage and percentage rows using established green, amber, and gray terminology.
+    - The pasture card retains Details, Edit, and Delete while adding phone-safe acreage
+      and percentage rows using established green, amber, and gray terminology.
+    - Details and Edit use bold white labels; Edit opens the pasture-boundary editor.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -251,11 +252,13 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
-10. Pasture coverage acreage and percentages remain deferred to RW-TX-007B.
-    - Analytics must union overlapping assigned-water zones before measuring area so the
-      same acre is never counted twice.
-    - Permanent versus portable water mobility remains separate from the Serves Pastures
-      relationship that describes livestock access.
+10. Shared pasture fence junctions remain deferred to the next dedicated transmission.
+    - Corners representing the same physical fence junction must share one persistent node,
+      not merely occupy nearby coordinates.
+    - Drawing near an existing junction must snap to that exact node; editing it must update
+      every connected pasture after clearly warning the operator about the shared change.
+    - Existing near-duplicate corners require a deliberate merge path that preserves all
+      connected pasture boundaries and prevents geometry gaps, overlaps, and slivers.
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -562,7 +565,7 @@ EVIDENCE STATUS:
   controls, persistence, and established map interactions are accepted as released.
 
 - RW-TX-007B
-  Status: IMPLEMENTED — BUILD VERIFIED — CONTRAST-CORRECTED DEVICE BUILD PENDING
+  Status: IMPLEMENTED — ANALYTICS PHYSICALLY VERIFIED — FINAL UI POLISH IN PROGRESS
   Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
   and percentage metrics with assignment filtering, overlap union, and strict precedence.
   Release identity: version 0.8.0, versionCode 9.
@@ -584,7 +587,12 @@ EVIDENCE STATUS:
   Contrast correction commit: 13b93210386976a32426f18096bd787dbce6c815.
   Verified CI run 35474920468: SUCCESS — JVM tests, Android instrumentation tests,
   debug APK assembly, and artifact upload all passed.
-  Remaining gate: verify the contrast-corrected build on the Galaxy S23 Ultra.
+  Device verification: PASSED — Michael confirmed the corrected assignment instructions
+  were readable; an unassigned 20.3-acre pasture reported 100% Beyond; assigning one water
+  source reported 20.3 preferred acres (100%) with zero Transition and Beyond; and the
+  assignment and metrics survived force-close and cold relaunch without memory loss.
+  Final polish: rename Boundary to Edit and render Details/Edit labels bold white to prevent
+  wrapping and improve outdoor contrast on the Galaxy S23 Ultra.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -615,9 +623,9 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-007B physical-device contrast correction
+- Current phase: RW-TX-007B final pasture-card polish
 - Working transmission: RW-TX-007B
-- Implementation status: CONTRAST CORRECTION BUILD VERIFIED — DEVICE RECHECK PENDING
+- Implementation status: ANALYTICS AND PERSISTENCE DEVICE VERIFIED — UI POLISH BUILD PENDING
 - Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
 - Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
 - CI status: GREEN — contrast-corrected run 35474920468
@@ -625,10 +633,10 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Install the run 35474920468 debug APK and confirm the Assign Pastures helper
-  text is clearly readable on the Galaxy S23 Ultra before completing the remaining checks.
-- Resume point: RW-TX-007B mathematics, persistence, and contrast correction are build
-  verified. Physical confirmation of the helper text remains open. Room remains version 3.
+- Next action: Build and verify the bold-white Details/Edit pasture-card controls, then close
+  RW-TX-007B and prepare the shared persistent fence-junction work order.
+- Resume point: RW-TX-007B analytics, assignment persistence, and helper-text contrast are
+  physically verified. Only the approved button-label polish remains. Room remains version 3.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

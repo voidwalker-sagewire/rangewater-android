@@ -1518,11 +1518,15 @@ private fun BoxScope.PastureInspectionCard(
                 OutlinedButton(
                     onClick = onEditDetails,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                ) { Text("Details") }
+                ) {
+                    Text("Details", color = Color.White, fontWeight = FontWeight.Bold)
+                }
                 OutlinedButton(
                     onClick = onEditBoundary,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                ) { Text("Boundary") }
+                ) {
+                    Text("Edit", color = Color.White, fontWeight = FontWeight.Bold)
+                }
                 Button(
                     onClick = onDelete,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
