@@ -7,7 +7,8 @@ import org.maplibre.android.maps.Style
  * Purpose: Declares federal imagery endpoints, zoom thresholds, and one unified
  *          MapLibre style for overview, pasture detail, and labeled navigation.
  * 🎮 Behavior:
- *    1. USGS cached imagery provides fast regional overview through zoom 15.
+ *    1. USGS cached imagery provides fast regional overview and a resilient overzoom
+ *       fallback when a device cannot render the USDA detail response.
  *    2. USDA NAIP exportImage requests provide approved close detail from zoom 15.
  *    3. USGS Imagery Topo provides a separately selectable labeled mode.
  * 🪨 Locked Authority: Michael ratified direct USDA NAIP close-detail quality.
@@ -135,7 +136,6 @@ object MapConfig {
               "id": "$LAYER_AERIAL_OVERVIEW",
               "type": "raster",
               "source": "source-usgs-overview",
-              "maxzoom": 15,
               "layout": { "visibility": "visible" }
             },
             {
