@@ -658,10 +658,12 @@ EVIDENCE STATUS:
   device performance and service behavior remain acceptance-test items.
 - The Tab S7 diagnostic build proved that its direct request to the USDA FPAC host
   times out while connecting on port 443. RangeWater now routes close-detail tiles
-  through a dedicated, cacheable imagery.sagewire.dev gateway design. The gateway
+  through the dedicated, cacheable
+  rangewater-imagery-gateway.voidwalker.workers.dev gateway. The gateway
   validates XYZ coordinates, forwards only fixed USDA NAIP export parameters, retries
-  transient upstream failures, and caches valid imagery. Deployment and target-device
-  acceptance remain pending; the USGS overzoom layer stays visible as a safe fallback.
+  transient upstream failures, and caches valid imagery. Cloudflare deployment and the
+  public /health check passed on 2026-09-20. Target-device acceptance remains pending;
+  the USGS overzoom layer stays visible as a safe fallback.
 - RangeWater 0.9.0 physical testing found that shared fence junctions appeared to operate
   correctly on both the Galaxy S23 Ultra and Samsung Tab S7. The Tab S7 exposed a separate
   aerial-imagery defect: USGS overview remains visible through zoom 15.0, but the map turns
@@ -680,7 +682,7 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-008-JCT-REV2 physical-device acceptance
 - Working transmission: RW-TX-008-JCT-REV2
-- Implementation status: BUILD VERIFIED — DEVICE ACCEPTANCE PENDING
+- Implementation status: GATEWAY DEPLOYED — UPDATED ANDROID BUILD PENDING
 - Authoritative baseline: bae20082447b9da01288a9786f14307f47a3db01
 - Verified implementation commit: cc351048bab903390ad08eccad2dae4329affcca
 - CI status: GREEN — run 35503420615
@@ -688,9 +690,12 @@ EVIDENCE STATUS:
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
-- Next action: Deploy and verify the dedicated USDA imagery gateway, run the resulting
-  Android build on the Galaxy S23 Ultra and Tab S7, complete the shared-junction
-  checklist, and finish Play release signing, store assets, and policy declarations.
+- Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
+  status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
+- Next action: Build the Android client with the deployed gateway URL, run it on the
+  Galaxy S23 Ultra and Tab S7, verify clear aerial imagery through zoom 20, complete
+  the shared-junction checklist, and finish Play release signing, store assets, and
+  policy declarations.
 - Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
   and APK-build verified. Physical shared-junction behavior remains unaccepted until the
   target-device checklist passes.

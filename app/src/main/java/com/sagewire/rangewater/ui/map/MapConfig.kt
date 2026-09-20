@@ -40,7 +40,7 @@ object MapConfig {
     // exportImage requests. The gateway avoids device-specific TLS/routing failures,
     // while the USGS overview remains visible underneath if detail is unavailable.
     const val USDA_NAIP_EXPORT_URL =
-        "https://imagery.sagewire.dev/naip/{z}/{x}/{y}.jpg"
+        "https://rangewater-imagery-gateway.voidwalker.workers.dev/naip/{z}/{x}/{y}.jpg"
 
     const val LAYER_AERIAL_OVERVIEW = "layer-aerial-overview"
     const val LAYER_AERIAL_DETAIL = "layer-aerial-detail"
