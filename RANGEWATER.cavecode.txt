@@ -621,7 +621,7 @@ EVIDENCE STATUS:
   acres (14.3%), and 5.8 beyond-planned acres (28.7%), reconciling to exactly 100.0%.
 
 - RW-TX-008-JCT-REV2
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — IMAGERY DEVICE ACCEPTED — JUNCTION CHECKLIST PENDING
   Scope: Room v4 canonical fence junctions, 32-dp corner snapping, shared-corner move
   confirmation and multi-pasture preview, atomic boundary persistence, orphan cleanup,
   and explicit validated near-corner merging.
@@ -637,6 +637,14 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35503420615.
   Result: SUCCESS — JVM tests, Android Room instrumentation tests, debug APK assembly,
   and artifact upload all passed.
+  Imagery gateway build: commit 8dee7d784bc36919956a4cf40a006a2b6011fe41,
+  GitHub Actions run 35526663597.
+  Imagery device acceptance: PASSED — on September 20, 2026, Michael downloaded the
+  gateway-enabled APK to his phone, transferred it to the Samsung Tab S7 with Quick
+  Share, installed it, and verified satisfactory aerial performance through the
+  close-detail zoom range. The former black-screen transition above zoom 15.0 did not
+  recur. Michael reported that the imagery worked extremely well and explicitly
+  accepted the tablet performance.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -654,21 +662,23 @@ EVIDENCE STATUS:
 - Bulk offline caching remains disabled until RangeWater has a validated regional
   packaging and provisioning design.
 - USDA FPAC NAIP exportImage is a live dynamic service and was visibly slower during
-  Michael's browser test. The 512-pixel request strategy is implemented but its real
-  device performance and service behavior remain acceptance-test items.
+  Michael's browser test. RangeWater therefore reaches it through the deployed imagery
+  gateway; gateway availability and the upstream USDA service remain operational
+  dependencies even though tablet performance is now accepted.
 - The Tab S7 diagnostic build proved that its direct request to the USDA FPAC host
   times out while connecting on port 443. RangeWater now routes close-detail tiles
   through the dedicated, cacheable
   rangewater-imagery-gateway.voidwalker.workers.dev gateway. The gateway
   validates XYZ coordinates, forwards only fixed USDA NAIP export parameters, retries
   transient upstream failures, and caches valid imagery. Cloudflare deployment and the
-  public /health check passed on 2026-09-20. Target-device acceptance remains pending;
-  the USGS overzoom layer stays visible as a safe fallback.
+  public /health check passed on 2026-09-20. Samsung Tab S7 target-device acceptance
+  passed on 2026-09-20; the USGS overzoom layer stays visible as a safe fallback.
 - RangeWater 0.9.0 physical testing found that shared fence junctions appeared to operate
   correctly on both the Galaxy S23 Ultra and Samsung Tab S7. The Tab S7 exposed a separate
   aerial-imagery defect: USGS overview remains visible through zoom 15.0, but the map turns
-  black at zoom 15.1 and above when the USDA detail layer becomes authoritative. This
-  device-specific imagery transition remains open and blocks full 0.9.0 acceptance.
+  black at zoom 15.1 and above when the USDA detail layer becomes authoritative. The
+  deployed gateway corrected that device-specific transition, and Michael accepted the
+  resulting tablet imagery performance on 2026-09-20.
 - Device testing confirmed that zoom 22 enlarged source pixels without adding ground
   detail. REV3's mode-specific zoom limits passed physical-device acceptance.
 - RW-TX-004 stores water assets locally, but the database remains device-specific and is
@@ -680,25 +690,26 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RW-TX-008-JCT-REV2 physical-device acceptance
+- Current phase: RangeWater 0.9.0 release-candidate completion
 - Working transmission: RW-TX-008-JCT-REV2
-- Implementation status: GATEWAY DEPLOYED — UPDATED ANDROID BUILD PENDING
+- Implementation status: GATEWAY DEPLOYED — ANDROID BUILD VERIFIED — TABLET IMAGERY ACCEPTED
 - Authoritative baseline: bae20082447b9da01288a9786f14307f47a3db01
-- Verified implementation commit: cc351048bab903390ad08eccad2dae4329affcca
-- CI status: GREEN — run 35503420615
+- Verified implementation commit: 8dee7d784bc36919956a4cf40a006a2b6011fe41
+- CI status: GREEN — run 35526663597
 - Build artifact: RangeWater-Debug-APK version 0.9.0 (versionCode 10)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-007B, RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007B CLOSED — ACCEPTED
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
-- Next action: Build the Android client with the deployed gateway URL, run it on the
-  Galaxy S23 Ultra and Tab S7, verify clear aerial imagery through zoom 20, complete
-  the shared-junction checklist, and finish Play release signing, store assets, and
-  policy declarations.
+- Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
+  Tab S7 and delivered satisfactory close-detail aerial performance without the former
+  black-screen failure above zoom 15.0.
+- Next action: Complete the remaining shared-junction acceptance checklist, then finish
+  Play release signing, the Android App Bundle, store assets, and policy declarations.
 - Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
-  and APK-build verified. Physical shared-junction behavior remains unaccepted until the
-  target-device checklist passes.
+  APK-build-, gateway-, and tablet-imagery-verified. Physical shared-junction behavior
+  remains unaccepted until the target-device checklist passes.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
