@@ -565,7 +565,7 @@ EVIDENCE STATUS:
   controls, persistence, and established map interactions are accepted as released.
 
 - RW-TX-007B
-  Status: IMPLEMENTED — ANALYTICS PHYSICALLY VERIFIED — FINAL UI POLISH IN PROGRESS
+  Status: IMPLEMENTED — ANALYTICS PHYSICALLY VERIFIED — UI POLISH BUILD VERIFIED
   Scope: Adds derived per-pasture Preferred, Transition-Only, and Beyond Planned acreage
   and percentage metrics with assignment filtering, overlap union, and strict precedence.
   Release identity: version 0.8.0, versionCode 9.
@@ -593,6 +593,9 @@ EVIDENCE STATUS:
   assignment and metrics survived force-close and cold relaunch without memory loss.
   Final polish: rename Boundary to Edit and render Details/Edit labels bold white to prevent
   wrapping and improve outdoor contrast on the Galaxy S23 Ultra.
+  Final polish commit: 38494436b2bee1fabea7583c8a8ae8568f4adba3.
+  Final polish CI run 35477800549: SUCCESS — JVM tests, Android instrumentation tests,
+  debug APK assembly, and artifact upload all passed.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -625,18 +628,19 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RW-TX-007B final pasture-card polish
 - Working transmission: RW-TX-007B
-- Implementation status: ANALYTICS AND PERSISTENCE DEVICE VERIFIED — UI POLISH BUILD PENDING
+- Implementation status: ANALYTICS/PERSISTENCE DEVICE VERIFIED — UI POLISH BUILD VERIFIED
 - Authoritative baseline: 4d4e71b6df5c91aaf2e9c9cd7ec246229f3a2f19
 - Verified implementation commit: 7db2d9deb0952f3271fae36bc14c8f67fc63a681
-- CI status: GREEN — contrast-corrected run 35474920468
+- CI status: GREEN — final polish run 35477800549
 - Build artifact: RangeWater-Debug-APK version 0.8.0 (versionCode 9)
 - Functional device verification: RW-TX-007A, RW-TX-006-WTR-REV1, RW-TX-006-WTR,
   RW-TX-005-REV2, RW-TX-005-REV, and RW-TX-004 PASSED.
 - Previous transmission status: RW-TX-007A CLOSED — ACCEPTED
-- Next action: Build and verify the bold-white Details/Edit pasture-card controls, then close
-  RW-TX-007B and prepare the shared persistent fence-junction work order.
+- Next action: Install the run 35477800549 APK and visually confirm the bold-white
+  Details/Edit pasture-card controls, then close RW-TX-007B.
 - Resume point: RW-TX-007B analytics, assignment persistence, and helper-text contrast are
-  physically verified. Only the approved button-label polish remains. Room remains version 3.
+  physically verified. Only visual confirmation of the built button polish remains. Room
+  remains version 3; the next dedicated work order will design shared fence junctions.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
