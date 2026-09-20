@@ -65,8 +65,51 @@ interface PastureDao {
     @Query("DELETE FROM pastures WHERE id = :id")
     suspend fun deletePastureRow(id: Long)
 
+    @Query("SELECT * FROM pasture_vertices WHERE pastureId = :pastureId ORDER BY sequence ASC")
+    suspend fun verticesForPasture(pastureId: Long): List<PastureVertexEntity>
+
+    @Query("SELECT COUNT(*) FROM gates WHERE junctionAId = :junctionAId AND junctionBId = :junctionBId")
+    suspend fun gateCountOnSegment(junctionAId: Long, junctionBId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM gates WHERE junctionAId = :junctionId OR junctionBId = :junctionId")
+    suspend fun gateCountForJunction(junctionId: Long): Int
+
+    @Query(
+        """
+        SELECT DISTINCT first.pastureId
+        FROM pasture_vertices AS first
+        JOIN pasture_vertices AS second ON first.pastureId = second.pastureId
+        WHERE first.pastureId != :excludedPastureId
+          AND ((first.junctionId = :junctionAId AND second.junctionId = :junctionBId)
+            OR (first.junctionId = :junctionBId AND second.junctionId = :junctionAId))
+          AND (
+            ABS(first.sequence - second.sequence) = 1
+            OR ABS(first.sequence - second.sequence) = (
+              SELECT COUNT(*) - 1 FROM pasture_vertices AS vertex
+              WHERE vertex.pastureId = first.pastureId
+            )
+          )
+        """
+    )
+    suspend fun otherPasturesSharingSegment(
+        junctionAId: Long,
+        junctionBId: Long,
+        excludedPastureId: Long
+    ): List<Long>
+
     @Transaction
     suspend fun deleteById(id: Long) {
+        val vertices = verticesForPasture(id)
+        vertices.canonicalVertexSegments().forEach { (junctionAId, junctionBId) ->
+            if (gateCountOnSegment(junctionAId, junctionBId) > 0 &&
+                otherPasturesSharingSegment(junctionAId, junctionBId, id).isEmpty()
+            ) {
+                throw IllegalStateException(
+                    "Cannot delete pasture: An exterior gate is anchored on segment " +
+                        "#$junctionAId-#$junctionBId"
+                )
+            }
+        }
         deletePastureRow(id)
         deleteOrphanJunctions()
     }
@@ -109,6 +152,18 @@ interface PastureDao {
     ) {
         require(vertices.size >= 3) { "A pasture requires at least three vertices" }
         check(getPastureEntity(pastureId) != null) { "Pasture $pastureId does not exist" }
+        val existingVertices = verticesForPasture(pastureId)
+        val newSegments = vertices.canonicalCoordinateSegments()
+        existingVertices.canonicalVertexSegments().forEach { (junctionAId, junctionBId) ->
+            if (gateCountOnSegment(junctionAId, junctionBId) > 0 &&
+                (junctionAId to junctionBId) !in newSegments
+            ) {
+                throw IllegalStateException(
+                    "Cannot alter fence: An active gate is anchored between posts " +
+                        "#$junctionAId and #$junctionBId"
+                )
+            }
+        }
         val affectedPastureIds = linkedSetOf(pastureId)
         junctionMoves.forEach { (junctionId, coordinate) ->
             affectedPastureIds += pastureIdsForJunction(junctionId)
@@ -127,6 +182,12 @@ interface PastureDao {
         now: Long = System.currentTimeMillis()
     ) {
         require(sourceJunctionId != targetJunctionId)
+        check(gateCountForJunction(sourceJunctionId) == 0) {
+            "Cannot merge: Junction #$sourceJunctionId serves as an anchor for an active gate"
+        }
+        check(gateCountForJunction(targetJunctionId) == 0) {
+            "Cannot merge: Junction #$targetJunctionId serves as an anchor for an active gate"
+        }
         val sourcePastures = pastureIdsForJunction(sourceJunctionId)
         val targetPastures = pastureIdsForJunction(targetJunctionId)
         check(sourcePastures.intersect(targetPastures.toSet()).isEmpty()) {
@@ -155,4 +216,23 @@ interface PastureDao {
         )
         PastureVertexEntity(pastureId = pastureId, sequence = index, junctionId = junctionId)
     }
+
+    private fun List<PastureVertexEntity>.canonicalVertexSegments(): Set<Pair<Long, Long>> {
+        if (size < 3) return emptySet()
+        return indices.mapTo(linkedSetOf()) { index ->
+            canonicalSegment(this[index].junctionId, this[(index + 1) % size].junctionId)
+        }
+    }
+
+    private fun List<PastureCoordinate>.canonicalCoordinateSegments(): Set<Pair<Long, Long>> {
+        if (size < 3) return emptySet()
+        return indices.mapNotNullTo(linkedSetOf()) { index ->
+            val first = this[index].junctionId
+            val second = this[(index + 1) % size].junctionId
+            if (first == null || second == null) null else canonicalSegment(first, second)
+        }
+    }
+
+    private fun canonicalSegment(first: Long, second: Long): Pair<Long, Long> =
+        if (first < second) first to second else second to first
 }

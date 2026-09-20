@@ -10,10 +10,13 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - App Name: RangeWater
 - Tagline: Grazing Buffers & Water Placement
 - Repository: voidwalker-sagewire/rangewater-android
-- Target Platform: Android / Google Play Store
+- Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.9.0
-- Version Code: 10
+- App Version: 0.10.0
+- Version Code: 11
+- Active Feature Branch: codex/rw-tx-009-gte
+- Frozen Baseline Branch: codex/rw-tx-008-jct-rev2 (c3a2f050)
+- Public Production: PAUSED pending RangeWater 1.0 operational scope
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -652,6 +655,19 @@ EVIDENCE STATUS:
   passed, including the rendered pasture geometry, acreage and accessible-coverage
   results shown for Pastures 2, 3, and 4 on the Samsung Tab S7.
 
+- RW-TX-009-GTE-REV3
+  Status: IMPLEMENTATION IN PROGRESS — ASH PREFLIGHT CORRECTIONS APPLIED
+  Scope: Room v5 durable gate entities, canonical segment anchoring, physical
+  clearance and overlap validation, protected fence topology, true fence gaps,
+  screen-space snapping, live shared-junction tracking, zoom-dependent physical
+  symbology, and persisted gate attributes and state.
+  Frozen baseline: c3a2f0506809c4aa9718b65a5f9ecbc234299536.
+  Feature branch: codex/rw-tx-009-gte.
+  Preflight correction: implementation is adapted to the accepted DAO, overlay,
+  editor-state, migration-test, and MapLibre contracts rather than applying stale
+  work-order snippets literally. Gate length and overlap validation resolve stored
+  junction coordinates inside the Room transaction rather than trusting UI input.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -696,17 +712,17 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Google Play release preparation
-- Working transmission: RW-TX-008-JCT-REV2 CLOSED — ACCEPTED
-- Implementation status: RANGEWATER 0.9.0 RELEASE CANDIDATE DEVICE ACCEPTED
-- Authoritative baseline: bae20082447b9da01288a9786f14307f47a3db01
-- Verified implementation commit: 8dee7d784bc36919956a4cf40a006a2b6011fe41
-- CI status: GREEN — run 35526663597
-- Build artifact: RangeWater-Debug-APK version 0.9.0 (versionCode 10)
+- Current phase: Durable gate implementation and verification
+- Working transmission: RW-TX-009-GTE-REV3
+- Implementation status: RANGEWATER 0.10.0 FEATURE BRANCH IN PROGRESS
+- Authoritative baseline: c3a2f0506809c4aa9718b65a5f9ecbc234299536
+- Verified implementation commit: PENDING
+- CI status: PENDING FEATURE-BRANCH PUSH
+- Build artifact: PENDING — RangeWater-Debug-APK version 0.10.0 (versionCode 11)
 - Functional device verification: RW-TX-008-JCT-REV2, RW-TX-007A,
   RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-007B, RW-TX-005-REV2,
   RW-TX-005-REV, and RW-TX-004 PASSED.
-- Current transmission status: RW-TX-008-JCT-REV2 CLOSED — ACCEPTED
+- Current transmission status: RW-TX-009-GTE-REV3 IMPLEMENTATION IN PROGRESS
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -714,11 +730,9 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Finish Play release signing, the Android App Bundle, production icon,
-  store assets, policy declarations, and Play testing-track preparation.
-- Resume point: RangeWater 0.9.0 and Room v4 are compiler-, unit-, migration-, transaction-,
-  APK-build-, gateway-, tablet-imagery-, and shared-junction-device verified. Core 0.9.0
-  functionality is accepted; remaining work is production packaging and Play submission.
+- Next action: Complete JVM, Room instrumentation, APK, and CI verification for gates.
+- Resume point: Physical-device acceptance of gate snapping, true fence gaps, live
+  shared-junction movement, segment protection, and persisted gate attributes.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

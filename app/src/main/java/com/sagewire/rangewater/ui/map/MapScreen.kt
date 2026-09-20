@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -67,11 +68,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sagewire.rangewater.data.PastureCoordinate
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.FenceJunctionEntity
+import com.sagewire.rangewater.data.GateEntity
+import com.sagewire.rangewater.data.GateWithConnectivity
 import com.sagewire.rangewater.data.RangeWaterDatabase
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.spatial.AcreageCalculator
 import com.sagewire.rangewater.spatial.GeometryValidator
+import com.sagewire.rangewater.spatial.GateFeatureConverter
+import com.sagewire.rangewater.spatial.GateSnapResult
+import com.sagewire.rangewater.spatial.GateSnappingEngine
+import com.sagewire.rangewater.spatial.SnappedGateCandidate
 import com.sagewire.rangewater.spatial.CornerSnappingEngine
 import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
 import com.sagewire.rangewater.spatial.PastureCoverageMetrics
@@ -79,7 +86,9 @@ import com.sagewire.rangewater.spatial.PastureFeatureConverter
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -100,7 +109,8 @@ private enum class InteractionState {
     WATER_PLACEMENT,
     WATER_MOVING,
     PASTURE_DRAWING,
-    PASTURE_EDITING
+    PASTURE_EDITING,
+    GATE_PLACEMENT
 }
 
 private enum class PastureEditMode {
@@ -134,11 +144,13 @@ fun MapScreen(
     val pastureDao = remember(database) { database.pastureDao() }
     val junctionDao = remember(database) { database.fenceJunctionDao() }
     val assignmentDao = remember(database) { database.waterPastureAssignmentDao() }
+    val gateDao = remember(database) { database.gateDao() }
     val waterPoints by waterDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val pastures by pastureDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val allJunctions by junctionDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val assignments by assignmentDao.observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
+    val gates by gateDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
     }
@@ -173,6 +185,10 @@ fun MapScreen(
 
     var selectedWaterId by remember { mutableStateOf<Long?>(null) }
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
+    var selectedGateId by remember { mutableStateOf<Long?>(null) }
+    var candidateGate by remember { mutableStateOf<SnappedGateCandidate?>(null) }
+    var showGateEditDialog by remember { mutableStateOf(false) }
+    var showGateDeleteDialog by remember { mutableStateOf(false) }
     var selectedVertexIndex by remember { mutableStateOf<Int?>(null) }
     var pastureEditMode by remember { mutableStateOf(PastureEditMode.SELECT_OR_DRAG) }
     val draftVertices = remember { mutableStateListOf<PastureCoordinate>() }
@@ -223,6 +239,42 @@ fun MapScreen(
     )
     val effectivePastures = remember(pastures, ephemeralJunctionMoves.toMap()) {
         applyJunctionMovePreview(pastures, ephemeralJunctionMoves)
+    }
+    val effectiveJunctionCoordinates = remember(allJunctions, ephemeralJunctionMoves.toMap()) {
+        allJunctions.associate { junction ->
+            val moved = ephemeralJunctionMoves[junction.id]
+            junction.id to if (moved == null) {
+                LatLng(junction.latitude, junction.longitude)
+            } else {
+                LatLng(moved.latitude, moved.longitude)
+            }
+        }
+    }
+    val resolvedGates = remember(gates, effectivePastures, effectiveJunctionCoordinates) {
+        gates.mapNotNull { gate ->
+            GateSnappingEngine.resolveConnectivity(gate, effectivePastures, effectiveJunctionCoordinates)
+        }
+    }
+    val displayedGates = remember(resolvedGates, candidateGate) {
+        val candidate = candidateGate
+        if (candidate == null) resolvedGates else resolvedGates + GateWithConnectivity(
+            gate = GateEntity(
+                id = 0L,
+                name = "Gate preview",
+                junctionAId = candidate.junctionA.id,
+                junctionBId = candidate.junctionB.id,
+                segmentRatio = candidate.segmentRatio,
+                widthMeters = GateEntity.WIDTH_14_FT
+            ),
+            derivedCoordinate = candidate.derivedCoordinate,
+            hingeCoordinate = candidate.hingeCoordinate,
+            latchCoordinate = candidate.latchCoordinate,
+            pastureAId = candidate.pastureAId,
+            pastureAName = candidate.pastureAName,
+            pastureBId = candidate.pastureBId,
+            pastureBName = candidate.pastureBName,
+            isShared = candidate.isShared
+        )
     }
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
 
@@ -317,6 +369,8 @@ fun MapScreen(
         effectivePastures,
         selectedWaterId,
         selectedPastureId,
+        selectedGateId,
+        displayedGates,
         selectedVertexIndex,
         draftRevision,
         interactionState,
@@ -331,6 +385,8 @@ fun MapScreen(
             selectedWaterId = selectedWaterId,
             pastures = effectivePastures,
             selectedPastureId = selectedPastureId,
+            gates = displayedGates,
+            selectedGateId = selectedGateId,
             draftVertices = draftVertices.toList(),
             selectedVertexIndex = selectedVertexIndex,
             coverageScope = displayPreferences.coverageScope,
@@ -339,9 +395,10 @@ fun MapScreen(
             activeSnappedJunction = activeSnappedJunction
         )
     }
-    LaunchedEffect(waterPoints, pastures, selectedWaterId, selectedPastureId) {
+    LaunchedEffect(waterPoints, pastures, gates, selectedWaterId, selectedPastureId, selectedGateId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
+        if (selectedGateId != null && gates.none { it.id == selectedGateId }) selectedGateId = null
         if (selectedWater == null) showAssignPasturesDialog = false
     }
     LaunchedEffect(displayPreferences, interactionState, mapInstance) {
@@ -360,7 +417,8 @@ fun MapScreen(
         interactionState,
         selectedVertexIndex,
         pastureEditMode,
-        allJunctions
+        allJunctions,
+        pastures
     ) {
         val map = mapInstance
         if (map == null) {
@@ -368,6 +426,28 @@ fun MapScreen(
         } else {
             val listener = MapLibreMap.OnMapClickListener { coordinate ->
                 when (interactionState) {
+                    InteractionState.GATE_PLACEMENT -> {
+                        when (
+                            val result = GateSnappingEngine.findCandidateSegmentScreenSpace(
+                                tapPoint = coordinate,
+                                pastures = pastures,
+                                projection = map.projection,
+                                tolerancePx = 36f * context.resources.displayMetrics.density
+                            )
+                        ) {
+                            is GateSnapResult.Snapped -> candidateGate = result.candidate
+                            GateSnapResult.FenceTooShort -> Toast.makeText(
+                                context,
+                                "Fence segment too short for gate width",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            GateSnapResult.NoFenceInRange -> Toast.makeText(
+                                context,
+                                "Tap directly on a fence line",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                     InteractionState.WATER_MOVING -> {
                         draftWaterLocation = coordinate
                     }
@@ -485,22 +565,36 @@ fun MapScreen(
                     }
                     InteractionState.ORDINARY -> {
                         val screenPoint = map.projection.toScreenLocation(coordinate)
-                        val waterHit = queryFeaturesNear(
+                        val gateHit = queryFeaturesNear(
                             map,
                             screenPoint,
-                            24f,
-                            MapConfig.LAYER_WATER_POINTS
+                            24f * context.resources.displayMetrics.density,
+                            MapConfig.LAYER_GATE_TOUCH_TARGET
                         ).firstOrNull()
-                        if (waterHit != null) {
-                            selectedWaterId = waterHit.getNumberProperty("id").toLong()
+                        if (gateHit != null) {
+                            selectedGateId = gateHit.getNumberProperty("id").toLong()
+                            selectedWaterId = null
                             selectedPastureId = null
                         } else {
-                            val pastureHit = map.queryRenderedFeatures(
+                            val waterHit = queryFeaturesNear(
+                                map,
                                 screenPoint,
-                                MapConfig.LAYER_PASTURE_FILL
+                                24f,
+                                MapConfig.LAYER_WATER_POINTS
                             ).firstOrNull()
-                            selectedPastureId = pastureHit?.getNumberProperty("id")?.toLong()
-                            selectedWaterId = null
+                            if (waterHit != null) {
+                                selectedWaterId = waterHit.getNumberProperty("id").toLong()
+                                selectedPastureId = null
+                                selectedGateId = null
+                            } else {
+                                val pastureHit = map.queryRenderedFeatures(
+                                    screenPoint,
+                                    MapConfig.LAYER_PASTURE_FILL
+                                ).firstOrNull()
+                                selectedPastureId = pastureHit?.getNumberProperty("id")?.toLong()
+                                selectedWaterId = null
+                                selectedGateId = null
+                            }
                         }
                     }
                 }
@@ -632,8 +726,10 @@ fun MapScreen(
                                 map,
                                 effectiveWaterPoints,
                                 selectedWaterId,
-                                pastures,
+                                effectivePastures,
                                 selectedPastureId,
+                                displayedGates,
+                                selectedGateId,
                                 draftVertices.toList(),
                                 selectedVertexIndex,
                                 displayPreferences.coverageScope,
@@ -668,15 +764,21 @@ fun MapScreen(
             onLayersClick = { showLayersDialog = true }
         )
 
-        if (interactionState == InteractionState.ORDINARY && selectedWater == null && selectedPasture == null) {
+        if (
+            interactionState == InteractionState.ORDINARY &&
+            selectedWater == null && selectedPasture == null && selectedGateId == null
+        ) {
             Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 56.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = Color.Black.copy(alpha = 0.82f),
                 tonalElevation = 4.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 7.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
@@ -684,8 +786,25 @@ fun MapScreen(
                             interactionState = InteractionState.WATER_PLACEMENT
                             selectedWaterId = null
                             selectedPastureId = null
-                        }
-                    ) { Text("Add Water") }
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                    ) { Text("Add Water", fontSize = 12.sp, maxLines = 1) }
+                    Button(
+                        onClick = {
+                            candidateGate = null
+                            selectedWaterId = null
+                            selectedPastureId = null
+                            selectedGateId = null
+                            interactionState = InteractionState.GATE_PLACEMENT
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF9100),
+                            contentColor = Color.Black
+                        )
+                    ) { Text("Add Gate", fontSize = 12.sp, maxLines = 1) }
                     Button(
                         onClick = {
                             interactionState = InteractionState.PASTURE_DRAWING
@@ -694,10 +813,48 @@ fun MapScreen(
                             replaceDraft(emptyList())
                             undoSnapshots.clear()
                         },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF2D95))
-                    ) { Text("Draw Pasture") }
+                    ) { Text("Draw Pasture", fontSize = 12.sp, maxLines = 1) }
                 }
             }
+        }
+
+        if (interactionState == InteractionState.GATE_PLACEMENT) {
+            GatePlacementCard(
+                candidate = candidateGate,
+                onCancel = {
+                    candidateGate = null
+                    interactionState = InteractionState.ORDINARY
+                },
+                onSave = {
+                    candidateGate?.let { candidate ->
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    gateDao.insertValidatedGate(
+                                        GateEntity(
+                                            name = "",
+                                            junctionAId = candidate.junctionA.id,
+                                            junctionBId = candidate.junctionB.id,
+                                            segmentRatio = candidate.segmentRatio
+                                        )
+                                    )
+                                }
+                                candidateGate = null
+                                interactionState = InteractionState.ORDINARY
+                            } catch (error: IllegalArgumentException) {
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Failed to place gate",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                }
+            )
         }
 
         if (interactionState == InteractionState.WATER_PLACEMENT) {
@@ -836,12 +993,20 @@ fun MapScreen(
                                 return@PastureGeometryControls
                             }
                             scope.launch {
-                                pastureDao.savePastureBoundaryWithJunctions(
-                                    pastureId = pastureId,
-                                    vertices = draftVertices.toList(),
-                                    junctionMoves = ephemeralJunctionMoves.toMap()
-                                )
-                                leaveGeometryMode()
+                                try {
+                                    pastureDao.savePastureBoundaryWithJunctions(
+                                        pastureId = pastureId,
+                                        vertices = draftVertices.toList(),
+                                        junctionMoves = ephemeralJunctionMoves.toMap()
+                                    )
+                                    leaveGeometryMode()
+                                } catch (error: IllegalStateException) {
+                                    Toast.makeText(
+                                        context,
+                                        error.message ?: "Failed to save pasture boundary",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         }
                     }
@@ -897,6 +1062,27 @@ fun MapScreen(
                         pastureEditMode = PastureEditMode.SELECT_OR_DRAG
                     },
                     onDelete = { showPastureDeleteDialog = true }
+                )
+            }
+        }
+
+        if (interactionState == InteractionState.ORDINARY) {
+            resolvedGates.firstOrNull { it.gate.id == selectedGateId }?.let { item ->
+                GateInspectionCard(
+                    item = item,
+                    onClose = { selectedGateId = null },
+                    onToggleStatus = {
+                        scope.launch {
+                            val next = if (item.gate.status == GateEntity.STATUS_CLOSED) {
+                                GateEntity.STATUS_OPEN
+                            } else {
+                                GateEntity.STATUS_CLOSED
+                            }
+                            gateDao.updateStatus(item.gate.id, next)
+                        }
+                    },
+                    onEdit = { showGateEditDialog = true },
+                    onDelete = { showGateDeleteDialog = true }
                 )
             }
         }
@@ -1091,11 +1277,19 @@ fun MapScreen(
                                     ).show()
                                 } else {
                                     scope.launch {
-                                        pastureDao.mergeJunctions(sourceId, targetId)
-                                        showMergeDialog = false
-                                        selectedMergeTargetId = null
-                                        leaveGeometryMode()
-                                        Toast.makeText(context, "Corners merged", Toast.LENGTH_SHORT).show()
+                                        try {
+                                            pastureDao.mergeJunctions(sourceId, targetId)
+                                            showMergeDialog = false
+                                            selectedMergeTargetId = null
+                                            leaveGeometryMode()
+                                            Toast.makeText(context, "Corners merged", Toast.LENGTH_SHORT).show()
+                                        } catch (error: IllegalStateException) {
+                                            Toast.makeText(
+                                                context,
+                                                error.message ?: "Failed to merge corners",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
                                     }
                                 }
                             }
@@ -1193,8 +1387,16 @@ fun MapScreen(
                         val id = selectedPasture.pasture.id
                         showPastureDeleteDialog = false
                         scope.launch {
-                            pastureDao.deleteById(id)
-                            selectedPastureId = null
+                            try {
+                                pastureDao.deleteById(id)
+                                selectedPastureId = null
+                            } catch (error: IllegalStateException) {
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Failed to delete pasture",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
@@ -1202,6 +1404,113 @@ fun MapScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showPastureDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showGateEditDialog && selectedGateId != null) {
+        gates.firstOrNull { it.id == selectedGateId }?.let { gate ->
+            key(gate.id) {
+                var editName by remember(gate.id) { mutableStateOf(gate.name) }
+                var editWidth by remember(gate.id) { mutableStateOf(gate.widthMeters.toString()) }
+                var editType by remember(gate.id) { mutableStateOf(gate.gateType) }
+                var editNotes by remember(gate.id) { mutableStateOf(gate.notes) }
+                AlertDialog(
+                    onDismissRequest = { showGateEditDialog = false },
+                    title = { Text("Edit Gate Details") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = editName,
+                                onValueChange = { editName = it },
+                                label = { Text("Name") },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = editWidth,
+                                onValueChange = { editWidth = it },
+                                label = { Text("Width in meters (2.0 to 10.0)") },
+                                singleLine = true
+                            )
+                            Text("Gate Type", fontSize = 12.sp, color = Color.Gray)
+                            GateEntity.VALID_TYPES.chunked(3).forEach { rowTypes ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    rowTypes.forEach { type ->
+                                        FilterChip(
+                                            selected = editType == type,
+                                            onClick = { editType = type },
+                                            label = { Text(type, fontSize = 9.sp) }
+                                        )
+                                    }
+                                }
+                            }
+                            OutlinedTextField(
+                                value = editNotes,
+                                onValueChange = { editNotes = it },
+                                label = { Text("Notes") }
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            val parsedWidth = editWidth.toDoubleOrNull()
+                            if (parsedWidth == null) {
+                                Toast.makeText(context, "Enter a valid gate width", Toast.LENGTH_LONG).show()
+                            } else {
+                                scope.launch {
+                                    try {
+                                        gateDao.updateValidatedDetails(
+                                            id = gate.id,
+                                            name = editName,
+                                            widthMeters = parsedWidth,
+                                            gateType = editType,
+                                            notes = editNotes
+                                        )
+                                        showGateEditDialog = false
+                                    } catch (error: IllegalArgumentException) {
+                                        Toast.makeText(
+                                            context,
+                                            error.message ?: "Failed to update gate",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            }
+                        }) { Text("Save") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showGateEditDialog = false }) { Text("Cancel") }
+                    }
+                )
+            }
+        }
+    }
+
+    if (showGateDeleteDialog && selectedGateId != null) {
+        val gate = gates.firstOrNull { it.id == selectedGateId }
+        AlertDialog(
+            onDismissRequest = { showGateDeleteDialog = false },
+            title = { Text("Delete Gate?") },
+            text = { Text("This removes the saved gate opening from this device.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (gate != null) {
+                            scope.launch {
+                                gateDao.deleteGate(gate)
+                                selectedGateId = null
+                                showGateDeleteDialog = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGateDeleteDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -1552,6 +1861,7 @@ private fun MapStatusAndModeControls(
                                     interactionState == InteractionState.PASTURE_EDITING -> Color(0xFFFF2D95)
                                 interactionState == InteractionState.WATER_PLACEMENT ||
                                     interactionState == InteractionState.WATER_MOVING -> Color(0xFF00E5FF)
+                                interactionState == InteractionState.GATE_PLACEMENT -> Color(0xFFFF9100)
                                 activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
                                 currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
                                 else -> Color(0xFF2196F3)
@@ -1568,6 +1878,7 @@ private fun MapStatusAndModeControls(
                             interactionState == InteractionState.PASTURE_EDITING -> "Edit boundary • z$zoom"
                             interactionState == InteractionState.WATER_PLACEMENT -> "Tap pasture to place • z$zoom"
                             interactionState == InteractionState.WATER_MOVING -> "Move water • z$zoom"
+                            interactionState == InteractionState.GATE_PLACEMENT -> "Tap fence for gate • z$zoom"
                             activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
                             currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
                             else -> "USGS Overview • z$zoom"
@@ -1979,6 +2290,131 @@ private fun BoxScope.PastureInspectionCard(
 }
 
 @Composable
+private fun BoxScope.GatePlacementCard(
+    candidate: SnappedGateCandidate?,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 20.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Black.copy(alpha = 0.90f)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Place Gate", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text(
+                text = when {
+                    candidate == null -> "Tap a fence line to align the gate"
+                    candidate.isShared -> "${candidate.pastureAName} ⟷ ${candidate.pastureBName}"
+                    else -> "${candidate.pastureAName} ⟷ Outside"
+                },
+                color = if (candidate == null) Color.LightGray else Color(0xFFFF9100),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                    Text("Cancel", color = Color.Red)
+                }
+                Button(
+                    onClick = onSave,
+                    enabled = candidate != null,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF9100),
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Text("Save Gate", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.GateInspectionCard(
+    item: GateWithConnectivity,
+    onClose: () -> Unit,
+    onToggleStatus: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val gate = item.gate
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 20.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(gate.name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = onClose) { Text("×", color = Color.White, fontSize = 20.sp) }
+            }
+            Text(item.connectivityDescription, color = Color(0xFFFF9100), fontSize = 13.sp)
+            Text(
+                String.format(
+                    Locale.US,
+                    "%.1f m (~%.0f ft) • %s • %s",
+                    gate.widthMeters,
+                    gate.widthMeters * 3.28084,
+                    gate.gateType,
+                    gate.status
+                ),
+                color = Color.LightGray,
+                fontSize = 11.sp
+            )
+            if (gate.notes.isNotBlank()) Text(gate.notes, color = Color.Gray, fontSize = 11.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Button(
+                    onClick = onToggleStatus,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (gate.status == GateEntity.STATUS_CLOSED) {
+                            Color(0xFF2E7D32)
+                        } else {
+                            Color(0xFFD32F2F)
+                        }
+                    )
+                ) {
+                    Text(if (gate.status == GateEntity.STATUS_CLOSED) "Open" else "Close", fontSize = 12.sp)
+                }
+                OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                ) { Text("Edit", color = Color.White, fontSize = 12.sp) }
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                ) { Text("Delete", color = Color.Red, fontSize = 12.sp) }
+            }
+        }
+    }
+}
+
+@Composable
 private fun CoverageMetricRow(
     label: String,
     color: Color,
@@ -2026,6 +2462,8 @@ private fun pushAllOverlays(
     selectedWaterId: Long?,
     pastures: List<PastureWithVertices>,
     selectedPastureId: Long?,
+    gates: List<GateWithConnectivity>,
+    selectedGateId: Long?,
     draftVertices: List<PastureCoordinate>,
     selectedVertexIndex: Int?,
     coverageScope: SpatialCoverageScope,
@@ -2048,6 +2486,10 @@ private fun pushAllOverlays(
             )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURES)
             ?.setGeoJson(PastureFeatureConverter.toPastureFeatures(pastures, selectedPastureId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_LINES)
+            ?.setGeoJson(PastureFeatureConverter.toPastureBoundaryLines(pastures, gates, selectedPastureId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_GATES)
+            ?.setGeoJson(GateFeatureConverter.toGateFeatures(gates, selectedGateId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)
             ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)

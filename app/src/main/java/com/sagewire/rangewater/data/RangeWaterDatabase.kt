@@ -18,9 +18,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PastureEntity::class,
         FenceJunctionEntity::class,
         PastureVertexEntity::class,
-        WaterPastureAssignmentEntity::class
+        WaterPastureAssignmentEntity::class,
+        GateEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
@@ -28,6 +29,7 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun pastureDao(): PastureDao
     abstract fun fenceJunctionDao(): FenceJunctionDao
     abstract fun waterPastureAssignmentDao(): WaterPastureAssignmentDao
+    abstract fun gateDao(): GateDao
 
     companion object {
         @Volatile
@@ -167,13 +169,45 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `gates` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `junctionAId` INTEGER NOT NULL,
+                        `junctionBId` INTEGER NOT NULL,
+                        `segmentRatio` REAL NOT NULL,
+                        `widthMeters` REAL NOT NULL,
+                        `gateType` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `notes` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`junctionAId`) REFERENCES `fence_junctions`(`id`)
+                            ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`junctionBId`) REFERENCES `fence_junctions`(`id`)
+                            ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX `index_gates_junctionAId` ON `gates` (`junctionAId`)")
+                db.execSQL("CREATE INDEX `index_gates_junctionBId` ON `gates` (`junctionBId`)")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX `index_gates_junctionAId_junctionBId_segmentRatio` " +
+                        "ON `gates` (`junctionAId`, `junctionBId`, `segmentRatio`)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     RangeWaterDatabase::class.java,
                     "rangewater_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }

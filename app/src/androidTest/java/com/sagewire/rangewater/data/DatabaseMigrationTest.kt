@@ -55,7 +55,8 @@ class DatabaseMigrationTest {
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_1_2,
                 RangeWaterDatabase.MIGRATION_2_3,
-                RangeWaterDatabase.MIGRATION_3_4
+                RangeWaterDatabase.MIGRATION_3_4,
+                RangeWaterDatabase.MIGRATION_4_5
             )
             .allowMainThreadQueries()
             .build()
@@ -168,7 +169,8 @@ class DatabaseMigrationTest {
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_2_3,
-                RangeWaterDatabase.MIGRATION_3_4
+                RangeWaterDatabase.MIGRATION_3_4,
+                RangeWaterDatabase.MIGRATION_4_5
             )
             .allowMainThreadQueries()
             .build()
@@ -196,6 +198,72 @@ class DatabaseMigrationTest {
                 listOf(10L),
                 migrated.waterPastureAssignmentDao().getPastureIdsForWaterPoint(5L)
             )
+        } finally {
+            migrated.close()
+        }
+    }
+
+    @Test
+    fun migrationFourToFiveCreatesDurableGateSchema() = runBlocking {
+        context.openOrCreateDatabase(databaseName, Context.MODE_PRIVATE, null).use { database ->
+            database.execSQL(
+                "CREATE TABLE `water_points` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `name` TEXT NOT NULL, " +
+                    "`sourceType` TEXT NOT NULL, `notes` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "`updatedAt` INTEGER NOT NULL)"
+            )
+            database.execSQL(
+                "CREATE TABLE `pastures` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `notes` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "`updatedAt` INTEGER NOT NULL)"
+            )
+            database.execSQL(
+                "CREATE TABLE `fence_junctions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `elevationMeters` REAL, " +
+                    "`elevationSource` TEXT, `verticalDatum` TEXT, `verticalAccuracyMeters` REAL, " +
+                    "`elevationCapturedAt` INTEGER)"
+            )
+            database.execSQL(
+                "CREATE TABLE `pasture_vertices` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`pastureId` INTEGER NOT NULL, `sequence` INTEGER NOT NULL, `junctionId` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`junctionId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION)"
+            )
+            database.execSQL("CREATE INDEX `index_pasture_vertices_pastureId` ON `pasture_vertices` (`pastureId`)")
+            database.execSQL("CREATE INDEX `index_pasture_vertices_junctionId` ON `pasture_vertices` (`junctionId`)")
+            database.execSQL("CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_sequence` ON `pasture_vertices` (`pastureId`, `sequence`)")
+            database.execSQL("CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_junctionId` ON `pasture_vertices` (`pastureId`, `junctionId`)")
+            database.execSQL(
+                "CREATE TABLE `water_pasture_assignments` (`waterPointId` INTEGER NOT NULL, " +
+                    "`pastureId` INTEGER NOT NULL, `assignedAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`waterPointId`, `pastureId`), " +
+                    "FOREIGN KEY(`waterPointId`) REFERENCES `water_points`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+            )
+            database.execSQL("CREATE INDEX `index_water_pasture_assignments_waterPointId` ON `water_pasture_assignments` (`waterPointId`)")
+            database.execSQL("CREATE INDEX `index_water_pasture_assignments_pastureId` ON `water_pasture_assignments` (`pastureId`)")
+            database.execSQL("INSERT INTO fence_junctions (id, latitude, longitude) VALUES (1, 40.0, -100.0)")
+            database.execSQL("INSERT INTO fence_junctions (id, latitude, longitude) VALUES (2, 40.0, -99.99)")
+            database.version = 4
+        }
+
+        val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
+            .addMigrations(RangeWaterDatabase.MIGRATION_4_5)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val id = migrated.gateDao().insertValidatedGate(
+                GateEntity(
+                    name = "East Gate",
+                    junctionAId = 1,
+                    junctionBId = 2,
+                    segmentRatio = 0.5
+                )
+            )
+            val gate = migrated.gateDao().getById(id)
+            assertNotNull(gate)
+            assertEquals("East Gate", gate?.name)
+            assertEquals(4.27, gate?.widthMeters ?: 0.0, 0.001)
         } finally {
             migrated.close()
         }

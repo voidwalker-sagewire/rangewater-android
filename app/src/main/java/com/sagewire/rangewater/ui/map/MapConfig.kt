@@ -58,6 +58,8 @@ object MapConfig {
     const val SOURCE_WATER_POINTS = "source-water-points"
     const val SOURCE_WATER_RINGS = "source-water-rings"
     const val SOURCE_PASTURES = "source-pastures"
+    const val SOURCE_PASTURE_LINES = "source-pasture-lines"
+    const val SOURCE_GATES = "source-gates"
     const val SOURCE_PASTURE_DRAFT = "source-pasture-draft"
     const val SOURCE_PASTURE_HANDLES = "source-pasture-handles"
     const val SOURCE_SNAPPED_JUNCTION = "source-snapped-junction"
@@ -74,6 +76,11 @@ object MapConfig {
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
     const val LAYER_WATER_POINTS_HIGHLIGHT = "layer-water-points-highlight"
     const val LAYER_WATER_POINTS = "layer-water-points"
+    const val LAYER_GATE_OVERVIEW = "layer-gate-overview"
+    const val LAYER_GATE_ARC = "layer-gate-arc"
+    const val LAYER_GATE_LEAF_CASING = "layer-gate-leaf-casing"
+    const val LAYER_GATE_LEAF = "layer-gate-leaf"
+    const val LAYER_GATE_TOUCH_TARGET = "layer-gate-touch-target"
 
     /*
      * 🎮 BLOCK 2 — UNIFIED STYLE SPECIFICATION
@@ -116,6 +123,14 @@ object MapConfig {
               "data": { "type": "FeatureCollection", "features": [] }
             },
             "$SOURCE_PASTURES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PASTURE_LINES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_GATES": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
             },
@@ -210,7 +225,7 @@ object MapConfig {
             {
               "id": "$LAYER_PASTURE_CASING",
               "type": "line",
-              "source": "$SOURCE_PASTURES",
+              "source": "$SOURCE_PASTURE_LINES",
               "paint": {
                 "line-color": "#151515",
                 "line-width": ["case", ["get", "selected"], 6.0, 4.0]
@@ -219,7 +234,7 @@ object MapConfig {
             {
               "id": "$LAYER_PASTURE_LINE",
               "type": "line",
-              "source": "$SOURCE_PASTURES",
+              "source": "$SOURCE_PASTURE_LINES",
               "paint": {
                 "line-color": "#FF2D95",
                 "line-width": ["case", ["get", "selected"], 4.0, 2.0]
@@ -265,6 +280,65 @@ object MapConfig {
                 ],
                 "circle-stroke-color": "#FF2D95",
                 "circle-stroke-width": 3.0
+              }
+            },
+            {
+              "id": "$LAYER_GATE_OVERVIEW",
+              "type": "circle",
+              "source": "$SOURCE_GATES",
+              "maxzoom": 16,
+              "filter": ["==", ["get", "isOverview"], true],
+              "paint": {
+                "circle-radius": 6.0,
+                "circle-color": "#FF9100",
+                "circle-stroke-color": "#151515",
+                "circle-stroke-width": 2.0
+              }
+            },
+            {
+              "id": "$LAYER_GATE_ARC",
+              "type": "line",
+              "source": "$SOURCE_GATES",
+              "minzoom": 16,
+              "filter": ["==", ["get", "isArc"], true],
+              "paint": {
+                "line-color": "#FF9100",
+                "line-width": 1.5,
+                "line-dasharray": [2.0, 2.0],
+                "line-opacity": 0.85
+              }
+            },
+            {
+              "id": "$LAYER_GATE_LEAF_CASING",
+              "type": "line",
+              "source": "$SOURCE_GATES",
+              "minzoom": 16,
+              "filter": ["all", ["!has", "isArc"], ["!has", "isOverview"], ["!has", "isTouchTarget"]],
+              "paint": {
+                "line-color": "#151515",
+                "line-width": ["case", ["get", "selected"], 7.0, 5.0]
+              }
+            },
+            {
+              "id": "$LAYER_GATE_LEAF",
+              "type": "line",
+              "source": "$SOURCE_GATES",
+              "minzoom": 16,
+              "filter": ["all", ["!has", "isArc"], ["!has", "isOverview"], ["!has", "isTouchTarget"]],
+              "paint": {
+                "line-color": ["case", ["get", "selected"], "#FFFFFF", "#FF9100"],
+                "line-width": ["case", ["get", "selected"], 4.5, 3.0]
+              }
+            },
+            {
+              "id": "$LAYER_GATE_TOUCH_TARGET",
+              "type": "circle",
+              "source": "$SOURCE_GATES",
+              "filter": ["==", ["get", "isTouchTarget"], true],
+              "paint": {
+                "circle-radius": 24.0,
+                "circle-color": "#FF9100",
+                "circle-opacity": 0.01
               }
             },
             {
