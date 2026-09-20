@@ -656,7 +656,7 @@ EVIDENCE STATUS:
   results shown for Pastures 2, 3, and 4 on the Samsung Tab S7.
 
 - RW-TX-009-GTE-REV3
-  Status: IMPLEMENTATION IN PROGRESS — ASH PREFLIGHT CORRECTIONS APPLIED
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Room v5 durable gate entities, canonical segment anchoring, physical
   clearance and overlap validation, protected fence topology, true fence gaps,
   screen-space snapping, live shared-junction tracking, zoom-dependent physical
@@ -667,6 +667,10 @@ EVIDENCE STATUS:
   editor-state, migration-test, and MapLibre contracts rather than applying stale
   work-order snippets literally. Gate length and overlap validation resolve stored
   junction coordinates inside the Room transaction rather than trusting UI input.
+  Verified source commit: 504821aca13372142662f5395a16ca508f87d5d5.
+  Verified GitHub Actions run: 35538607124.
+  Result: SUCCESS — JVM tests, Android Room instrumentation tests, debug APK assembly,
+  artifact upload, and the imagery-gateway regression suite all passed.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -714,15 +718,15 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Durable gate implementation and verification
 - Working transmission: RW-TX-009-GTE-REV3
-- Implementation status: RANGEWATER 0.10.0 FEATURE BRANCH IN PROGRESS
+- Implementation status: RANGEWATER 0.10.0 BUILD VERIFIED — DEVICE CHECK PENDING
 - Authoritative baseline: c3a2f0506809c4aa9718b65a5f9ecbc234299536
-- Verified implementation commit: PENDING
-- CI status: PENDING FEATURE-BRANCH PUSH
-- Build artifact: PENDING — RangeWater-Debug-APK version 0.10.0 (versionCode 11)
+- Verified implementation commit: 504821aca13372142662f5395a16ca508f87d5d5
+- CI status: GREEN — run 35538607124
+- Build artifact: RangeWater-Debug-APK version 0.10.0 (versionCode 11)
 - Functional device verification: RW-TX-008-JCT-REV2, RW-TX-007A,
   RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-007B, RW-TX-005-REV2,
   RW-TX-005-REV, and RW-TX-004 PASSED.
-- Current transmission status: RW-TX-009-GTE-REV3 IMPLEMENTATION IN PROGRESS
+- Current transmission status: RW-TX-009-GTE-REV3 BUILD VERIFIED — DEVICE CHECK PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -730,7 +734,7 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Complete JVM, Room instrumentation, APK, and CI verification for gates.
+- Next action: Install the debug artifact and complete the gate physical-device checklist.
 - Resume point: Physical-device acceptance of gate snapping, true fence gaps, live
   shared-junction movement, segment protection, and persisted gate attributes.
 
