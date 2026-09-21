@@ -693,7 +693,7 @@ EVIDENCE STATUS:
   persistence, fence-post tracking, segment protection, and confirmed deletion passed.
 
 - RW-TX-009-REF
-  Status: IMPLEMENTED — BUILD VERIFICATION PENDING
+  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
   Scope: Moves Add Gate from the global toolbar into the selected-pasture card and adds
   identity-preserving gate sliding and cross-segment relocation with live preview,
   cancellation rollback, and DAO-owned clearance and overlap validation.
@@ -702,6 +702,10 @@ EVIDENCE STATUS:
   Preflight corrections: retained DAO-owned segment-length calculation instead of
   trusting a UI-supplied length; preserved existing pasture Details editing; replaced
   the proposed non-asserting relocation test with a real canonical snapping test.
+  Verified source commit: 42a378686a488160e8d3a35ccb31c61cc793ef23.
+  Verified GitHub Actions run: 35547077898.
+  Result: SUCCESS — JVM relocation tests, Android Room instrumentation tests, debug
+  APK assembly and upload, and the imagery-gateway regression suite all passed.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -749,14 +753,15 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Gate canvas ergonomics and position relocation
 - Working transmission: RW-TX-009-REF
-- Implementation status: RANGEWATER 0.10.1 IMPLEMENTED — BUILD VERIFICATION PENDING
+- Implementation status: RANGEWATER 0.10.1 BUILD VERIFIED — DEVICE CHECK PENDING
 - Authoritative baseline: a13f13a302801ee9bd9448701c5150b3703e6017
-- Previous verified implementation commit: 504821aca13372142662f5395a16ca508f87d5d5
-- Previous CI status: GREEN — run 35538607124
-- Previous build artifact: RangeWater-Debug-APK version 0.10.0 (versionCode 11)
+- Verified implementation commit: 42a378686a488160e8d3a35ccb31c61cc793ef23
+- CI status: GREEN — run 35547077898
+- Build artifact: RangeWater-Debug-APK version 0.10.1 (versionCode 12), artifact
+  10617335159, SHA-256 9e77508aa78cfadb5cc14586e4fa20347c1680fa54b7d1b6dfae261b7907d8bf
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
-- Current transmission status: RW-TX-009-REF BUILD VERIFICATION PENDING
+- Current transmission status: RW-TX-009-REF BUILD VERIFIED — DEVICE CHECK PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -764,8 +769,8 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Run JVM tests, connected Android tests, and debug assembly; publish the
-  verified 0.10.1 artifact from codex/rw-tx-009-gte.
+- Next action: Install the 0.10.1 debug artifact and complete the refinement checklist
+  on the Samsung Tab S7 and Galaxy S26.
 - Resume point: Physical-device acceptance of the two-button global toolbar, contextual
   Add Gate launcher, gate slide/relocation preview, rollback, and persisted position.
 
