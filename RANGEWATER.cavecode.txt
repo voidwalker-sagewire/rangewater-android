@@ -693,7 +693,7 @@ EVIDENCE STATUS:
   persistence, fence-post tracking, segment protection, and confirmed deletion passed.
 
 - RW-TX-009-REF
-  Status: CLOSE-ZOOM CORRECTION BUILD VERIFIED — DEVICE RETEST PENDING
+  Status: SECOND CLOSE-ZOOM CORRECTION BUILD VERIFIED — DEVICE RETEST PENDING
   Scope: Moves Add Gate from the global toolbar into the selected-pasture card and adds
   identity-preserving gate sliding and cross-segment relocation with live preview,
   cancellation rollback, and DAO-owned clearance and overlap validation.
@@ -714,6 +714,16 @@ EVIDENCE STATUS:
   Correction GitHub Actions run: 35550636199.
   Correction result: SUCCESS — JVM tests including the off-screen endpoint regression,
   Android Room instrumentation, debug APK assembly/upload, and imagery regression passed.
+  Correction device result: FAILED — on physical hardware, close-detail movement still
+  returned "Tap directly on a fence line" before producing a relocation candidate.
+  Root correction: the live acceptance path no longer projects the nearest fence point
+  back through the renderer. MapLibre converts the established 36-dp pixel envelope to
+  meters at the current latitude and zoom; the engine then compares that tolerance
+  directly against the physical point-to-segment distance.
+  Second correction commit: da7d0acb9e4df26a96be7dbd5a0912dc05cf967d.
+  Second correction GitHub Actions run: 35554550240.
+  Second correction result: SUCCESS — the physical-distance regression and all JVM tests,
+  Android Room instrumentation, APK assembly/upload, and imagery regression passed.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -761,12 +771,12 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Gate canvas ergonomics and position relocation
 - Working transmission: RW-TX-009-REF
-- Implementation status: RANGEWATER 0.10.1 CLOSE-ZOOM CORRECTION BUILD VERIFIED
+- Implementation status: RANGEWATER 0.10.1 SECOND CLOSE-ZOOM CORRECTION BUILD VERIFIED
 - Authoritative baseline: a13f13a302801ee9bd9448701c5150b3703e6017
 - Verified implementation commit: 42a378686a488160e8d3a35ccb31c61cc793ef23
-- CI status: GREEN — run 35547077898
+- CI status: GREEN — second correction run 35554550240
 - Build artifact: RangeWater-Debug-APK version 0.10.1 (versionCode 12), artifact
-  10617335159, SHA-256 9e77508aa78cfadb5cc14586e4fa20347c1680fa54b7d1b6dfae261b7907d8bf
+  10619332840, SHA-256 5a36f23f1ef0b13714aa962567f378318ecc7fa2426a0cda797ae09317888a95
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
 - Current transmission status: RW-TX-009-REF DEVICE RETEST PENDING
@@ -777,7 +787,7 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Install artifact 10618526089 and retest close-zoom gate movement.
+- Next action: Install artifact 10619332840 and retest close-zoom gate movement.
 - Resume point: Retest gate sliding and relocation above zoom 16 on the Samsung Tab S7
   and Galaxy S26; all other RW-TX-009-REF device checks passed.
 
