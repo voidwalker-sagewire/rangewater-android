@@ -133,6 +133,40 @@ class GateSnappingEngineTest {
         assertEquals(5L, candidate.pastureAId)
     }
 
+    @Test
+    fun closeZoomWithOffscreenEndpointsStillUsesPhysicalFenceRatio() {
+        val tap = LatLng(40.0, -99.985)
+        val pasture = pasture(
+            6,
+            "Close zoom",
+            listOf(
+                vertex(1, 6, 0, junction(100, 40.0, -100.0)),
+                vertex(2, 6, 1, junction(200, 40.0, -99.98)),
+                vertex(3, 6, 2, junction(300, 40.01, -99.98)),
+                vertex(4, 6, 3, junction(400, 40.01, -100.0))
+            )
+        )
+        val clampedViewportProjection: (LatLng) -> ScreenCoordinate = { coordinate ->
+            ScreenCoordinate(
+                ((coordinate.longitude - tap.longitude) * 10_000_000.0).coerceIn(-1_000.0, 1_000.0),
+                ((coordinate.latitude - tap.latitude) * 10_000_000.0).coerceIn(-1_000.0, 1_000.0)
+            )
+        }
+
+        val result = GateSnappingEngine.findCandidateSegment(
+            tapPoint = tap,
+            pastures = listOf(pasture),
+            tolerancePx = 20.0,
+            project = clampedViewportProjection
+        )
+
+        assertTrue(result is GateSnapResult.Snapped)
+        val candidate = (result as GateSnapResult.Snapped).candidate
+        assertEquals(100L, candidate.junctionA.id)
+        assertEquals(200L, candidate.junctionB.id)
+        assertEquals(0.75, candidate.segmentRatio, 0.01)
+    }
+
     private fun linearProjection(coordinate: LatLng) = ScreenCoordinate(
         coordinate.longitude * 100_000.0,
         coordinate.latitude * 100_000.0

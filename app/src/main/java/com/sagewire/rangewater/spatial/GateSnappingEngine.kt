@@ -77,23 +77,32 @@ object GateSnappingEngine {
                 val end = vertices[(index + 1) % vertices.size]
                 val startCoordinate = LatLng(start.latitude, start.longitude)
                 val endCoordinate = LatLng(end.latitude, end.longitude)
-                val startScreen = project(startCoordinate)
-                val endScreen = project(endCoordinate)
-                val screenDx = endScreen.x - startScreen.x
-                val screenDy = endScreen.y - startScreen.y
-                val screenLengthSquared = screenDx * screenDx + screenDy * screenDy
-                if (screenLengthSquared < 1e-6) return@segmentLoop
+                // Resolve the physical nearest point before screen projection. At close
+                // zoom, long-segment endpoints can sit far outside MapLibre's viewport;
+                // projecting those endpoints first makes the ratio numerically unstable.
+                val latitudeRadians = Math.toRadians(tapPoint.latitude)
+                val metersPerLongitudeDegree = 111_320.0 * cos(latitudeRadians)
+                val startX = (startCoordinate.longitude - tapPoint.longitude) * metersPerLongitudeDegree
+                val startY = (startCoordinate.latitude - tapPoint.latitude) * 110_540.0
+                val endX = (endCoordinate.longitude - tapPoint.longitude) * metersPerLongitudeDegree
+                val endY = (endCoordinate.latitude - tapPoint.latitude) * 110_540.0
+                val physicalDx = endX - startX
+                val physicalDy = endY - startY
+                val physicalLengthSquared = physicalDx * physicalDx + physicalDy * physicalDy
+                if (physicalLengthSquared < 1e-6) return@segmentLoop
 
-                val rawTraversalRatio = (
-                    (tapScreen.x - startScreen.x) * screenDx +
-                        (tapScreen.y - startScreen.y) * screenDy
-                    ) / screenLengthSquared
-                val screenRatio = rawTraversalRatio.coerceIn(0.0, 1.0)
-                val nearestX = startScreen.x + screenRatio * screenDx
-                val nearestY = startScreen.y + screenRatio * screenDy
+                val rawTraversalRatio = -(
+                    startX * physicalDx + startY * physicalDy
+                    ) / physicalLengthSquared
+                val nearestCoordinate = interpolate(
+                    startCoordinate,
+                    endCoordinate,
+                    rawTraversalRatio.coerceIn(0.0, 1.0)
+                )
+                val nearestScreen = project(nearestCoordinate)
                 val distance = sqrt(
-                    (tapScreen.x - nearestX) * (tapScreen.x - nearestX) +
-                        (tapScreen.y - nearestY) * (tapScreen.y - nearestY)
+                    (tapScreen.x - nearestScreen.x) * (tapScreen.x - nearestScreen.x) +
+                        (tapScreen.y - nearestScreen.y) * (tapScreen.y - nearestScreen.y)
                 )
                 if (distance > tolerancePx) return@segmentLoop
 
