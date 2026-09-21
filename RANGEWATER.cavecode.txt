@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.10.0
-- Version Code: 11
+- App Version: 0.10.1
+- Version Code: 12
 - Active Feature Branch: codex/rw-tx-009-gte
 - Frozen Baseline Branch: codex/rw-tx-008-jct-rev2 (c3a2f050)
 - Public Production: PAUSED pending RangeWater 1.0 operational scope
@@ -42,7 +42,7 @@ RULE:
 - Map Engine: MapLibre Native Android SDK 11.5.1
 - Spatial Math: MapLibre Turf Java 6.0.1 plus JTS Core 1.20.0 for robust
   polygon union and intersection topology
-- Persistence: Android Room 2.8.5 database version 4 with local SQLite,
+- Persistence: Android Room 2.8.5 database version 5 with local SQLite,
   Flow-backed reads, and SharedPreferences-backed display settings
 - CI: GitHub Actions runs JVM geometry tests, Android Room instrumentation tests,
   and builds a debug APK with the committed Gradle wrapper
@@ -62,6 +62,9 @@ RULE:
 - Shared fence junctions: canonical physical corners can be referenced by multiple
   ordered pasture boundaries, snapped in screen space, previewed together, and moved
   or explicitly merged through validated atomic transactions
+- Durable gates: canonical fence-segment anchors, physical clearance, protected
+  topology, true fence gaps, persisted open/closed state, and contextual relocation
+  are enforced through Room-backed transactions and derived MapLibre geometry
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -234,6 +237,20 @@ RULE:
     - Google Play compatibility filtering, automated phone/tablet/large-screen profiles,
       and physical-device evidence together define release confidence. Emulator success
       supplements but does not replace device-specific field testing.
+20. Michael accepted durable gate topology in RW-TX-009-GTE-REV3.
+    - Room version 5 stores gates against canonical ordered junction pairs and a
+      normalized segment ratio while deriving the physical center, posts, gap, leaf,
+      swing arc, and pasture connectivity from current fence geometry.
+    - Persistence-level validation resolves junction coordinates from Room, enforces
+      width and post clearance, rejects gate overlap, and protects anchored segments
+      from subdivision, endpoint removal, deletion, or junction merge.
+    - Physical-device acceptance passed on the Samsung Tab S7 and Galaxy S26.
+21. Michael approved contextual gate placement and identity-preserving relocation.
+    - Add Gate belongs to the selected-pasture card rather than the global creation bar.
+    - Move Gate supports an in-memory preview on the same or another fence segment.
+      Cancel performs no write; Save atomically preserves the gate identity, attributes,
+      status, and createdAt while updating canonical anchors, ratio, and updatedAt.
+    - Room remains at version 5; RW-TX-009-REF changes no persisted schema.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -656,7 +673,7 @@ EVIDENCE STATUS:
   results shown for Pastures 2, 3, and 4 on the Samsung Tab S7.
 
 - RW-TX-009-GTE-REV3
-  Status: IMPLEMENTED — BUILD VERIFIED — DEVICE CHECK PENDING
+  Status: ACCEPTED & FIELD-VERIFIED — Samsung Tab S7 and Galaxy S26
   Scope: Room v5 durable gate entities, canonical segment anchoring, physical
   clearance and overlap validation, protected fence topology, true fence gaps,
   screen-space snapping, live shared-junction tracking, zoom-dependent physical
@@ -671,6 +688,20 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35538607124.
   Result: SUCCESS — JVM tests, Android Room instrumentation tests, debug APK assembly,
   artifact upload, and the imagery-gateway regression suite all passed.
+  Device result: Michael completed the gate acceptance checklist on the Samsung Tab S7
+  and follow-up phone testing on the Galaxy S26. Placement, editing, open/close state,
+  persistence, fence-post tracking, segment protection, and confirmed deletion passed.
+
+- RW-TX-009-REF
+  Status: IMPLEMENTED — BUILD VERIFICATION PENDING
+  Scope: Moves Add Gate from the global toolbar into the selected-pasture card and adds
+  identity-preserving gate sliding and cross-segment relocation with live preview,
+  cancellation rollback, and DAO-owned clearance and overlap validation.
+  Baseline: a13f13a302801ee9bd9448701c5150b3703e6017.
+  Feature branch: codex/rw-tx-009-gte.
+  Preflight corrections: retained DAO-owned segment-length calculation instead of
+  trusting a UI-supplied length; preserved existing pasture Details editing; replaced
+  the proposed non-asserting relocation test with a real canonical snapping test.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -716,17 +747,16 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Durable gate implementation and verification
-- Working transmission: RW-TX-009-GTE-REV3
-- Implementation status: RANGEWATER 0.10.0 BUILD VERIFIED — DEVICE CHECK PENDING
-- Authoritative baseline: c3a2f0506809c4aa9718b65a5f9ecbc234299536
-- Verified implementation commit: 504821aca13372142662f5395a16ca508f87d5d5
-- CI status: GREEN — run 35538607124
-- Build artifact: RangeWater-Debug-APK version 0.10.0 (versionCode 11)
-- Functional device verification: RW-TX-008-JCT-REV2, RW-TX-007A,
-  RW-TX-006-WTR-REV1, RW-TX-006-WTR, RW-TX-007B, RW-TX-005-REV2,
-  RW-TX-005-REV, and RW-TX-004 PASSED.
-- Current transmission status: RW-TX-009-GTE-REV3 BUILD VERIFIED — DEVICE CHECK PENDING
+- Current phase: Gate canvas ergonomics and position relocation
+- Working transmission: RW-TX-009-REF
+- Implementation status: RANGEWATER 0.10.1 IMPLEMENTED — BUILD VERIFICATION PENDING
+- Authoritative baseline: a13f13a302801ee9bd9448701c5150b3703e6017
+- Previous verified implementation commit: 504821aca13372142662f5395a16ca508f87d5d5
+- Previous CI status: GREEN — run 35538607124
+- Previous build artifact: RangeWater-Debug-APK version 0.10.0 (versionCode 11)
+- Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
+  Galaxy S26; all earlier accepted transmissions remain intact.
+- Current transmission status: RW-TX-009-REF BUILD VERIFICATION PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -734,9 +764,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Install the debug artifact and complete the gate physical-device checklist.
-- Resume point: Physical-device acceptance of gate snapping, true fence gaps, live
-  shared-junction movement, segment protection, and persisted gate attributes.
+- Next action: Run JVM tests, connected Android tests, and debug assembly; publish the
+  verified 0.10.1 artifact from codex/rw-tx-009-gte.
+- Resume point: Physical-device acceptance of the two-button global toolbar, contextual
+  Add Gate launcher, gate slide/relocation preview, rollback, and persisted position.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

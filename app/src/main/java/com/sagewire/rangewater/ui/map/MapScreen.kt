@@ -110,7 +110,8 @@ private enum class InteractionState {
     WATER_MOVING,
     PASTURE_DRAWING,
     PASTURE_EDITING,
-    GATE_PLACEMENT
+    GATE_PLACEMENT,
+    GATE_MOVING
 }
 
 private enum class PastureEditMode {
@@ -187,6 +188,8 @@ fun MapScreen(
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
     var selectedGateId by remember { mutableStateOf<Long?>(null) }
     var candidateGate by remember { mutableStateOf<SnappedGateCandidate?>(null) }
+    var movingGate by remember { mutableStateOf<GateEntity?>(null) }
+    var draftGateMoveCandidate by remember { mutableStateOf<SnappedGateCandidate?>(null) }
     var showGateEditDialog by remember { mutableStateOf(false) }
     var showGateDeleteDialog by remember { mutableStateOf(false) }
     var selectedVertexIndex by remember { mutableStateOf<Int?>(null) }
@@ -255,26 +258,43 @@ fun MapScreen(
             GateSnappingEngine.resolveConnectivity(gate, effectivePastures, effectiveJunctionCoordinates)
         }
     }
-    val displayedGates = remember(resolvedGates, candidateGate) {
-        val candidate = candidateGate
-        if (candidate == null) resolvedGates else resolvedGates + GateWithConnectivity(
-            gate = GateEntity(
-                id = 0L,
-                name = "Gate preview",
-                junctionAId = candidate.junctionA.id,
-                junctionBId = candidate.junctionB.id,
-                segmentRatio = candidate.segmentRatio,
-                widthMeters = GateEntity.WIDTH_14_FT
-            ),
-            derivedCoordinate = candidate.derivedCoordinate,
-            hingeCoordinate = candidate.hingeCoordinate,
-            latchCoordinate = candidate.latchCoordinate,
-            pastureAId = candidate.pastureAId,
-            pastureAName = candidate.pastureAName,
-            pastureBId = candidate.pastureBId,
-            pastureBName = candidate.pastureBName,
-            isShared = candidate.isShared
-        )
+    val displayedGates = remember(
+        resolvedGates,
+        candidateGate,
+        movingGate,
+        draftGateMoveCandidate,
+        interactionState
+    ) {
+        when {
+            interactionState == InteractionState.GATE_MOVING &&
+                movingGate != null && draftGateMoveCandidate != null -> {
+                val moving = movingGate!!
+                val candidate = draftGateMoveCandidate!!
+                resolvedGates.map { resolved ->
+                    if (resolved.gate.id != moving.id) resolved else candidate.toConnectivity(
+                        moving.copy(
+                            junctionAId = candidate.junctionA.id,
+                            junctionBId = candidate.junctionB.id,
+                            segmentRatio = candidate.segmentRatio
+                        )
+                    )
+                }
+            }
+            interactionState == InteractionState.GATE_PLACEMENT && candidateGate != null -> {
+                val candidate = candidateGate!!
+                resolvedGates + candidate.toConnectivity(
+                    GateEntity(
+                        id = 0L,
+                        name = "Gate preview",
+                        junctionAId = candidate.junctionA.id,
+                        junctionBId = candidate.junctionB.id,
+                        segmentRatio = candidate.segmentRatio,
+                        widthMeters = GateEntity.WIDTH_14_FT
+                    )
+                )
+            }
+            else -> resolvedGates
+        }
     }
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
 
@@ -418,7 +438,8 @@ fun MapScreen(
         selectedVertexIndex,
         pastureEditMode,
         allJunctions,
-        pastures
+        pastures,
+        movingGate
     ) {
         val map = mapInstance
         if (map == null) {
@@ -446,6 +467,32 @@ fun MapScreen(
                                 "Tap directly on a fence line",
                                 Toast.LENGTH_SHORT
                             ).show()
+                        }
+                    }
+                    InteractionState.GATE_MOVING -> {
+                        val gate = movingGate
+                        if (gate != null) {
+                            when (
+                                val result = GateSnappingEngine.findCandidateSegmentScreenSpace(
+                                    tapPoint = coordinate,
+                                    pastures = pastures,
+                                    projection = map.projection,
+                                    tolerancePx = 36f * context.resources.displayMetrics.density,
+                                    gateWidthMeters = gate.widthMeters
+                                )
+                            ) {
+                                is GateSnapResult.Snapped -> draftGateMoveCandidate = result.candidate
+                                GateSnapResult.FenceTooShort -> Toast.makeText(
+                                    context,
+                                    "Fence segment too short for gate width",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                GateSnapResult.NoFenceInRange -> Toast.makeText(
+                                    context,
+                                    "Tap directly on a fence line",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                     InteractionState.WATER_MOVING -> {
@@ -779,7 +826,7 @@ fun MapScreen(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 7.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
                         onClick = {
@@ -790,21 +837,6 @@ fun MapScreen(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
                     ) { Text("Add Water", fontSize = 12.sp, maxLines = 1) }
-                    Button(
-                        onClick = {
-                            candidateGate = null
-                            selectedWaterId = null
-                            selectedPastureId = null
-                            selectedGateId = null
-                            interactionState = InteractionState.GATE_PLACEMENT
-                        },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFF9100),
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Add Gate", fontSize = 12.sp, maxLines = 1) }
                     Button(
                         onClick = {
                             interactionState = InteractionState.PASTURE_DRAWING
@@ -848,6 +880,46 @@ fun MapScreen(
                                 Toast.makeText(
                                     context,
                                     error.message ?: "Failed to place gate",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+        if (interactionState == InteractionState.GATE_MOVING) {
+            GateMoveControls(
+                gate = movingGate,
+                candidate = draftGateMoveCandidate,
+                onCancel = {
+                    movingGate = null
+                    draftGateMoveCandidate = null
+                    interactionState = InteractionState.ORDINARY
+                },
+                onSave = {
+                    val gate = movingGate
+                    val candidate = draftGateMoveCandidate
+                    if (gate != null && candidate != null) {
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    gateDao.updateValidatedPosition(
+                                        id = gate.id,
+                                        junctionAId = candidate.junctionA.id,
+                                        junctionBId = candidate.junctionB.id,
+                                        segmentRatio = candidate.segmentRatio
+                                    )
+                                }
+                                movingGate = null
+                                draftGateMoveCandidate = null
+                                interactionState = InteractionState.ORDINARY
+                                Toast.makeText(context, "Gate position saved", Toast.LENGTH_SHORT).show()
+                            } catch (error: IllegalArgumentException) {
+                                Toast.makeText(
+                                    context,
+                                    error.message ?: "Failed to move gate",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -1048,6 +1120,11 @@ fun MapScreen(
                     pasture = pasture,
                     metrics = selectedPastureMetrics ?: return@let,
                     onClose = { selectedPastureId = null },
+                    onAddGate = {
+                        candidateGate = null
+                        selectedGateId = null
+                        interactionState = InteractionState.GATE_PLACEMENT
+                    },
                     onEditDetails = {
                         pastureEditName = pasture.pasture.name
                         pastureEditNotes = pasture.pasture.notes
@@ -1080,6 +1157,11 @@ fun MapScreen(
                             }
                             gateDao.updateStatus(item.gate.id, next)
                         }
+                    },
+                    onMove = {
+                        movingGate = item.gate
+                        draftGateMoveCandidate = null
+                        interactionState = InteractionState.GATE_MOVING
                     },
                     onEdit = { showGateEditDialog = true },
                     onDelete = { showGateDeleteDialog = true }
@@ -1861,7 +1943,8 @@ private fun MapStatusAndModeControls(
                                     interactionState == InteractionState.PASTURE_EDITING -> Color(0xFFFF2D95)
                                 interactionState == InteractionState.WATER_PLACEMENT ||
                                     interactionState == InteractionState.WATER_MOVING -> Color(0xFF00E5FF)
-                                interactionState == InteractionState.GATE_PLACEMENT -> Color(0xFFFF9100)
+                                interactionState == InteractionState.GATE_PLACEMENT ||
+                                    interactionState == InteractionState.GATE_MOVING -> Color(0xFFFF9100)
                                 activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
                                 currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
                                 else -> Color(0xFF2196F3)
@@ -1879,6 +1962,7 @@ private fun MapStatusAndModeControls(
                             interactionState == InteractionState.WATER_PLACEMENT -> "Tap pasture to place • z$zoom"
                             interactionState == InteractionState.WATER_MOVING -> "Move water • z$zoom"
                             interactionState == InteractionState.GATE_PLACEMENT -> "Tap fence for gate • z$zoom"
+                            interactionState == InteractionState.GATE_MOVING -> "Tap fence to move gate • z$zoom"
                             activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
                             currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
                             else -> "USGS Overview • z$zoom"
@@ -2205,6 +2289,7 @@ private fun BoxScope.PastureInspectionCard(
     pasture: PastureWithVertices,
     metrics: PastureCoverageMetrics,
     onClose: () -> Unit,
+    onAddGate: () -> Unit,
     onEditDetails: () -> Unit,
     onEditBoundary: () -> Unit,
     onDelete: () -> Unit
@@ -2265,17 +2350,32 @@ private fun BoxScope.PastureInspectionCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                OutlinedButton(
-                    onClick = onEditDetails,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                Button(
+                    onClick = onAddGate,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF9100),
+                        contentColor = Color.Black
+                    )
                 ) {
-                    Text("Details", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Add Gate", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
                     onClick = onEditBoundary,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
-                    Text("Edit", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Edit Boundary", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onEditDetails,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                ) {
+                    Text("Details", color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = onDelete,
@@ -2346,6 +2446,7 @@ private fun BoxScope.GateInspectionCard(
     item: GateWithConnectivity,
     onClose: () -> Unit,
     onToggleStatus: () -> Unit,
+    onMove: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -2400,6 +2501,12 @@ private fun BoxScope.GateInspectionCard(
                     Text(if (gate.status == GateEntity.STATUS_CLOSED) "Open" else "Close", fontSize = 12.sp)
                 }
                 OutlinedButton(
+                    onClick = onMove,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF9100))
+                ) { Text("Move", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                OutlinedButton(
                     onClick = onEdit,
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
@@ -2409,6 +2516,64 @@ private fun BoxScope.GateInspectionCard(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) { Text("Delete", color = Color.Red, fontSize = 12.sp) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.GateMoveControls(
+    gate: GateEntity?,
+    candidate: SnappedGateCandidate?,
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 20.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Black.copy(alpha = 0.90f)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Move ${gate?.name.orEmpty()}",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp
+            )
+            Text(
+                text = when {
+                    candidate == null -> "Tap this fence to slide, or another fence to relocate"
+                    candidate.isShared -> "Proposed: ${candidate.pastureAName} ⟷ ${candidate.pastureBName}"
+                    else -> "Proposed: ${candidate.pastureAName} ⟷ Outside"
+                },
+                color = if (candidate == null) Color.LightGray else Color(0xFFFF9100),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+                    Text("Cancel", color = Color.Red)
+                }
+                Button(
+                    onClick = onSave,
+                    enabled = candidate != null,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF9100),
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Text("Save Position", fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
@@ -2507,6 +2672,18 @@ private fun pushAllOverlays(
             ?.setGeoJson(FeatureCollection.fromFeatures(snapFeatures))
     }
 }
+
+private fun SnappedGateCandidate.toConnectivity(gate: GateEntity) = GateWithConnectivity(
+    gate = gate,
+    derivedCoordinate = derivedCoordinate,
+    hingeCoordinate = hingeCoordinate,
+    latchCoordinate = latchCoordinate,
+    pastureAId = pastureAId,
+    pastureAName = pastureAName,
+    pastureBId = pastureBId,
+    pastureBName = pastureBName,
+    isShared = isShared
+)
 
 internal fun applyJunctionMovePreview(
     pastures: List<PastureWithVertices>,

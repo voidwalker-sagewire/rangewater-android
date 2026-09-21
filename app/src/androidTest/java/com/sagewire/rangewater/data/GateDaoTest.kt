@@ -172,6 +172,107 @@ class GateDaoTest {
         }
     }
 
+    @Test
+    fun validatedPositionUpdateSlidesGateAndPreservesIdentity() = runBlocking {
+        val (junctionAId, junctionBId) = longSegment()
+        val gateId = gateDao.insertValidatedGate(
+            GateEntity(
+                name = "Sliding Gate",
+                junctionAId = junctionAId,
+                junctionBId = junctionBId,
+                segmentRatio = 0.3,
+                gateType = GateEntity.TYPE_PIPE,
+                status = GateEntity.STATUS_OPEN,
+                notes = "North lane"
+            )
+        )
+
+        gateDao.updateValidatedPosition(
+            id = gateId,
+            junctionAId = junctionAId,
+            junctionBId = junctionBId,
+            segmentRatio = 0.7,
+            timestamp = 5_000L
+        )
+
+        val updated = gateDao.getById(gateId)
+        assertNotNull(updated)
+        assertEquals(gateId, updated!!.id)
+        assertEquals(0.7, updated.segmentRatio, 0.001)
+        assertEquals("Sliding Gate", updated.name)
+        assertEquals(GateEntity.TYPE_PIPE, updated.gateType)
+        assertEquals(GateEntity.STATUS_OPEN, updated.status)
+        assertEquals("North lane", updated.notes)
+        assertEquals(5_000L, updated.updatedAt)
+    }
+
+    @Test
+    fun validatedPositionUpdateRelocatesGateToNewCanonicalSegment() = runBlocking {
+        val first = junctionDao.insert(FenceJunctionEntity(latitude = 40.0, longitude = -100.0))
+        val second = junctionDao.insert(FenceJunctionEntity(latitude = 40.0, longitude = -99.99))
+        val third = junctionDao.insert(FenceJunctionEntity(latitude = 40.01, longitude = -99.99))
+        val gateId = gateDao.insertValidatedGate(
+            GateEntity(
+                name = "Moving Gate",
+                junctionAId = minOf(first, second),
+                junctionBId = maxOf(first, second),
+                segmentRatio = 0.5
+            )
+        )
+        val targetA = minOf(second, third)
+        val targetB = maxOf(second, third)
+
+        gateDao.updateValidatedPosition(
+            id = gateId,
+            junctionAId = targetA,
+            junctionBId = targetB,
+            segmentRatio = 0.4
+        )
+
+        val relocated = gateDao.getById(gateId)
+        assertNotNull(relocated)
+        assertEquals(targetA, relocated!!.junctionAId)
+        assertEquals(targetB, relocated.junctionBId)
+        assertEquals(0.4, relocated.segmentRatio, 0.001)
+    }
+
+    @Test
+    fun rejectedPositionOverlapLeavesOriginalGateUnchanged() = runBlocking {
+        val (junctionAId, junctionBId) = longSegment()
+        gateDao.insertValidatedGate(
+            GateEntity(
+                name = "Existing Gate",
+                junctionAId = junctionAId,
+                junctionBId = junctionBId,
+                segmentRatio = 0.5
+            )
+        )
+        val movingId = gateDao.insertValidatedGate(
+            GateEntity(
+                name = "Gate to Move",
+                junctionAId = junctionAId,
+                junctionBId = junctionBId,
+                segmentRatio = 0.2
+            )
+        )
+
+        try {
+            gateDao.updateValidatedPosition(
+                id = movingId,
+                junctionAId = junctionAId,
+                junctionBId = junctionBId,
+                segmentRatio = 0.501
+            )
+            fail("Moving into another gate should be rejected")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("overlaps"))
+        }
+
+        val unchanged = gateDao.getById(movingId)
+        assertNotNull(unchanged)
+        assertEquals(0.2, unchanged!!.segmentRatio, 0.001)
+    }
+
     private suspend fun longSegment(): Pair<Long, Long> {
         val first = junctionDao.insert(FenceJunctionEntity(latitude = 40.0, longitude = -100.0))
         val second = junctionDao.insert(FenceJunctionEntity(latitude = 40.0, longitude = -99.99))

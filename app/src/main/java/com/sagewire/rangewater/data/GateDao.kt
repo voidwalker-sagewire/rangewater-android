@@ -36,6 +36,18 @@ interface GateDao {
     @Query("UPDATE gates SET status = :status, updatedAt = :timestamp WHERE id = :id")
     suspend fun updateStatusRaw(id: Long, status: String, timestamp: Long)
 
+    @Query(
+        "UPDATE gates SET junctionAId = :junctionAId, junctionBId = :junctionBId, " +
+            "segmentRatio = :segmentRatio, updatedAt = :timestamp WHERE id = :id"
+    )
+    suspend fun updatePositionRaw(
+        id: Long,
+        junctionAId: Long,
+        junctionBId: Long,
+        segmentRatio: Double,
+        timestamp: Long
+    )
+
     @Delete
     suspend fun deleteGate(gate: GateEntity)
 
@@ -90,6 +102,28 @@ interface GateDao {
         require(status in GateEntity.VALID_STATUSES) { "Unsupported gate status: $status" }
         check(getById(id) != null) { "Gate #$id not found" }
         updateStatusRaw(id, status, timestamp)
+    }
+
+    @Transaction
+    suspend fun updateValidatedPosition(
+        id: Long,
+        junctionAId: Long,
+        junctionBId: Long,
+        segmentRatio: Double,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        require(junctionAId < junctionBId) { "Gate anchor junctions must be canonical" }
+        require(segmentRatio in 0.0..1.0) { "Gate ratio must be between 0 and 1" }
+        val existing = getById(id) ?: throw IllegalArgumentException("Gate #$id not found")
+        val updated = existing.copy(
+            junctionAId = junctionAId,
+            junctionBId = junctionBId,
+            segmentRatio = segmentRatio,
+            updatedAt = timestamp
+        )
+        val targetLengthMeters = segmentLengthMeters(junctionAId, junctionBId)
+        validateGeometryAndOverlap(updated, targetLengthMeters, excludeGateId = id)
+        updatePositionRaw(id, junctionAId, junctionBId, segmentRatio, timestamp)
     }
 
     private fun validateCanonicalValues(gate: GateEntity) {

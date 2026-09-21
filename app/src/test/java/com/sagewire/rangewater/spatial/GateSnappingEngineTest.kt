@@ -103,6 +103,36 @@ class GateSnappingEngineTest {
         )
     }
 
+    @Test
+    fun relocationCandidateOnDifferentEdgeRecalculatesCanonicalEndpointsAndRatio() {
+        val first = junction(100, 40.0, -100.0)
+        val second = junction(200, 40.0, -99.98)
+        val third = junction(300, 40.02, -99.98)
+        val pasture = pasture(
+            5,
+            "Relocation",
+            listOf(
+                vertex(1, 5, 0, first),
+                vertex(2, 5, 1, second),
+                vertex(3, 5, 2, third)
+            )
+        )
+
+        val result = GateSnappingEngine.findCandidateSegment(
+            tapPoint = LatLng(40.015, -99.98),
+            pastures = listOf(pasture),
+            tolerancePx = 10.0,
+            project = ::linearProjection
+        )
+
+        assertTrue(result is GateSnapResult.Snapped)
+        val candidate = (result as GateSnapResult.Snapped).candidate
+        assertEquals(200L, candidate.junctionA.id)
+        assertEquals(300L, candidate.junctionB.id)
+        assertEquals(0.75, candidate.segmentRatio, 0.01)
+        assertEquals(5L, candidate.pastureAId)
+    }
+
     private fun linearProjection(coordinate: LatLng) = ScreenCoordinate(
         coordinate.longitude * 100_000.0,
         coordinate.latitude * 100_000.0
