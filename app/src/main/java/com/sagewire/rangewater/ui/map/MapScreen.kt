@@ -36,6 +36,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -66,6 +67,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sagewire.rangewater.data.PastureCoordinate
+import com.sagewire.rangewater.data.CattleMovementEntity
+import com.sagewire.rangewater.data.CountUnit
+import com.sagewire.rangewater.data.HerdEntity
+import com.sagewire.rangewater.data.HerdLocationKind
+import com.sagewire.rangewater.data.MovementStatus
+import com.sagewire.rangewater.data.StockClass
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.GateEntity
@@ -78,6 +85,8 @@ import com.sagewire.rangewater.spatial.GeometryValidator
 import com.sagewire.rangewater.spatial.GateFeatureConverter
 import com.sagewire.rangewater.spatial.GateSnapResult
 import com.sagewire.rangewater.spatial.GateSnappingEngine
+import com.sagewire.rangewater.spatial.HerdFeatureConverter
+import com.sagewire.rangewater.spatial.MovementFeatureConverter
 import com.sagewire.rangewater.spatial.SnappedGateCandidate
 import com.sagewire.rangewater.spatial.CornerSnappingEngine
 import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
@@ -86,6 +95,7 @@ import com.sagewire.rangewater.spatial.PastureFeatureConverter
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
 import java.util.Locale
+import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -152,6 +162,8 @@ fun MapScreen(
     val assignments by assignmentDao.observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val gates by gateDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val herds by database.herdDao().observeActiveHerds().collectAsStateWithLifecycle(initialValue = emptyList())
+    val movements by database.movementDao().observeAllMovements().collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
     }
@@ -187,6 +199,15 @@ fun MapScreen(
     var selectedWaterId by remember { mutableStateOf<Long?>(null) }
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
     var selectedGateId by remember { mutableStateOf<Long?>(null) }
+    var selectedHerdId by remember { mutableStateOf<Long?>(null) }
+    var selectedMovementId by remember { mutableStateOf<Long?>(null) }
+    var herdManagerPastureFilterId by remember { mutableStateOf<Long?>(null) }
+    var showHerdManagerDialog by remember { mutableStateOf(false) }
+    var showHerdCreateEditDialog by remember { mutableStateOf(false) }
+    var herdBeingEdited by remember { mutableStateOf<HerdEntity?>(null) }
+    var showPlanMoveDialog by remember { mutableStateOf(false) }
+    var showMoveHistoryDialog by remember { mutableStateOf(false) }
+    var showArchiveHerdConfirmDialog by remember { mutableStateOf(false) }
     var candidateGate by remember { mutableStateOf<SnappedGateCandidate?>(null) }
     var movingGate by remember { mutableStateOf<GateEntity?>(null) }
     var draftGateMoveCandidate by remember { mutableStateOf<SnappedGateCandidate?>(null) }
@@ -227,6 +248,8 @@ fun MapScreen(
 
     val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
+    val selectedHerd = herds.firstOrNull { it.id == selectedHerdId }
+    val activeMovement = movements.firstOrNull { it.id == selectedMovementId }
     val selectedPastureMetrics = remember(selectedPasture, waterPoints, assignmentMap) {
         selectedPasture?.let { pasture ->
             val assignedWater = waterPoints.filter { point ->
@@ -390,6 +413,9 @@ fun MapScreen(
         selectedWaterId,
         selectedPastureId,
         selectedGateId,
+        herds,
+        selectedHerdId,
+        activeMovement,
         displayedGates,
         selectedVertexIndex,
         draftRevision,
@@ -407,6 +433,9 @@ fun MapScreen(
             selectedPastureId = selectedPastureId,
             gates = displayedGates,
             selectedGateId = selectedGateId,
+            herds = herds,
+            selectedHerdId = selectedHerdId,
+            activeMovement = activeMovement,
             draftVertices = draftVertices.toList(),
             selectedVertexIndex = selectedVertexIndex,
             coverageScope = displayPreferences.coverageScope,
@@ -415,10 +444,12 @@ fun MapScreen(
             activeSnappedJunction = activeSnappedJunction
         )
     }
-    LaunchedEffect(waterPoints, pastures, gates, selectedWaterId, selectedPastureId, selectedGateId) {
+    LaunchedEffect(waterPoints, pastures, gates, herds, movements, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, selectedMovementId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
         if (selectedGateId != null && gates.none { it.id == selectedGateId }) selectedGateId = null
+        if (selectedHerdId != null && selectedHerd == null) selectedHerdId = null
+        if (selectedMovementId != null && movements.none { it.id == selectedMovementId }) selectedMovementId = null
         if (selectedWater == null) showAssignPasturesDialog = false
     }
     LaunchedEffect(displayPreferences, interactionState, mapInstance) {
@@ -622,6 +653,8 @@ fun MapScreen(
                             selectedGateId = gateHit.getNumberProperty("id").toLong()
                             selectedWaterId = null
                             selectedPastureId = null
+                            selectedHerdId = null
+                            selectedMovementId = null
                         } else {
                             val waterHit = queryFeaturesNear(
                                 map,
@@ -633,14 +666,40 @@ fun MapScreen(
                                 selectedWaterId = waterHit.getNumberProperty("id").toLong()
                                 selectedPastureId = null
                                 selectedGateId = null
+                                selectedHerdId = null
+                                selectedMovementId = null
                             } else {
-                                val pastureHit = map.queryRenderedFeatures(
+                                val herdHit = queryFeaturesNear(
+                                    map,
                                     screenPoint,
-                                    MapConfig.LAYER_PASTURE_FILL
+                                    30f * context.resources.displayMetrics.density,
+                                    MapConfig.LAYER_HERD_BADGE_FILL_0,
+                                    MapConfig.LAYER_HERD_BADGE_FILL_1,
+                                    MapConfig.LAYER_HERD_BADGE_FILL_2
                                 ).firstOrNull()
-                                selectedPastureId = pastureHit?.getNumberProperty("id")?.toLong()
-                                selectedWaterId = null
-                                selectedGateId = null
+                                if (herdHit != null) {
+                                    if (herdHit.getBooleanProperty("isOverflow")) {
+                                        herdManagerPastureFilterId = herdHit.getNumberProperty("pastureId").toLong()
+                                        showHerdManagerDialog = true
+                                        selectedHerdId = null
+                                    } else {
+                                        selectedHerdId = herdHit.getNumberProperty("id").toLong()
+                                    }
+                                    selectedGateId = null
+                                    selectedWaterId = null
+                                    selectedPastureId = null
+                                    selectedMovementId = null
+                                } else {
+                                    val pastureHit = map.queryRenderedFeatures(
+                                        screenPoint,
+                                        MapConfig.LAYER_PASTURE_FILL
+                                    ).firstOrNull()
+                                    selectedPastureId = pastureHit?.getNumberProperty("id")?.toLong()
+                                    selectedWaterId = null
+                                    selectedGateId = null
+                                    selectedHerdId = null
+                                    selectedMovementId = null
+                                }
                             }
                         }
                     }
@@ -777,6 +836,9 @@ fun MapScreen(
                                 selectedPastureId,
                                 displayedGates,
                                 selectedGateId,
+                                herds,
+                                selectedHerdId,
+                                activeMovement,
                                 draftVertices.toList(),
                                 selectedVertexIndex,
                                 displayPreferences.coverageScope,
@@ -808,12 +870,16 @@ fun MapScreen(
                 activeMode = mode
                 mapInstance?.let { applyMapMode(it, mode) }
             },
-            onLayersClick = { showLayersDialog = true }
+            onLayersClick = { showLayersDialog = true },
+            onHerdsClick = {
+                herdManagerPastureFilterId = null
+                showHerdManagerDialog = true
+            }
         )
 
         if (
             interactionState == InteractionState.ORDINARY &&
-            selectedWater == null && selectedPasture == null && selectedGateId == null
+            selectedWater == null && selectedPasture == null && selectedGateId == null && selectedHerd == null
         ) {
             Surface(
                 modifier = Modifier
@@ -1169,7 +1235,384 @@ fun MapScreen(
             }
         }
 
+        if (interactionState == InteractionState.ORDINARY && selectedHerd != null) {
+            val herd = selectedHerd
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF1E1E1E)
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(herd.name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${herd.quantity} ${if (herd.countUnit == CountUnit.PAIRS) "Pairs" else "Head"}",
+                            color = Color(android.graphics.Color.parseColor(herd.markerColorHex)),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Text(herd.stockClass.displayName, color = Color.LightGray, fontSize = 12.sp)
+                    val location = pastures.find { it.pasture.id == herd.currentPastureId }?.pasture?.name
+                        ?: herd.locationKind.name
+                    Text("Location: $location", color = Color(0xFF00E5FF), fontSize = 12.sp)
+                    if (herd.notes.isNotBlank()) Text(herd.notes, color = Color.Gray, fontSize = 11.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Button(
+                            onClick = { showPlanMoveDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
+                        ) { Text("Move", fontSize = 11.sp) }
+                        OutlinedButton(
+                            onClick = { herdBeingEdited = herd; showHerdCreateEditDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
+                        ) { Text("Edit", fontSize = 11.sp) }
+                        OutlinedButton(
+                            onClick = { showMoveHistoryDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
+                        ) { Text("History", fontSize = 11.sp) }
+                        OutlinedButton(
+                            onClick = { showArchiveHerdConfirmDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
+                        ) { Text("Archive", color = Color.Red, fontSize = 10.sp) }
+                    }
+                }
+            }
+        }
+
         ActiveAttribution(activeMode, currentZoom)
+    }
+
+    if (showHerdManagerDialog) {
+        val displayedHerds = herdManagerPastureFilterId?.let { pastureId ->
+            herds.filter { it.currentPastureId == pastureId }
+        } ?: herds
+        AlertDialog(
+            onDismissRequest = { showHerdManagerDialog = false; herdManagerPastureFilterId = null },
+            title = {
+                val pastureName = pastures.find { it.pasture.id == herdManagerPastureFilterId }?.pasture?.name
+                Text(pastureName?.let { "Herds in $it" } ?: "Herds & Grazing Groups")
+            },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = { herdBeingEdited = null; showHerdCreateEditDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("+ Create New Herd") }
+                    Spacer(Modifier.width(8.dp))
+                    if (displayedHerds.isEmpty()) {
+                        Text("No active herds in this view.", color = Color.Gray)
+                    } else {
+                        LazyColumn(Modifier.heightIn(max = 300.dp)) {
+                            items(displayedHerds) { herd ->
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable {
+                                        selectedHerdId = herd.id
+                                        selectedMovementId = null
+                                        showHerdManagerDialog = false
+                                        herdManagerPastureFilterId = null
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFF252525)
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(herd.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                            Text("${herd.quantity} ${herd.countUnit.name} • ${herd.stockClass.displayName}", color = Color.LightGray, fontSize = 11.sp)
+                                        }
+                                        Text(herd.shortMarkerLabel ?: "●", color = Color(android.graphics.Color.parseColor(herd.markerColorHex)))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHerdManagerDialog = false; herdManagerPastureFilterId = null }) { Text("Close") }
+            }
+        )
+    }
+
+    if (showHerdCreateEditDialog) {
+        val editing = herdBeingEdited
+        var name by remember(editing?.id) { mutableStateOf(editing?.name.orEmpty()) }
+        var quantityText by remember(editing?.id) { mutableStateOf(editing?.quantity?.toString().orEmpty()) }
+        var countUnit by remember(editing?.id) { mutableStateOf(editing?.countUnit ?: CountUnit.HEAD) }
+        var stockClass by remember(editing?.id) { mutableStateOf(editing?.stockClass ?: StockClass.COW_CALF_PAIRS) }
+        var weightText by remember(editing?.id) { mutableStateOf(editing?.averageWeightLbs?.toString().orEmpty()) }
+        var color by remember(editing?.id) { mutableStateOf(editing?.markerColorHex ?: "#FF9100") }
+        var shortLabel by remember(editing?.id) { mutableStateOf(editing?.shortMarkerLabel.orEmpty()) }
+        var notes by remember(editing?.id) { mutableStateOf(editing?.notes.orEmpty()) }
+        var locationKind by remember(editing?.id) { mutableStateOf(editing?.locationKind ?: HerdLocationKind.PASTURE) }
+        var pastureId by remember(editing?.id) { mutableStateOf(editing?.currentPastureId ?: pastures.firstOrNull()?.pasture?.id) }
+        val colors = listOf("#FF9100", "#00E5FF", "#76FF03", "#FF2D95", "#D500F9", "#FFD600")
+        AlertDialog(
+            onDismissRequest = { showHerdCreateEditDialog = false },
+            title = { Text(if (editing == null) "Create Herd" else "Edit Herd Details") },
+            text = {
+                LazyColumn(Modifier.fillMaxWidth()) {
+                    item {
+                        OutlinedTextField(name, { name = it }, label = { Text("Herd name") }, singleLine = true)
+                        OutlinedTextField(quantityText, { quantityText = it }, label = { Text("Quantity") }, singleLine = true)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CountUnit.entries.forEach { unit ->
+                                FilterChip(countUnit == unit, { countUnit = unit }, label = { Text(unit.name) })
+                            }
+                        }
+                        Text("Stock class", color = Color.Gray, fontSize = 12.sp)
+                        StockClass.entries.forEach { value ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(stockClass == value, { stockClass = value })
+                                Text(value.displayName, fontSize = 12.sp)
+                            }
+                        }
+                        OutlinedTextField(weightText, { weightText = it }, label = { Text("Average weight (lbs, optional)") }, singleLine = true)
+                        Text("Marker color", color = Color.Gray, fontSize = 12.sp)
+                        colors.chunked(3).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                row.forEach { value ->
+                                    FilterChip(color == value, { color = value }, label = { Text(value, fontSize = 9.sp) })
+                                }
+                            }
+                        }
+                        OutlinedTextField(shortLabel, { if (it.length <= 4) shortLabel = it }, label = { Text("Short label (max 4)") }, singleLine = true)
+                        if (editing != null) {
+                            val currentLocation = pastures.find { it.pasture.id == editing.currentPastureId }?.pasture?.name ?: editing.locationKind.name
+                            Text("Current location: $currentLocation", color = Color(0xFF00E5FF), fontSize = 12.sp)
+                            Text("Use Move to change location and preserve history.", color = Color.Gray, fontSize = 10.sp)
+                        } else {
+                            Text("Initial location", color = Color.Gray, fontSize = 12.sp)
+                            HerdLocationKind.entries.forEach { value ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(locationKind == value, { locationKind = value })
+                                    Text(value.name, fontSize = 12.sp)
+                                }
+                            }
+                            if (locationKind == HerdLocationKind.PASTURE) {
+                                Text("Pasture", color = Color.Gray, fontSize = 12.sp)
+                                pastures.forEach { pasture ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        RadioButton(pastureId == pasture.pasture.id, { pastureId = pasture.pasture.id })
+                                        Text(pasture.pasture.name, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                        OutlinedTextField(notes, { notes = it }, label = { Text("Notes") })
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val quantity = quantityText.toIntOrNull()
+                    val weight = weightText.takeIf { it.isNotBlank() }?.toDoubleOrNull()
+                    if (name.isBlank() || quantity == null || quantity <= 0 || (weightText.isNotBlank() && (weight == null || weight <= 0.0))) {
+                        Toast.makeText(context, "Enter a name, positive quantity, and valid optional weight", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
+                    if (editing == null && locationKind == HerdLocationKind.PASTURE && pastureId == null) {
+                        Toast.makeText(context, "Select an initial pasture", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                if (editing != null) {
+                                    database.herdDao().updateHerdDetails(editing.id, name, quantity, countUnit, stockClass, weight, color, shortLabel, notes)
+                                } else {
+                                    database.herdDao().createHerd(
+                                        HerdEntity(
+                                            name = name.trim(), quantity = quantity, countUnit = countUnit,
+                                            stockClass = stockClass, averageWeightLbs = weight,
+                                            markerColorHex = color, shortMarkerLabel = shortLabel.trim().ifBlank { null },
+                                            notes = notes.trim(), locationKind = locationKind,
+                                            currentPastureId = pastureId.takeIf { locationKind == HerdLocationKind.PASTURE }
+                                        )
+                                    )
+                                }
+                            }
+                            showHerdCreateEditDialog = false
+                        } catch (error: Exception) {
+                            Toast.makeText(context, error.message ?: "Failed to save herd", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showHerdCreateEditDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (showPlanMoveDialog && selectedHerd != null) {
+        val herd = selectedHerd
+        var destinationKind by remember(herd.id) { mutableStateOf(HerdLocationKind.PASTURE) }
+        var destinationPastureId by remember(herd.id) { mutableStateOf(pastures.firstOrNull { it.pasture.id != herd.currentPastureId }?.pasture?.id) }
+        var unmappedRoute by remember(herd.id) { mutableStateOf(false) }
+        var routeGateId by remember(herd.id) { mutableStateOf<Long?>(null) }
+        var completeNow by remember(herd.id) { mutableStateOf(true) }
+        var plannedDayOffset by remember(herd.id) { mutableIntStateOf(0) }
+        var movementNotes by remember(herd.id) { mutableStateOf("") }
+        val validGates = displayedGates.filter { gate ->
+            val originId = herd.currentPastureId
+            val destinationId = destinationPastureId
+            when {
+                herd.locationKind == HerdLocationKind.PASTURE && destinationKind == HerdLocationKind.PASTURE ->
+                    (gate.pastureAId == originId && gate.pastureBId == destinationId) || (gate.pastureAId == destinationId && gate.pastureBId == originId)
+                herd.locationKind == HerdLocationKind.PASTURE -> !gate.isShared && gate.pastureAId == originId
+                destinationKind == HerdLocationKind.PASTURE -> !gate.isShared && gate.pastureAId == destinationId
+                else -> false
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { showPlanMoveDialog = false },
+            title = { Text("Move ${herd.name}") },
+            text = {
+                LazyColumn(Modifier.fillMaxWidth()) {
+                    item {
+                        Text("Destination", color = Color.Gray, fontSize = 12.sp)
+                        listOf(HerdLocationKind.PASTURE, HerdLocationKind.PEN, HerdLocationKind.OFF_RANCH).forEach { value ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(destinationKind == value, { destinationKind = value; routeGateId = null })
+                                Text(value.name, fontSize = 12.sp)
+                            }
+                        }
+                        if (destinationKind == HerdLocationKind.PASTURE) {
+                            pastures.filter { it.pasture.id != herd.currentPastureId }.forEach { pasture ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(destinationPastureId == pasture.pasture.id, { destinationPastureId = pasture.pasture.id; routeGateId = null })
+                                    Text(pasture.pasture.name, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilterChip(!unmappedRoute, { unmappedRoute = false }, label = { Text("Mapped gate") })
+                            FilterChip(unmappedRoute, { unmappedRoute = true; routeGateId = null }, label = { Text("Unmapped") })
+                        }
+                        if (!unmappedRoute) {
+                            if (validGates.isEmpty()) Text("No valid mapped gate for this route.", color = Color(0xFFFFD600), fontSize = 11.sp)
+                            validGates.forEach { gate ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(routeGateId == gate.gate.id, { routeGateId = gate.gate.id })
+                                    Text(gate.gate.name, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilterChip(completeNow, { completeNow = true }, label = { Text("Log now") })
+                            FilterChip(!completeNow, { completeNow = false }, label = { Text("Schedule") })
+                        }
+                        if (!completeNow) {
+                            listOf(0 to "Today", 1 to "+1 day", 3 to "+3 days", 7 to "+7 days").forEach { (days, label) ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(plannedDayOffset == days, { plannedDayOffset = days })
+                                    Text(label, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                        OutlinedTextField(movementNotes, { movementNotes = it }, label = { Text(if (unmappedRoute) "Route notes (required)" else "Notes") })
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (unmappedRoute && movementNotes.isBlank()) {
+                        Toast.makeText(context, "Unmapped routes require explanatory notes", Toast.LENGTH_LONG).show(); return@Button
+                    }
+                    if (!unmappedRoute && routeGateId == null) {
+                        Toast.makeText(context, "Select a valid gate or choose Unmapped", Toast.LENGTH_LONG).show(); return@Button
+                    }
+                    val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, plannedDayOffset) }
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                database.movementDao().scheduleOrLogMovement(
+                                    herd.id, destinationKind,
+                                    destinationPastureId.takeIf { destinationKind == HerdLocationKind.PASTURE },
+                                    routeGateId.takeUnless { unmappedRoute }, unmappedRoute,
+                                    calendar.timeInMillis, completeNow, movementNotes
+                                )
+                            }
+                            showPlanMoveDialog = false
+                        } catch (error: Exception) {
+                            Toast.makeText(context, error.message ?: "Failed to record movement", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Confirm") }
+            },
+            dismissButton = { TextButton(onClick = { showPlanMoveDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (showMoveHistoryDialog && selectedHerd != null) {
+        val herdMovements = movements.filter { it.herdId == selectedHerd.id }
+        AlertDialog(
+            onDismissRequest = { showMoveHistoryDialog = false },
+            title = { Text("Movement History & Plans") },
+            text = {
+                if (herdMovements.isEmpty()) Text("No recorded movements.", color = Color.Gray) else LazyColumn(Modifier.heightIn(max = 340.dp)) {
+                    items(herdMovements) { movement ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable {
+                                selectedMovementId = movement.id
+                                showMoveHistoryDialog = false
+                            },
+                            shape = RoundedCornerShape(8.dp), color = Color(0xFF252525)
+                        ) {
+                            Column(Modifier.padding(10.dp)) {
+                                Text("${movement.originNameSnapshot} → ${movement.destinationNameSnapshot}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("${movement.status} • ${movement.gateSnapshot ?: "Unmapped route"}", color = Color.LightGray, fontSize = 11.sp)
+                                if (movement.status == MovementStatus.PLANNED) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Button(onClick = {
+                                            scope.launch {
+                                                try {
+                                                    withContext(Dispatchers.IO) { database.movementDao().completePlannedMovement(movement.id, System.currentTimeMillis(), null) }
+                                                } catch (error: Exception) { Toast.makeText(context, error.message, Toast.LENGTH_LONG).show() }
+                                            }
+                                        }) { Text("Complete", fontSize = 10.sp) }
+                                        OutlinedButton(onClick = {
+                                            scope.launch {
+                                                try {
+                                                    withContext(Dispatchers.IO) { database.movementDao().cancelPlannedMovement(movement.id) }
+                                                } catch (error: Exception) { Toast.makeText(context, error.message, Toast.LENGTH_LONG).show() }
+                                            }
+                                        }) { Text("Cancel", fontSize = 10.sp, color = Color.Red) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showMoveHistoryDialog = false }) { Text("Close") } }
+        )
+    }
+
+    if (showArchiveHerdConfirmDialog && selectedHerd != null) {
+        AlertDialog(
+            onDismissRequest = { showArchiveHerdConfirmDialog = false },
+            title = { Text("Archive Herd?") },
+            text = { Text("Archive '${selectedHerd.name}'? Its location will be cleared while movement history remains available.") },
+            confirmButton = {
+                Button(onClick = {
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { database.herdDao().archiveHerdWithChecks(selectedHerd.id) }
+                            selectedHerdId = null
+                            showArchiveHerdConfirmDialog = false
+                        } catch (error: Exception) { Toast.makeText(context, error.message, Toast.LENGTH_LONG).show() }
+                    }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) { Text("Archive") }
+            },
+            dismissButton = { TextButton(onClick = { showArchiveHerdConfirmDialog = false }) { Text("Cancel") } }
+        )
     }
 
     pendingSharedMoveJunctionId?.let { junctionId ->
@@ -1582,9 +2025,13 @@ fun MapScreen(
                     onClick = {
                         if (gate != null) {
                             scope.launch {
-                                gateDao.deleteGate(gate)
-                                selectedGateId = null
-                                showGateDeleteDialog = false
+                                try {
+                                    gateDao.deleteGateWithChecks(gate)
+                                    selectedGateId = null
+                                    showGateDeleteDialog = false
+                                } catch (error: IllegalStateException) {
+                                    Toast.makeText(context, error.message ?: "Cannot delete gate", Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     },
@@ -1915,7 +2362,8 @@ private fun MapStatusAndModeControls(
     coverageScope: SpatialCoverageScope,
     pastureFillEnabled: Boolean,
     onModeSelected: (ActiveMapMode) -> Unit,
-    onLayersClick: () -> Unit
+    onLayersClick: () -> Unit,
+    onHerdsClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp, start = 12.dp, end = 12.dp),
@@ -2019,6 +2467,13 @@ private fun MapStatusAndModeControls(
                     fontWeight = FontWeight.Bold
                 )
             }
+            Spacer(Modifier.width(6.dp))
+            Button(
+                onClick = onHerdsClick,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32), contentColor = Color.White),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) { Text("Herds", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -2629,6 +3084,9 @@ private fun pushAllOverlays(
     selectedPastureId: Long?,
     gates: List<GateWithConnectivity>,
     selectedGateId: Long?,
+    herds: List<HerdEntity>,
+    selectedHerdId: Long?,
+    activeMovement: CattleMovementEntity?,
     draftVertices: List<PastureCoordinate>,
     selectedVertexIndex: Int?,
     coverageScope: SpatialCoverageScope,
@@ -2655,6 +3113,12 @@ private fun pushAllOverlays(
             ?.setGeoJson(PastureFeatureConverter.toPastureBoundaryLines(pastures, gates, selectedPastureId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_GATES)
             ?.setGeoJson(GateFeatureConverter.toGateFeatures(gates, selectedGateId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_HERD_BADGES)
+            ?.setGeoJson(HerdFeatureConverter.toHerdBadges(herds, pastures, selectedHerdId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_MOVEMENT_ROUTE)
+            ?.setGeoJson(MovementFeatureConverter.toMovementRouteLines(activeMovement, pastures, gates))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_MOVEMENT_HIGHLIGHT)
+            ?.setGeoJson(MovementFeatureConverter.toMovementHighlights(activeMovement, pastures))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_DRAFT)
             ?.setGeoJson(PastureFeatureConverter.draftFeature(draftVertices))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_HANDLES)
@@ -2727,10 +3191,10 @@ private fun queryFeaturesNear(
     map: MapLibreMap,
     point: PointF,
     radius: Float,
-    layer: String
+    vararg layers: String
 ) = map.queryRenderedFeatures(
     RectF(point.x - radius, point.y - radius, point.x + radius, point.y + radius),
-    layer
+    *layers
 )
 
 private fun LatLng.toPastureCoordinate() = PastureCoordinate(latitude, longitude)

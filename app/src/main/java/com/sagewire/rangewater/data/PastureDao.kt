@@ -68,6 +68,12 @@ interface PastureDao {
     @Query("SELECT * FROM pasture_vertices WHERE pastureId = :pastureId ORDER BY sequence ASC")
     suspend fun verticesForPasture(pastureId: Long): List<PastureVertexEntity>
 
+    @Query("SELECT COUNT(*) FROM herds WHERE currentPastureId = :pastureId AND archivedAt IS NULL")
+    suspend fun countActiveHerdsInPasture(pastureId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM cattle_movements WHERE status = 'PLANNED' AND (originPastureId = :pastureId OR destinationPastureId = :pastureId)")
+    suspend fun countPlannedMovementsForPasture(pastureId: Long): Int
+
     @Query("SELECT COUNT(*) FROM gates WHERE junctionAId = :junctionAId AND junctionBId = :junctionBId")
     suspend fun gateCountOnSegment(junctionAId: Long, junctionBId: Long): Int
 
@@ -99,6 +105,12 @@ interface PastureDao {
 
     @Transaction
     suspend fun deleteById(id: Long) {
+        if (countActiveHerdsInPasture(id) > 0) {
+            throw IllegalStateException("Cannot delete pasture: Currently occupied by an active herd.")
+        }
+        if (countPlannedMovementsForPasture(id) > 0) {
+            throw IllegalStateException("Cannot delete pasture: Referenced by an active planned cattle movement.")
+        }
         val vertices = verticesForPasture(id)
         vertices.canonicalVertexSegments().forEach { (junctionAId, junctionBId) ->
             if (gateCountOnSegment(junctionAId, junctionBId) > 0 &&

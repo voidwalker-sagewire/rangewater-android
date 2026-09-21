@@ -48,8 +48,19 @@ interface GateDao {
         timestamp: Long
     )
 
+    @Query("SELECT COUNT(*) FROM cattle_movements WHERE status = 'PLANNED' AND gateId = :gateId")
+    suspend fun countPlannedMovementsForGate(gateId: Long): Int
+
     @Delete
-    suspend fun deleteGate(gate: GateEntity)
+    suspend fun deleteGateRaw(gate: GateEntity)
+
+    @Transaction
+    suspend fun deleteGateWithChecks(gate: GateEntity) {
+        if (countPlannedMovementsForGate(gate.id) > 0) {
+            throw IllegalStateException("Cannot delete gate: Referenced by an active planned movement.")
+        }
+        deleteGateRaw(gate)
+    }
 
     @Transaction
     suspend fun insertValidatedGate(gate: GateEntity): Long {
@@ -115,6 +126,9 @@ interface GateDao {
         require(junctionAId < junctionBId) { "Gate anchor junctions must be canonical" }
         require(segmentRatio in 0.0..1.0) { "Gate ratio must be between 0 and 1" }
         val existing = getById(id) ?: throw IllegalArgumentException("Gate #$id not found")
+        if (countPlannedMovementsForGate(id) > 0) {
+            throw IllegalStateException("Cannot relocate gate: Referenced by an active planned cattle movement.")
+        }
         val updated = existing.copy(
             junctionAId = junctionAId,
             junctionBId = junctionBId,

@@ -19,9 +19,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FenceJunctionEntity::class,
         PastureVertexEntity::class,
         WaterPastureAssignmentEntity::class,
-        GateEntity::class
+        GateEntity::class,
+        HerdEntity::class,
+        CattleMovementEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
@@ -30,6 +32,8 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun fenceJunctionDao(): FenceJunctionDao
     abstract fun waterPastureAssignmentDao(): WaterPastureAssignmentDao
     abstract fun gateDao(): GateDao
+    abstract fun herdDao(): HerdDao
+    abstract fun movementDao(): MovementDao
 
     companion object {
         @Volatile
@@ -201,13 +205,76 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `herds` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL COLLATE NOCASE,
+                        `quantity` INTEGER NOT NULL,
+                        `countUnit` TEXT NOT NULL,
+                        `stockClass` TEXT NOT NULL,
+                        `averageWeightLbs` REAL,
+                        `markerColorHex` TEXT NOT NULL,
+                        `shortMarkerLabel` TEXT,
+                        `notes` TEXT NOT NULL,
+                        `locationKind` TEXT NOT NULL,
+                        `currentPastureId` INTEGER,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `archivedAt` INTEGER,
+                        FOREIGN KEY(`currentPastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_herds_name` ON `herds` (`name`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_herds_currentPastureId` ON `herds` (`currentPastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_herds_archivedAt` ON `herds` (`archivedAt`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `cattle_movements` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `herdId` INTEGER NOT NULL,
+                        `originLocationKind` TEXT NOT NULL,
+                        `originPastureId` INTEGER,
+                        `originNameSnapshot` TEXT NOT NULL,
+                        `destinationLocationKind` TEXT NOT NULL,
+                        `destinationPastureId` INTEGER,
+                        `destinationNameSnapshot` TEXT NOT NULL,
+                        `quantity` INTEGER NOT NULL,
+                        `countUnit` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `plannedAt` INTEGER,
+                        `completedAt` INTEGER,
+                        `unmappedRoute` INTEGER NOT NULL,
+                        `gateId` INTEGER,
+                        `gateSnapshot` TEXT,
+                        `notes` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`herdId`) REFERENCES `herds`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT,
+                        FOREIGN KEY(`originPastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+                        FOREIGN KEY(`destinationPastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+                        FOREIGN KEY(`gateId`) REFERENCES `gates`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cattle_movements_herdId_completedAt` ON `cattle_movements` (`herdId`, `completedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cattle_movements_status_plannedAt` ON `cattle_movements` (`status`, `plannedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cattle_movements_originPastureId` ON `cattle_movements` (`originPastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cattle_movements_destinationPastureId` ON `cattle_movements` (`destinationPastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cattle_movements_gateId` ON `cattle_movements` (`gateId`)")
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     RangeWaterDatabase::class.java,
                     "rangewater_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { instance = it }
             }

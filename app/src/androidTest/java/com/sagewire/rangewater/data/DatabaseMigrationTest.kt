@@ -56,7 +56,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_1_2,
                 RangeWaterDatabase.MIGRATION_2_3,
                 RangeWaterDatabase.MIGRATION_3_4,
-                RangeWaterDatabase.MIGRATION_4_5
+                RangeWaterDatabase.MIGRATION_4_5,
+                RangeWaterDatabase.MIGRATION_5_6
             )
             .allowMainThreadQueries()
             .build()
@@ -170,7 +171,8 @@ class DatabaseMigrationTest {
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_2_3,
                 RangeWaterDatabase.MIGRATION_3_4,
-                RangeWaterDatabase.MIGRATION_4_5
+                RangeWaterDatabase.MIGRATION_4_5,
+                RangeWaterDatabase.MIGRATION_5_6
             )
             .allowMainThreadQueries()
             .build()
@@ -248,7 +250,7 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_4_5)
+            .addMigrations(RangeWaterDatabase.MIGRATION_4_5, RangeWaterDatabase.MIGRATION_5_6)
             .allowMainThreadQueries()
             .build()
         try {
@@ -264,6 +266,48 @@ class DatabaseMigrationTest {
             assertNotNull(gate)
             assertEquals("East Gate", gate?.name)
             assertEquals(4.27, gate?.widthMeters ?: 0.0, 0.001)
+        } finally {
+            migrated.close()
+        }
+    }
+
+    @Test
+    fun migrationFiveToSixCreatesHerdAndMovementSchemaAndPreservesData() = runBlocking {
+        context.openOrCreateDatabase(databaseName, Context.MODE_PRIVATE, null).use { database ->
+            database.execSQL("CREATE TABLE `water_points` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `name` TEXT NOT NULL, `sourceType` TEXT NOT NULL, `notes` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
+            database.execSQL("CREATE TABLE `pastures` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `notes` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)")
+            database.execSQL("CREATE TABLE `fence_junctions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `elevationMeters` REAL, `elevationSource` TEXT, `verticalDatum` TEXT, `verticalAccuracyMeters` REAL, `elevationCapturedAt` INTEGER)")
+            database.execSQL("CREATE TABLE `pasture_vertices` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `pastureId` INTEGER NOT NULL, `sequence` INTEGER NOT NULL, `junctionId` INTEGER NOT NULL, FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(`junctionId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION)")
+            database.execSQL("CREATE INDEX `index_pasture_vertices_pastureId` ON `pasture_vertices` (`pastureId`)")
+            database.execSQL("CREATE INDEX `index_pasture_vertices_junctionId` ON `pasture_vertices` (`junctionId`)")
+            database.execSQL("CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_sequence` ON `pasture_vertices` (`pastureId`, `sequence`)")
+            database.execSQL("CREATE UNIQUE INDEX `index_pasture_vertices_pastureId_junctionId` ON `pasture_vertices` (`pastureId`, `junctionId`)")
+            database.execSQL("CREATE TABLE `water_pasture_assignments` (`waterPointId` INTEGER NOT NULL, `pastureId` INTEGER NOT NULL, `assignedAt` INTEGER NOT NULL, PRIMARY KEY(`waterPointId`, `pastureId`), FOREIGN KEY(`waterPointId`) REFERENCES `water_points`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+            database.execSQL("CREATE INDEX `index_water_pasture_assignments_waterPointId` ON `water_pasture_assignments` (`waterPointId`)")
+            database.execSQL("CREATE INDEX `index_water_pasture_assignments_pastureId` ON `water_pasture_assignments` (`pastureId`)")
+            database.execSQL("CREATE TABLE `gates` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `junctionAId` INTEGER NOT NULL, `junctionBId` INTEGER NOT NULL, `segmentRatio` REAL NOT NULL, `widthMeters` REAL NOT NULL, `gateType` TEXT NOT NULL, `status` TEXT NOT NULL, `notes` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`junctionAId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION, FOREIGN KEY(`junctionBId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION)")
+            database.execSQL("CREATE INDEX `index_gates_junctionAId` ON `gates` (`junctionAId`)")
+            database.execSQL("CREATE INDEX `index_gates_junctionBId` ON `gates` (`junctionBId`)")
+            database.execSQL("CREATE UNIQUE INDEX `index_gates_junctionAId_junctionBId_segmentRatio` ON `gates` (`junctionAId`, `junctionBId`, `segmentRatio`)")
+            database.execSQL("INSERT INTO water_points VALUES (1, 40.0, -100.0, 'Trough 1', 'TROUGH', '', 10, 10)")
+            database.execSQL("INSERT INTO pastures VALUES (1, 'North Meadow', '', 100, 100)")
+            database.version = 5
+        }
+
+        val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
+            .addMigrations(RangeWaterDatabase.MIGRATION_5_6)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            assertEquals("Trough 1", migrated.waterPointDao().getById(1)?.name)
+            val id = migrated.herdDao().createHerd(
+                HerdEntity(
+                    name = "Calvers", quantity = 40, countUnit = CountUnit.PAIRS,
+                    stockClass = StockClass.COW_CALF_PAIRS, markerColorHex = "#FF9100",
+                    locationKind = HerdLocationKind.PASTURE, currentPastureId = 1
+                )
+            )
+            assertEquals("Calvers", migrated.herdDao().getById(id)?.name)
         } finally {
             migrated.close()
         }

@@ -60,6 +60,9 @@ object MapConfig {
     const val SOURCE_PASTURES = "source-pastures"
     const val SOURCE_PASTURE_LINES = "source-pasture-lines"
     const val SOURCE_GATES = "source-gates"
+    const val SOURCE_HERD_BADGES = "source-herd-badges"
+    const val SOURCE_MOVEMENT_ROUTE = "source-movement-route"
+    const val SOURCE_MOVEMENT_HIGHLIGHT = "source-movement-highlight"
     const val SOURCE_PASTURE_DRAFT = "source-pasture-draft"
     const val SOURCE_PASTURE_HANDLES = "source-pasture-handles"
     const val SOURCE_SNAPPED_JUNCTION = "source-snapped-junction"
@@ -81,6 +84,9 @@ object MapConfig {
     const val LAYER_GATE_LEAF_CASING = "layer-gate-leaf-casing"
     const val LAYER_GATE_LEAF = "layer-gate-leaf"
     const val LAYER_GATE_TOUCH_TARGET = "layer-gate-touch-target"
+    const val LAYER_HERD_BADGE_FILL_0 = "layer-herd-badge-fill-0"
+    const val LAYER_HERD_BADGE_FILL_1 = "layer-herd-badge-fill-1"
+    const val LAYER_HERD_BADGE_FILL_2 = "layer-herd-badge-fill-2"
 
     /*
      * 🎮 BLOCK 2 — UNIFIED STYLE SPECIFICATION
@@ -134,6 +140,18 @@ object MapConfig {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
             },
+            "$SOURCE_HERD_BADGES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_MOVEMENT_ROUTE": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_MOVEMENT_HIGHLIGHT": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
             "$SOURCE_PASTURE_DRAFT": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
@@ -184,6 +202,18 @@ object MapConfig {
                 "fill-color": "#FF2D95",
                 "fill-opacity": 0.08
               }
+            },
+            {
+              "id": "layer-movement-highlight-fill",
+              "type": "fill",
+              "source": "$SOURCE_MOVEMENT_HIGHLIGHT",
+              "paint": { "fill-color": "#FF9100", "fill-opacity": 0.22 }
+            },
+            {
+              "id": "layer-movement-highlight-line",
+              "type": "line",
+              "source": "$SOURCE_MOVEMENT_HIGHLIGHT",
+              "paint": { "line-color": "#FF9100", "line-width": 3.0, "line-dasharray": [3.0, 2.0] }
             },
             {
               "id": "$LAYER_WATER_TRANSITION_FILL",
@@ -296,6 +326,26 @@ object MapConfig {
               }
             },
             {
+              "id": "layer-movement-route-casing",
+              "type": "line",
+              "source": "$SOURCE_MOVEMENT_ROUTE",
+              "paint": { "line-color": "#151515", "line-width": 5.0 }
+            },
+            {
+              "id": "layer-movement-route-planned",
+              "type": "line",
+              "source": "$SOURCE_MOVEMENT_ROUTE",
+              "filter": ["==", ["get", "isPlanned"], true],
+              "paint": { "line-color": "#FF9100", "line-width": 3.0, "line-dasharray": [2.0, 2.0] }
+            },
+            {
+              "id": "layer-movement-route-completed",
+              "type": "line",
+              "source": "$SOURCE_MOVEMENT_ROUTE",
+              "filter": ["==", ["get", "isPlanned"], false],
+              "paint": { "line-color": "#00E5FF", "line-width": 3.0 }
+            },
+            {
               "id": "$LAYER_GATE_ARC",
               "type": "line",
               "source": "$SOURCE_GATES",
@@ -367,6 +417,54 @@ object MapConfig {
                 "circle-stroke-width": [
                   "case", ["get", "selected"], 3.0, 2.0
                 ]
+              }
+            },
+            {
+              "id": "layer-herd-badge-casing-0",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 0],
+              "paint": { "circle-radius": ["case", ["get", "selected"], 14.0, 10.0], "circle-color": "#151515" }
+            },
+            {
+              "id": "$LAYER_HERD_BADGE_FILL_0",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 0],
+              "paint": { "circle-radius": ["case", ["get", "selected"], 12.0, 8.0], "circle-color": ["get", "color"], "circle-stroke-color": ["case", ["get", "selected"], "#FFFFFF", "#151515"], "circle-stroke-width": 2.0 }
+            },
+            {
+              "id": "layer-herd-badge-casing-1",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 1],
+              "paint": { "circle-radius": ["case", ["get", "selected"], 14.0, 10.0], "circle-color": "#151515", "circle-translate": [0.0, -24.0] }
+            },
+            {
+              "id": "$LAYER_HERD_BADGE_FILL_1",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 1],
+              "paint": { "circle-radius": ["case", ["get", "selected"], 12.0, 8.0], "circle-color": ["get", "color"], "circle-stroke-color": ["case", ["get", "selected"], "#FFFFFF", "#151515"], "circle-stroke-width": 2.0, "circle-translate": [0.0, -24.0] }
+            },
+            {
+              "id": "layer-herd-badge-casing-2",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 2],
+              "paint": { "circle-radius": ["case", ["get", "selected"], 14.0, 10.0], "circle-color": "#151515", "circle-translate": [0.0, -48.0] }
+            },
+            {
+              "id": "$LAYER_HERD_BADGE_FILL_2",
+              "type": "circle",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 2],
+              "paint": {
+                "circle-radius": ["case", ["get", "selected"], 12.0, 8.0],
+                "circle-color": ["get", "color"],
+                "circle-stroke-color": ["case", ["get", "isOverflow"], "#FF9100", ["case", ["get", "selected"], "#FFFFFF", "#151515"]],
+                "circle-stroke-width": ["case", ["get", "isOverflow"], 3.5, 2.0],
+                "circle-translate": [0.0, -48.0]
               }
             }
           ]

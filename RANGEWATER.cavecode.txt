@@ -12,10 +12,10 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.10.1
-- Version Code: 12
-- Active Feature Branch: codex/rw-tx-009-gte
-- Frozen Baseline Branch: codex/rw-tx-008-jct-rev2 (c3a2f050)
+- App Version: 0.11.0
+- Version Code: 13
+- Active Feature Branch: codex/rw-tx-010-hrd
+- Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
 - Public Production: PAUSED pending RangeWater 1.0 operational scope
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
@@ -42,7 +42,7 @@ RULE:
 - Map Engine: MapLibre Native Android SDK 11.5.1
 - Spatial Math: MapLibre Turf Java 6.0.1 plus JTS Core 1.20.0 for robust
   polygon union and intersection topology
-- Persistence: Android Room 2.8.5 database version 5 with local SQLite,
+- Persistence: Android Room 2.8.5 database version 6 with local SQLite,
   Flow-backed reads, and SharedPreferences-backed display settings
 - CI: GitHub Actions runs JVM geometry tests, Android Room instrumentation tests,
   and builds a debug APK with the committed Gradle wrapper
@@ -65,6 +65,11 @@ RULE:
 - Durable gates: canonical fence-segment anchors, physical clearance, protected
   topology, true fence gaps, persisted open/closed state, and contextual relocation
   are enforced through Room-backed transactions and derived MapLibre geometry
+- Herd logistics: active herds use explicit count, stock-class, and location enums;
+  movement plans snapshot live names and counts, validate gate topology, and update
+  movement status and herd location atomically when completed
+- Herd map overlays: multi-herd pasture occupancy anchors to JTS interior points with
+  fixed screen-space stacking, overflow summarization, and offline vector-circle badges
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -251,6 +256,14 @@ RULE:
       Cancel performs no write; Save atomically preserves the gate identity, attributes,
       status, and createdAt while updating canonical anchors, ratio, and updatedAt.
     - Room remains at version 5; RW-TX-009-REF changes no persisted schema.
+22. Michael approved RW-TX-010-HRD-REV2A for implementation.
+    - Room version 6 adds herds and cattle_movements with durable string snapshots,
+      case-insensitive herd names, guarded archival, and SET NULL asset history.
+    - Planning causes no location drift; completion revalidates the origin and gate
+      topology before atomically updating both the audit row and current herd location.
+    - Offline circle badges use JTS interior points, fixed screen-space stacks, and an
+      overflow feature for four or more herds in a pasture. Route lines never invent
+      geometry for unmapped or deleted gates.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -729,6 +742,18 @@ EVIDENCE STATUS:
   placement, live preview, cancellation rollback, saved relocation, and all previously
   accepted gate behavior remain intact.
 
+- RW-TX-010-HRD-REV2A
+  Status: IMPLEMENTED — CI VERIFICATION PENDING
+  Scope: Room v6 herd and movement persistence, guarded asset deletion and herd
+  archival, bidirectional gate-topology validation, atomic movement completion,
+  JTS interior-point badges with overflow handling, honest route overlays, and
+  non-teleporting Compose management workflows.
+  Baseline: 47895ec22f69dd8cd401e807216fd918ef529c36.
+  Feature branch: codex/rw-tx-010-hrd.
+  Preflight adaptations: preserved DAO-owned gate-length calculation, integrated the
+  expression-bodied database builder and actual overlay call sites, used constant
+  filtered route styles, and made the selection controls safe for phone widths.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -773,17 +798,16 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Gate canvas ergonomics and position relocation
-- Working transmission: RW-TX-009-REF
-- Implementation status: RANGEWATER 0.10.1 ACCEPTED AND PHYSICALLY VERIFIED
-- Authoritative baseline: a13f13a302801ee9bd9448701c5150b3703e6017
-- Verified implementation commit: 42a378686a488160e8d3a35ccb31c61cc793ef23
-- CI status: GREEN — second correction run 35554550240
-- Build artifact: RangeWater-Debug-APK version 0.10.1 (versionCode 12), artifact
-  10619332840, SHA-256 5a36f23f1ef0b13714aa962567f378318ecc7fa2426a0cda797ae09317888a95
+- Current phase: Herds, grazing groups, and movement routing
+- Working transmission: RW-TX-010-HRD-REV2A
+- Implementation status: RANGEWATER 0.11.0 IMPLEMENTED — VERIFICATION PENDING
+- Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
+- Feature branch: codex/rw-tx-010-hrd
+- CI status: PENDING
+- Build artifact: PENDING — RangeWater-Debug-APK version 0.11.0 (versionCode 13)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
-- Current transmission status: RW-TX-009-REF CLOSED — ACCEPTED
+- Current transmission status: RW-TX-010-HRD-REV2A IMPLEMENTED — AWAITING CI
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -791,10 +815,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Preserve RangeWater 0.10.1 as the accepted gate baseline and prepare the
-  next separately approved transmission.
-- Resume point: RW-TX-010 Herds, Grazing Groups, and Movement Routing remains queued;
-  the optional gate-opening cattle animation remains an unratified product idea.
+- Next action: Run JVM tests, Room instrumentation tests, and debug APK assembly in CI.
+- Resume point: Review CI output, correct any compiler or migration findings, then begin
+  physical acceptance on Samsung Tab S7 and Galaxy S26. RangeWater 0.10.1 at 47895ec
+  remains the frozen accepted gate baseline until this transmission is accepted.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
