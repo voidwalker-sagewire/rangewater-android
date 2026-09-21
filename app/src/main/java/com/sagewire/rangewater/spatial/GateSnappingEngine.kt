@@ -46,14 +46,29 @@ object GateSnappingEngine {
         projection: Projection,
         tolerancePx: Float,
         gateWidthMeters: Double = GateEntity.WIDTH_14_FT
-    ): GateSnapResult = findCandidateSegment(
+    ): GateSnapResult = findCandidateSegmentWithinMeters(
         tapPoint = tapPoint,
         pastures = pastures,
-        tolerancePx = tolerancePx.toDouble(),
+        toleranceMeters = tolerancePx * projection.getMetersPerPixelAtLatitude(tapPoint.latitude),
         gateWidthMeters = gateWidthMeters
-    ) { coordinate ->
-        projection.toScreenLocation(coordinate).let { ScreenCoordinate(it.x.toDouble(), it.y.toDouble()) }
-    }
+    )
+
+    /**
+     * Physical-distance seam used by the live map hit test. MapLibre supplies the
+     * current meters-per-pixel scale once; fence acceptance no longer depends on
+     * projecting offscreen or sub-pixel coordinates back through the renderer.
+     */
+    fun findCandidateSegmentWithinMeters(
+        tapPoint: LatLng,
+        pastures: List<PastureWithVertices>,
+        toleranceMeters: Double,
+        gateWidthMeters: Double = GateEntity.WIDTH_14_FT
+    ): GateSnapResult = findCandidateSegmentInternal(
+        tapPoint = tapPoint,
+        pastures = pastures,
+        tolerance = toleranceMeters,
+        gateWidthMeters = gateWidthMeters
+    ) { _, physicalDistance -> physicalDistance }
 
     /** Pure projection seam keeps canonical snapping and clearance math JVM-testable. */
     fun findCandidateSegment(
@@ -64,8 +79,29 @@ object GateSnappingEngine {
         project: (LatLng) -> ScreenCoordinate
     ): GateSnapResult {
         val tapScreen = project(tapPoint)
+        return findCandidateSegmentInternal(
+            tapPoint = tapPoint,
+            pastures = pastures,
+            tolerance = tolerancePx,
+            gateWidthMeters = gateWidthMeters
+        ) { nearestCoordinate, _ ->
+            val nearestScreen = project(nearestCoordinate)
+            sqrt(
+                (tapScreen.x - nearestScreen.x) * (tapScreen.x - nearestScreen.x) +
+                    (tapScreen.y - nearestScreen.y) * (tapScreen.y - nearestScreen.y)
+            )
+        }
+    }
+
+    private fun findCandidateSegmentInternal(
+        tapPoint: LatLng,
+        pastures: List<PastureWithVertices>,
+        tolerance: Double,
+        gateWidthMeters: Double,
+        distanceToFence: (nearestCoordinate: LatLng, physicalDistanceMeters: Double) -> Double
+    ): GateSnapResult {
         var closest: SnappedGateCandidate? = null
-        var closestDistance = tolerancePx
+        var closestDistance = tolerance
         var shortFenceInRange = false
 
         pastures.forEach pastureLoop@ { pasture ->
@@ -99,12 +135,12 @@ object GateSnappingEngine {
                     endCoordinate,
                     rawTraversalRatio.coerceIn(0.0, 1.0)
                 )
-                val nearestScreen = project(nearestCoordinate)
-                val distance = sqrt(
-                    (tapScreen.x - nearestScreen.x) * (tapScreen.x - nearestScreen.x) +
-                        (tapScreen.y - nearestScreen.y) * (tapScreen.y - nearestScreen.y)
-                )
-                if (distance > tolerancePx) return@segmentLoop
+                val clampedTraversalRatio = rawTraversalRatio.coerceIn(0.0, 1.0)
+                val nearestX = startX + clampedTraversalRatio * physicalDx
+                val nearestY = startY + clampedTraversalRatio * physicalDy
+                val physicalDistance = sqrt(nearestX * nearestX + nearestY * nearestY)
+                val distance = distanceToFence(nearestCoordinate, physicalDistance)
+                if (distance > tolerance) return@segmentLoop
 
                 val segmentLength = calculateSegmentLengthMeters(startCoordinate, endCoordinate)
                 if (segmentLength < gateWidthMeters + 1.0) {
