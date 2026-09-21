@@ -43,7 +43,7 @@ class MovementDaoTest {
         assertEquals(geometry.secondPasture, herdDao.getById(herdId)?.currentPastureId)
         val movement = movementDao.getById(moveId)!!
         assertEquals(MovementStatus.COMPLETED, movement.status)
-        assertEquals(2000, movement.completedAt)
+        assertEquals(2000L, movement.completedAt)
         assertEquals("Field A", movement.originNameSnapshot)
         assertEquals("Field B", movement.destinationNameSnapshot)
         assertEquals(CountUnit.PAIRS, movement.countUnit)
