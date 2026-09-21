@@ -167,6 +167,39 @@ class GateSnappingEngineTest {
         assertEquals(0.75, candidate.segmentRatio, 0.01)
     }
 
+    @Test
+    fun closeZoomPhysicalHitTestAcceptsFenceWithoutRendererRoundTrip() {
+        val pasture = pasture(
+            7,
+            "Close zoom physical hit",
+            listOf(
+                vertex(1, 7, 0, junction(100, 40.0, -100.0)),
+                vertex(2, 7, 1, junction(200, 40.0, -99.98)),
+                vertex(3, 7, 2, junction(300, 40.01, -99.98)),
+                vertex(4, 7, 3, junction(400, 40.01, -100.0))
+            )
+        )
+
+        // Roughly 0.44 m north of the fence: inside a one-meter touch envelope.
+        val accepted = GateSnappingEngine.findCandidateSegmentWithinMeters(
+            tapPoint = LatLng(40.000004, -99.985),
+            pastures = listOf(pasture),
+            toleranceMeters = 1.0
+        )
+        assertTrue(accepted is GateSnapResult.Snapped)
+        val candidate = (accepted as GateSnapResult.Snapped).candidate
+        assertEquals(100L, candidate.junctionA.id)
+        assertEquals(200L, candidate.junctionB.id)
+        assertEquals(0.75, candidate.segmentRatio, 0.01)
+
+        val rejected = GateSnappingEngine.findCandidateSegmentWithinMeters(
+            tapPoint = LatLng(40.000004, -99.985),
+            pastures = listOf(pasture),
+            toleranceMeters = 0.1
+        )
+        assertEquals(GateSnapResult.NoFenceInRange, rejected)
+    }
+
     private fun linearProjection(coordinate: LatLng) = ScreenCoordinate(
         coordinate.longitude * 100_000.0,
         coordinate.latitude * 100_000.0
