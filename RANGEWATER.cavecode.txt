@@ -744,7 +744,7 @@ EVIDENCE STATUS:
   accepted gate behavior remain intact.
 
 - RW-TX-010-HRD-REV2A
-  Status: REV2B BUILD VERIFIED — FOCUSED DEVICE RETEST PENDING
+  Status: ACCEPTED & FIELD-VERIFIED
   Scope: Room v6 herd and movement persistence, guarded asset deletion and herd
   archival, bidirectional gate-topology validation, atomic movement completion,
   JTS interior-point badges with overflow handling, honest route overlays, and
@@ -773,6 +773,11 @@ EVIDENCE STATUS:
   REV2B result: SUCCESS — JVM tests, Android Room instrumentation, debug APK assembly
   and upload, and imagery-gateway regression tests all passed.
   REV2B artifact: RangeWater-Debug-APK 10671352398 (26,323,714 bytes).
+  Final focused device acceptance: PASSED — Michael verified that protected gate
+  relocation now warns without crashing, individually translated herd badges are
+  selectable, the color control renders actual swatches, device-local cow/water
+  pictograms render correctly, and stored weight/marker details appear on the herd card.
+  Acceptance date: 2026-09-22.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -813,6 +818,11 @@ EVIDENCE STATUS:
   not yet backed up or synchronized. Uninstalling the app removes its stored assets.
 - Destructive Room migration is prohibited. Any future schema version must include and
   test a data-preserving migration before release.
+- GitHub-hosted debug APKs currently inherit an ephemeral runner debug certificate. The
+  0.11.1 field build therefore required a one-time uninstall before installation instead
+  of updating the prior debug build in place. Before the next distributed APK, establish
+  a stable non-production field-test signing key; the eventual Play release key remains
+  separate and must never be committed to the repository.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
@@ -820,16 +830,16 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Herds, grazing groups, and movement routing
 - Working transmission: RW-TX-010-HRD-REV2A
-- Implementation status: RANGEWATER 0.11.1 REV2B BUILD VERIFIED — FOCUSED DEVICE RETEST PENDING
+- Implementation status: RANGEWATER 0.11.1 ACCEPTED & FIELD-VERIFIED
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
 - Feature branch: codex/rw-tx-010-hrd
-- Verified implementation commit: 59aeb671f154f48e12bd0581ad122857695437a2
-- CI status: GREEN — correction run 35593022288
-- Build artifact: RangeWater-Debug-APK version 0.11.0 (versionCode 13), artifact
-  10635089928 (26,318,389 bytes)
+- Verified implementation commit: cf31902e5d0da92f572a6c40d0e0fbd39934486a
+- CI status: GREEN — final branch-tip run 35672319163
+- Build artifact: RangeWater-Debug-APK version 0.11.1 (versionCode 14), artifact
+  10671427898 (26,323,713 bytes)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
-- Current transmission status: RW-TX-010-HRD-REV2B BUILD VERIFIED — FOCUSED DEVICE RETEST PENDING
+- Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -837,11 +847,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Install artifact 10671352398 and run the focused five-item physical
-  retest on Samsung Tab S7 and Galaxy S26.
-- Resume point: Verify planned-route gate warnings, individual stacked-badge taps,
-  swatch selection, map pictograms, and complete herd-card details. RangeWater 0.10.1
-  at 47895ec remains the frozen accepted gate baseline until this transmission is accepted.
+- Next action: Freeze the accepted 0.11.1 herd/movement baseline and establish stable
+  field-test APK signing before distributing the next development build.
+- Resume point: Begin the next ratified RangeWater transmission from the accepted
+  RW-TX-010-HRD-REV2B branch state.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
