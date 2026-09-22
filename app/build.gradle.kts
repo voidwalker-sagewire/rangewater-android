@@ -16,8 +16,8 @@ android {
         applicationId = "com.sagewire.rangewater"
         minSdk = 24
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.11.1"
+        versionCode = 15
+        versionName = "0.12.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,6 +54,7 @@ dependencies {
     implementation("org.maplibre.gl:android-sdk:11.5.1")
     implementation("org.maplibre.gl:android-sdk-turf:6.0.1")
     implementation("org.locationtech.jts:jts-core:1.20.0")
+    implementation("com.google.code.gson:gson:2.11.0")
 
     val roomVersion = "2.8.5"
     implementation("androidx.room:room-runtime:$roomVersion")

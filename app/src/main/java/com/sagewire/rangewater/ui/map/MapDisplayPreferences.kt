@@ -58,6 +58,13 @@ class DisplayPreferencesRepository(context: Context) {
         preferences.edit().putString(KEY_COVERAGE_SCOPE, scope.name).apply()
     }
 
+    /** Synchronous because restore must know whether the complete recovery succeeded. */
+    fun replacePreferences(value: DisplayPreferences): Boolean = preferences.edit()
+        .putString(KEY_COVERAGE_MODE, value.coverageMode.name)
+        .putString(KEY_COVERAGE_SCOPE, value.coverageScope.name)
+        .putBoolean(KEY_PASTURE_FILL, value.pastureFillEnabled)
+        .commit()
+
     companion object {
         const val PREFERENCES_NAME = "rangewater_display_prefs"
         const val KEY_COVERAGE_MODE = "water_coverage_mode"

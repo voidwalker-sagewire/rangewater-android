@@ -34,6 +34,7 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun gateDao(): GateDao
     abstract fun herdDao(): HerdDao
     abstract fun movementDao(): MovementDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         @Volatile

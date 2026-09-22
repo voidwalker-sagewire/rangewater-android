@@ -12,9 +12,9 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.11.1
-- Version Code: 14
-- Active Feature Branch: codex/rw-tx-010-hrd
+- App Version: 0.12.0
+- Version Code: 15
+- Active Feature Branch: codex/rw-tx-011-bkr
 - Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
 - Public Production: PAUSED pending RangeWater 1.0 operational scope
 - Package Notice: This is the intended permanent package identity. Once registered
@@ -265,10 +265,16 @@ RULE:
     - Offline circle badges use JTS interior points, fixed screen-space stacks, and an
       overflow feature for four or more herds in a pasture. Route lines never invent
       geometry for unmapped or deleted gates.
-23. Michael authorized backup and restore as RangeWater's next development phase.
+23. Michael ratified RW-TX-011-BKR backup and restore for implementation.
     - The purpose is to protect device-local ranch records before further feature growth.
-    - Archive format, restore behavior, validation, operator workflow, and automated
-      recovery tests remain in design preflight until Michael ratifies RW-TX-011.
+    - A versioned .rangewater archive preserves all Room records, stable IDs,
+      relationships, audit history, and display preferences through Android's system
+      document picker without storage permission or required network access.
+    - Restore is replace-all, never merge. The complete archive is checksummed and
+      validated before any live write; replacement is atomic and creates an internal
+      emergency rollback first. Invalid or newer archives leave current data untouched.
+    - A compact Data Safety menu exposes Create Backup, Restore Backup, and Undo Last
+      Restore. Room remains at schema version 6.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -784,10 +790,11 @@ EVIDENCE STATUS:
   Acceptance date: 2026-09-22.
 
 - RW-TX-011-BKR
-  Status: AUTHORIZED — DESIGN PREFLIGHT IN PROGRESS
-  Scope direction: Complete local backup and restore for RangeWater's Room records,
-  relationships, audit history, and operator display preferences. The implementation
-  contract must be ratified before repository changes begin.
+  Status: RATIFIED — IMPLEMENTATION IN PROGRESS
+  Scope: Versioned and checksummed full-data archives, pre-write validation,
+  foreign-key-safe atomic replacement, system document picker integration, preserved
+  display settings, and an internal emergency rollback path.
+  Target release: RangeWater 0.12.0 (versionCode 15), Room schema version 6.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -839,10 +846,10 @@ EVIDENCE STATUS:
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Local data safety and recovery
-- Working transmission: RW-TX-011-BKR design preflight
-- Implementation status: RANGEWATER 0.11.1 ACCEPTED & FIELD-VERIFIED
+- Working transmission: RW-TX-011-BKR
+- Implementation status: RANGEWATER 0.12.0 IMPLEMENTATION IN PROGRESS
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
-- Feature branch: codex/rw-tx-010-hrd
+- Feature branch: codex/rw-tx-011-bkr
 - Verified implementation commit: cf31902e5d0da92f572a6c40d0e0fbd39934486a
 - CI status: GREEN — final branch-tip run 35672319163
 - Build artifact: RangeWater-Debug-APK version 0.11.1 (versionCode 14), artifact
@@ -857,10 +864,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Ratify the RW-TX-011 backup/restore contract, then establish stable
-  field-test APK signing before distributing its first device build.
-- Resume point: Design a validated, versioned archive and safe restore workflow from
-  the accepted RW-TX-010-HRD-REV2B branch state.
+- Next action: Complete RW-TX-011 implementation and automated recovery tests, then
+  establish stable field-test APK signing before distributing its first device build.
+- Resume point: Compile and verify the ratified backup/restore implementation from the
+  accepted RW-TX-010-HRD-REV2B branch state.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
