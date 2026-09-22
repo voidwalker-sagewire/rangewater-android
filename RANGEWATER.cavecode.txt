@@ -265,6 +265,10 @@ RULE:
     - Offline circle badges use JTS interior points, fixed screen-space stacks, and an
       overflow feature for four or more herds in a pasture. Route lines never invent
       geometry for unmapped or deleted gates.
+23. Michael authorized backup and restore as RangeWater's next development phase.
+    - The purpose is to protect device-local ranch records before further feature growth.
+    - Archive format, restore behavior, validation, operator workflow, and automated
+      recovery tests remain in design preflight until Michael ratifies RW-TX-011.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -779,6 +783,12 @@ EVIDENCE STATUS:
   pictograms render correctly, and stored weight/marker details appear on the herd card.
   Acceptance date: 2026-09-22.
 
+- RW-TX-011-BKR
+  Status: AUTHORIZED — DESIGN PREFLIGHT IN PROGRESS
+  Scope direction: Complete local backup and restore for RangeWater's Room records,
+  relationships, audit history, and operator display preferences. The implementation
+  contract must be ratified before repository changes begin.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -828,8 +838,8 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Herds, grazing groups, and movement routing
-- Working transmission: RW-TX-010-HRD-REV2A
+- Current phase: Local data safety and recovery
+- Working transmission: RW-TX-011-BKR design preflight
 - Implementation status: RANGEWATER 0.11.1 ACCEPTED & FIELD-VERIFIED
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
 - Feature branch: codex/rw-tx-010-hrd
@@ -847,10 +857,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Freeze the accepted 0.11.1 herd/movement baseline and establish stable
-  field-test APK signing before distributing the next development build.
-- Resume point: Begin the next ratified RangeWater transmission from the accepted
-  RW-TX-010-HRD-REV2B branch state.
+- Next action: Ratify the RW-TX-011 backup/restore contract, then establish stable
+  field-test APK signing before distributing its first device build.
+- Resume point: Design a validated, versioned archive and safe restore workflow from
+  the accepted RW-TX-010-HRD-REV2B branch state.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
