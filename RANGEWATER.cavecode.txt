@@ -71,6 +71,10 @@ RULE:
 - Herd map overlays: multi-herd pasture occupancy anchors to JTS interior points with
   fixed screen-space stacking, overflow summarization, and device-local cow badges;
   water-source types use separate device-local pictograms without remote glyphs
+- Data safety: a versioned, checksummed .rangewater archive uses Android's system
+  document picker to back up or replace all Room records and display preferences;
+  restores validate before writing, commit database replacement atomically, and retain
+  up to three internal pre-restore rollback archives
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -790,11 +794,16 @@ EVIDENCE STATUS:
   Acceptance date: 2026-09-22.
 
 - RW-TX-011-BKR
-  Status: RATIFIED — IMPLEMENTATION IN PROGRESS
+  Status: IMPLEMENTED — BUILD VERIFIED — FIELD RECOVERY TEST PENDING
   Scope: Versioned and checksummed full-data archives, pre-write validation,
   foreign-key-safe atomic replacement, system document picker integration, preserved
   display settings, and an internal emergency rollback path.
   Target release: RangeWater 0.12.0 (versionCode 15), Room schema version 6.
+  Verified implementation commit: 6eed3aa9f8f06115aa5363cecfca4269a9c343d7.
+  Verified GitHub Actions run: 35714482715.
+  Result: SUCCESS — archive JVM tests, complete Room round-trip and rollback
+  instrumentation, APK assembly/upload, and imagery-gateway regression tests passed.
+  Build artifact: RangeWater-Debug-APK 10688607580 (26,391,734 bytes).
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -847,16 +856,17 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Local data safety and recovery
 - Working transmission: RW-TX-011-BKR
-- Implementation status: RANGEWATER 0.12.0 IMPLEMENTATION IN PROGRESS
+- Implementation status: RANGEWATER 0.12.0 BUILD VERIFIED — FIELD RECOVERY TEST PENDING
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
 - Feature branch: codex/rw-tx-011-bkr
-- Verified implementation commit: cf31902e5d0da92f572a6c40d0e0fbd39934486a
-- CI status: GREEN — final branch-tip run 35672319163
-- Build artifact: RangeWater-Debug-APK version 0.11.1 (versionCode 14), artifact
-  10671427898 (26,323,713 bytes)
+- Verified implementation commit: 6eed3aa9f8f06115aa5363cecfca4269a9c343d7
+- CI status: GREEN — backup/recovery run 35714482715
+- Build artifact: RangeWater-Debug-APK version 0.12.0 (versionCode 15), artifact
+  10688607580 (26,391,734 bytes)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
 - Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
+- Active transmission status: RW-TX-011-BKR BUILD VERIFIED — FIELD RECOVERY TEST PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -864,10 +874,10 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Complete RW-TX-011 implementation and automated recovery tests, then
-  establish stable field-test APK signing before distributing its first device build.
-- Resume point: Compile and verify the ratified backup/restore implementation from the
-  accepted RW-TX-010-HRD-REV2B branch state.
+- Next action: Establish stable field-test APK signing, then perform the focused physical
+  backup, destructive-change, restore, restart, and emergency-rollback acceptance test.
+- Resume point: Do not distribute the ephemeral-signed CI artifact as an in-place update;
+  preserve the installed database until the stable field-test package is available.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
