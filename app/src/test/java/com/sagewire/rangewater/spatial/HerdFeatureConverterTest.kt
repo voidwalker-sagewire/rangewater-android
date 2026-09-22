@@ -29,6 +29,7 @@ class HerdFeatureConverterTest {
         assertEquals(1, features[1].getNumberProperty("stackIndex").toInt())
         assertTrue(features[0].getBooleanProperty("selected"))
         assertEquals("Group A (40 pairs)", features[0].getStringProperty("displayLabel"))
+        assertEquals("marker-herd-cow", features[0].getStringProperty("markerIcon"))
     }
 
     @Test
@@ -40,6 +41,7 @@ class HerdFeatureConverterTest {
         assertTrue(features[2].getBooleanProperty("isOverflow"))
         assertEquals(3, features[2].getNumberProperty("overflowCount").toInt())
         assertEquals(10L, features[2].getNumberProperty("pastureId").toLong())
+        assertEquals("marker-herd-overflow-3", features[2].getStringProperty("markerIcon"))
     }
 
     private fun herd(id: Long, name: String, quantity: Int, unit: CountUnit) = HerdEntity(

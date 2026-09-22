@@ -79,6 +79,7 @@ object MapConfig {
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
     const val LAYER_WATER_POINTS_HIGHLIGHT = "layer-water-points-highlight"
     const val LAYER_WATER_POINTS = "layer-water-points"
+    const val LAYER_WATER_POINT_ICONS = "layer-water-point-icons"
     const val LAYER_GATE_OVERVIEW = "layer-gate-overview"
     const val LAYER_GATE_ARC = "layer-gate-arc"
     const val LAYER_GATE_LEAF_CASING = "layer-gate-leaf-casing"
@@ -87,6 +88,9 @@ object MapConfig {
     const val LAYER_HERD_BADGE_FILL_0 = "layer-herd-badge-fill-0"
     const val LAYER_HERD_BADGE_FILL_1 = "layer-herd-badge-fill-1"
     const val LAYER_HERD_BADGE_FILL_2 = "layer-herd-badge-fill-2"
+    const val LAYER_HERD_BADGE_ICON_0 = "layer-herd-badge-icon-0"
+    const val LAYER_HERD_BADGE_ICON_1 = "layer-herd-badge-icon-1"
+    const val LAYER_HERD_BADGE_ICON_2 = "layer-herd-badge-icon-2"
 
     /*
      * 🎮 BLOCK 2 — UNIFIED STYLE SPECIFICATION
@@ -420,6 +424,17 @@ object MapConfig {
               }
             },
             {
+              "id": "$LAYER_WATER_POINT_ICONS",
+              "type": "symbol",
+              "source": "$SOURCE_WATER_POINTS",
+              "layout": {
+                "icon-image": ["get", "markerIcon"],
+                "icon-size": 0.42,
+                "icon-allow-overlap": true,
+                "icon-ignore-placement": true
+              }
+            },
+            {
               "id": "layer-herd-badge-casing-0",
               "type": "circle",
               "source": "$SOURCE_HERD_BADGES",
@@ -434,6 +449,13 @@ object MapConfig {
               "paint": { "circle-radius": ["case", ["get", "selected"], 12.0, 8.0], "circle-color": ["get", "color"], "circle-stroke-color": ["case", ["get", "selected"], "#FFFFFF", "#151515"], "circle-stroke-width": 2.0 }
             },
             {
+              "id": "$LAYER_HERD_BADGE_ICON_0",
+              "type": "symbol",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 0],
+              "layout": { "icon-image": ["get", "markerIcon"], "icon-size": 0.42, "icon-allow-overlap": true, "icon-ignore-placement": true }
+            },
+            {
               "id": "layer-herd-badge-casing-1",
               "type": "circle",
               "source": "$SOURCE_HERD_BADGES",
@@ -446,6 +468,13 @@ object MapConfig {
               "source": "$SOURCE_HERD_BADGES",
               "filter": ["==", ["get", "stackIndex"], 1],
               "paint": { "circle-radius": ["case", ["get", "selected"], 12.0, 8.0], "circle-color": ["get", "color"], "circle-stroke-color": ["case", ["get", "selected"], "#FFFFFF", "#151515"], "circle-stroke-width": 2.0, "circle-translate": [0.0, -24.0] }
+            },
+            {
+              "id": "$LAYER_HERD_BADGE_ICON_1",
+              "type": "symbol",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 1],
+              "layout": { "icon-image": ["get", "markerIcon"], "icon-size": 0.42, "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-translate": [0.0, -24.0] }
             },
             {
               "id": "layer-herd-badge-casing-2",
@@ -466,6 +495,13 @@ object MapConfig {
                 "circle-stroke-width": ["case", ["get", "isOverflow"], 3.5, 2.0],
                 "circle-translate": [0.0, -48.0]
               }
+            },
+            {
+              "id": "$LAYER_HERD_BADGE_ICON_2",
+              "type": "symbol",
+              "source": "$SOURCE_HERD_BADGES",
+              "filter": ["==", ["get", "stackIndex"], 2],
+              "layout": { "icon-image": ["get", "markerIcon"], "icon-size": 0.42, "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-translate": [0.0, -48.0] }
             }
           ]
         }

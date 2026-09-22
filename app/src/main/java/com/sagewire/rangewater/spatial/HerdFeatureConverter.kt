@@ -40,6 +40,7 @@ object HerdFeatureConverter {
                     addProperty("stackIndex", 2)
                     addProperty("color", "#FFFFFF")
                     addProperty("selected", false)
+                    addProperty("markerIcon", "marker-herd-overflow-${(pastureHerds.size - 2).coerceAtMost(99)}")
                 }
                 features += Feature.fromGeometry(Point.fromLngLat(interior.x, interior.y), properties)
             }
@@ -64,6 +65,7 @@ object HerdFeatureConverter {
             addProperty("selected", herd.id == selectedHerdId)
             addProperty("stackIndex", stackIndex)
             addProperty("isOverflow", false)
+            addProperty("markerIcon", "marker-herd-cow")
         }
         return Feature.fromGeometry(Point.fromLngLat(longitude, latitude), properties)
     }

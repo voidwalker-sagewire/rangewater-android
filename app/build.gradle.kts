@@ -16,8 +16,8 @@ android {
         applicationId = "com.sagewire.rangewater"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.11.0"
+        versionCode = 14
+        versionName = "0.11.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -12,8 +12,8 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.11.0
-- Version Code: 13
+- App Version: 0.11.1
+- Version Code: 14
 - Active Feature Branch: codex/rw-tx-010-hrd
 - Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
 - Public Production: PAUSED pending RangeWater 1.0 operational scope
@@ -69,7 +69,8 @@ RULE:
   movement plans snapshot live names and counts, validate gate topology, and update
   movement status and herd location atomically when completed
 - Herd map overlays: multi-herd pasture occupancy anchors to JTS interior points with
-  fixed screen-space stacking, overflow summarization, and offline vector-circle badges
+  fixed screen-space stacking, overflow summarization, and device-local cow badges;
+  water-source types use separate device-local pictograms without remote glyphs
 
 🪨 BLOCK 4 — SETTLED DECISIONS
 --------------------------------------------------------------------------------
@@ -743,7 +744,7 @@ EVIDENCE STATUS:
   accepted gate behavior remain intact.
 
 - RW-TX-010-HRD-REV2A
-  Status: BUILD VERIFIED — PHYSICAL DEVICE ACCEPTANCE PENDING
+  Status: CORE FIELD TESTS PASSED — REV2B POLISH BUILD IN PROGRESS
   Scope: Room v6 herd and movement persistence, guarded asset deletion and herd
   archival, bidirectional gate-topology validation, atomic movement completion,
   JTS interior-point badges with overflow handling, honest route overlays, and
@@ -757,6 +758,16 @@ EVIDENCE STATUS:
   Verified GitHub Actions run: 35593022288.
   Result: SUCCESS — JVM spatial tests, Android Room migration and transaction tests,
   debug APK assembly/upload, and imagery-gateway regression tests all passed.
+  Field verification: all herd creation/editing, mapped and unmapped movement,
+  planning/completion/cancellation, exterior routing, archive and asset guards,
+  overflow behavior, history retention, and restart persistence tests passed.
+  REV2B findings: a planned-movement gate relocation correctly rejects in the DAO but
+  its exception escaped the Compose save handler; translated herd badges shared an
+  oversized hit rectangle; color choices exposed hex strings; map asset classes needed
+  stronger visual distinction; and the herd card omitted stored weight/short-label data.
+  REV2B correction scope: contain the gate exception as an operator warning, query each
+  badge at its rendered screen position, present real color swatches, add device-local
+  cow and source-specific water pictograms, and complete the herd inspection details.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -804,7 +815,7 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Herds, grazing groups, and movement routing
 - Working transmission: RW-TX-010-HRD-REV2A
-- Implementation status: RANGEWATER 0.11.0 BUILD VERIFIED — DEVICE TESTING PENDING
+- Implementation status: RANGEWATER 0.11.1 REV2B FIELD POLISH — BUILD IN PROGRESS
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
 - Feature branch: codex/rw-tx-010-hrd
 - Verified implementation commit: 59aeb671f154f48e12bd0581ad122857695437a2
@@ -813,7 +824,7 @@ EVIDENCE STATUS:
   10635089928 (26,318,389 bytes)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
-- Current transmission status: RW-TX-010-HRD-REV2A BUILD VERIFIED — DEVICE TESTING PENDING
+- Current transmission status: RW-TX-010-HRD-REV2A CORE FIELD TESTS PASSED — REV2B POLISH BUILD IN PROGRESS
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -821,9 +832,11 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Install artifact 10635089928 and run physical herd/movement acceptance.
-- Resume point: Begin physical acceptance on Samsung Tab S7 and Galaxy S26. RangeWater 0.10.1 at 47895ec
-  remains the frozen accepted gate baseline until this transmission is accepted.
+- Next action: Compile and verify the 0.11.1 REV2B correction APK, then run the focused
+  five-item physical retest on Samsung Tab S7 and Galaxy S26.
+- Resume point: Verify planned-route gate warnings, individual stacked-badge taps,
+  swatch selection, map pictograms, and complete herd-card details. RangeWater 0.10.1
+  at 47895ec remains the frozen accepted gate baseline until this transmission is accepted.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

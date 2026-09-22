@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -669,14 +670,7 @@ fun MapScreen(
                                 selectedHerdId = null
                                 selectedMovementId = null
                             } else {
-                                val herdHit = queryFeaturesNear(
-                                    map,
-                                    screenPoint,
-                                    30f * context.resources.displayMetrics.density,
-                                    MapConfig.LAYER_HERD_BADGE_FILL_0,
-                                    MapConfig.LAYER_HERD_BADGE_FILL_1,
-                                    MapConfig.LAYER_HERD_BADGE_FILL_2
-                                ).firstOrNull()
+                                val herdHit = queryHerdFeatureAt(map, screenPoint)
                                 if (herdHit != null) {
                                     if (herdHit.getBooleanProperty("isOverflow")) {
                                         herdManagerPastureFilterId = herdHit.getNumberProperty("pastureId").toLong()
@@ -818,6 +812,7 @@ fun MapScreen(
                         map.setMinZoomPreference(MapConfig.MIN_ALLOWED_ZOOM)
                         map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
                         map.setStyle(MapConfig.createStyleBuilder()) {
+                            MapMarkerIcons.register(it)
                             map.cameraPosition = CameraPosition.Builder()
                                 .target(LatLng(initialLat, initialLng))
                                 .zoom(initialZoom)
@@ -982,7 +977,7 @@ fun MapScreen(
                                 draftGateMoveCandidate = null
                                 interactionState = InteractionState.ORDINARY
                                 Toast.makeText(context, "Gate position saved", Toast.LENGTH_SHORT).show()
-                            } catch (error: IllegalArgumentException) {
+                            } catch (error: Exception) {
                                 Toast.makeText(
                                     context,
                                     error.message ?: "Failed to move gate",
@@ -1254,6 +1249,16 @@ fun MapScreen(
                         )
                     }
                     Text(herd.stockClass.displayName, color = Color.LightGray, fontSize = 12.sp)
+                    val detailParts = buildList {
+                        herd.averageWeightLbs?.let { weight ->
+                            val formatted = if (weight % 1.0 == 0.0) weight.toInt().toString() else weight.toString()
+                            add("Avg weight: $formatted lb")
+                        }
+                        herd.shortMarkerLabel?.takeIf { it.isNotBlank() }?.let { add("Marker: $it") }
+                    }
+                    if (detailParts.isNotEmpty()) {
+                        Text(detailParts.joinToString(" • "), color = Color.LightGray, fontSize = 11.sp)
+                    }
                     val location = pastures.find { it.pasture.id == herd.currentPastureId }?.pasture?.name
                         ?: herd.locationKind.name
                     Text("Location: $location", color = Color(0xFF00E5FF), fontSize = 12.sp)
@@ -1377,9 +1382,27 @@ fun MapScreen(
                         OutlinedTextField(weightText, { weightText = it }, label = { Text("Average weight (lbs, optional)") }, singleLine = true)
                         Text("Marker color", color = Color.Gray, fontSize = 12.sp)
                         colors.chunked(3).forEach { row ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 row.forEach { value ->
-                                    FilterChip(color == value, { color = value }, label = { Text(value, fontSize = 9.sp) })
+                                    val selected = color == value
+                                    Surface(
+                                        modifier = Modifier.size(42.dp).clickable { color = value },
+                                        shape = CircleShape,
+                                        color = Color(android.graphics.Color.parseColor(value)),
+                                        border = BorderStroke(
+                                            if (selected) 4.dp else 2.dp,
+                                            if (selected) Color.White else Color(0xFF333333)
+                                        )
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            if (selected) {
+                                                Text("✓", color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2347,6 +2370,9 @@ private fun applyLayerVisibility(
             style.getLayer(MapConfig.LAYER_WATER_POINTS)?.setProperties(
                 visibility(Property.VISIBLE)
             )
+            style.getLayer(MapConfig.LAYER_WATER_POINT_ICONS)?.setProperties(
+                visibility(Property.VISIBLE)
+            )
         }
     }
 }
@@ -3196,6 +3222,32 @@ private fun queryFeaturesNear(
     RectF(point.x - radius, point.y - radius, point.x + radius, point.y + radius),
     *layers
 )
+
+/**
+ * Each stacked badge is rendered at a different screen translation even though its
+ * GeoJSON point is shared. Point queries preserve that rendered separation; the old
+ * large rectangle overlapped the whole stack and repeatedly returned index zero.
+ */
+private fun queryHerdFeatureAt(map: MapLibreMap, point: PointF): Feature? {
+    val iconLayers = arrayOf(
+        MapConfig.LAYER_HERD_BADGE_ICON_2,
+        MapConfig.LAYER_HERD_BADGE_ICON_1,
+        MapConfig.LAYER_HERD_BADGE_ICON_0
+    )
+    iconLayers.forEach { layer ->
+        map.queryRenderedFeatures(point, layer).firstOrNull()?.let { return it }
+    }
+
+    val fillLayers = arrayOf(
+        MapConfig.LAYER_HERD_BADGE_FILL_2,
+        MapConfig.LAYER_HERD_BADGE_FILL_1,
+        MapConfig.LAYER_HERD_BADGE_FILL_0
+    )
+    fillLayers.forEach { layer ->
+        map.queryRenderedFeatures(point, layer).firstOrNull()?.let { return it }
+    }
+    return null
+}
 
 private fun LatLng.toPastureCoordinate() = PastureCoordinate(latitude, longitude)
 

@@ -37,6 +37,8 @@ class WaterFeatureConverterTest {
         assertEquals(1L, features[0].getNumberProperty("id").toLong())
         assertEquals("North Trough", features[0].getStringProperty("name"))
         assertEquals("TROUGH", features[0].getStringProperty("sourceType"))
+        assertEquals("marker-water-trough", features[0].getStringProperty("markerIcon"))
+        assertEquals("marker-water-tank", features[1].getStringProperty("markerIcon"))
         assertFalse(features[0].getBooleanProperty("selected"))
         assertTrue(features[0].geometry() is Point)
         assertTrue(features[1].getBooleanProperty("selected"))

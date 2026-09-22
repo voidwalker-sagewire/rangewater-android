@@ -3,6 +3,7 @@ package com.sagewire.rangewater.spatial
 import com.google.gson.JsonObject
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.WaterPointEntity
+import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.ui.map.MapConfig
 import com.sagewire.rangewater.ui.map.SpatialCoverageScope
 import org.maplibre.geojson.Feature
@@ -102,6 +103,16 @@ object WaterFeatureConverter {
             addProperty("id", entity.id)
             addProperty("name", entity.name)
             addProperty("sourceType", entity.sourceType.name)
+            addProperty("markerIcon", entity.sourceType.markerIconName())
             addProperty("selected", entity.id == selectedId)
         }
+
+    private fun WaterSourceType.markerIconName(): String = when (this) {
+        WaterSourceType.TROUGH -> "marker-water-trough"
+        WaterSourceType.TANK -> "marker-water-tank"
+        WaterSourceType.SPRING -> "marker-water-spring"
+        WaterSourceType.POND -> "marker-water-pond"
+        WaterSourceType.HYDRANT -> "marker-water-hydrant"
+        WaterSourceType.OTHER -> "marker-water-other"
+    }
 }
