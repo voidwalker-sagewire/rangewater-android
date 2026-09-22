@@ -4,6 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.sagewire.rangewater.ui.map.DisplayPreferences
+import com.sagewire.rangewater.ui.map.DisplayPreferencesRepository
+import com.sagewire.rangewater.ui.map.SpatialCoverageScope
+import com.sagewire.rangewater.ui.map.WaterCoverageMode
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,10 +22,15 @@ import org.junit.runner.RunWith
 class BackupDaoTest {
     private lateinit var db: RangeWaterDatabase
     private lateinit var dao: BackupDao
+    private lateinit var context: Context
+    private lateinit var preferences: DisplayPreferencesRepository
 
     @Before
     fun createDb() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext()
+        context.getSharedPreferences(DisplayPreferencesRepository.PREFERENCES_NAME, Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        preferences = DisplayPreferencesRepository(context)
         db = Room.inMemoryDatabaseBuilder(context, RangeWaterDatabase::class.java)
             .allowMainThreadQueries()
             .build()
@@ -27,7 +38,12 @@ class BackupDaoTest {
     }
 
     @After
-    fun closeDb() = db.close()
+    fun closeDb() {
+        db.close()
+        context.getSharedPreferences(DisplayPreferencesRepository.PREFERENCES_NAME, Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        context.filesDir.resolve("emergency_backups").deleteRecursively()
+    }
 
     @Test
     fun replaceAll_roundTripPreservesIdsRelationshipsAndHistory() = runBlocking {
@@ -56,6 +72,56 @@ class BackupDaoTest {
         }
 
         assertEquals(original, dao.snapshot())
+    }
+
+    @Test
+    fun managerRestore_replacesRecordsPreferencesAndCreatesEmergencyRollback() = runBlocking {
+        val manager = RangeWaterBackupManager(context, db, preferences)
+        val original = completeData()
+        dao.replaceAll(original)
+        preferences.replacePreferences(
+            DisplayPreferences(WaterCoverageMode.FULL, SpatialCoverageScope.PHYSICAL_RADIUS, true)
+        )
+
+        val replacement = original.copy(
+            waterPoints = listOf(original.waterPoints.single().copy(name = "Restored Tank")),
+            displayPreferences = DisplayPreferences(
+                WaterCoverageMode.LINES_ONLY,
+                SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+                false
+            )
+        )
+        val archiveBytes = RangeWaterArchiveCodec.toByteArray(replacement, "0.12.0")
+        val prepared = manager.prepareRestore(ByteArrayInputStream(archiveBytes))
+
+        manager.restore(prepared)
+
+        assertEquals("Restored Tank", dao.allWaterPoints().single().name)
+        assertEquals(replacement.displayPreferences, preferences.getPreferences())
+        assertEquals(true, manager.hasEmergencyBackup())
+
+        manager.restore(manager.prepareLatestEmergencyRestore())
+        assertEquals("Tank 1", dao.allWaterPoints().single().name)
+        assertEquals(DisplayPreferences(), preferences.getPreferences())
+    }
+
+    @Test
+    fun managerManualBackup_roundTripsCurrentDatabaseAndPreferences() = runBlocking {
+        val manager = RangeWaterBackupManager(context, db, preferences)
+        val original = completeData()
+        dao.replaceAll(original)
+        val expectedPreferences = DisplayPreferences(
+            WaterCoverageMode.OFF,
+            SpatialCoverageScope.ACCESSIBLE_COVERAGE,
+            false
+        )
+        preferences.replacePreferences(expectedPreferences)
+        val output = ByteArrayOutputStream()
+
+        manager.writeManualBackup(output)
+        val restored = manager.prepareRestore(ByteArrayInputStream(output.toByteArray()))
+
+        assertEquals(original.copy(displayPreferences = expectedPreferences), restored.data)
     }
 
     private fun completeData(): RangeWaterBackupData {
