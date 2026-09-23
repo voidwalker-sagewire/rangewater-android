@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#101820"/>
+  <circle cx="845" cy="250" r="320" fill="#162832"/>
+  <circle cx="845" cy="250" r="235" fill="none" stroke="#ffd24a" stroke-opacity=".23" stroke-width="28"/>
+  <circle cx="845" cy="250" r="170" fill="none" stroke="#63d383" stroke-opacity=".35" stroke-width="42"/>
+  <path d="M845 93c0 0-102 118-102 199 0 59 48 107 107 107s107-48 107-107c0-81-112-199-112-199Z" fill="#22d3ee"/>
+  <path d="M727 337l69-64 67 40 101-93" fill="none" stroke="#ff2d93" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#ff8a00" stroke="#101820" stroke-width="9">
+    <circle cx="796" cy="273" r="23"/>
+    <circle cx="863" cy="313" r="23"/>
+    <circle cx="964" cy="220" r="23"/>
+  </g>
+  <text x="72" y="205" fill="#ffffff" font-family="sans-serif" font-size="86" font-weight="700">RangeWater</text>
+  <text x="77" y="270" fill="#22d3ee" font-family="sans-serif" font-size="31" font-weight="600" letter-spacing="2">GRAZING BUFFERS</text>
+  <text x="77" y="313" fill="#ffffff" font-family="sans-serif" font-size="31" font-weight="600" letter-spacing="2">&amp; WATER PLACEMENT</text>
+  <path d="M77 355h490" stroke="#ff2d93" stroke-width="7" stroke-linecap="round"/>
+</svg>

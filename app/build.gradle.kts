@@ -38,12 +38,39 @@ android {
         null
     }
 
+    // 🪨 BLOCK 2B — GOOGLE PLAY UPLOAD SIGNING
+    // 🎮 Behavior: The Play upload key is independent from the field-distribution key.
+    //    CI or the release operator supplies it only through environment variables;
+    //    no key material or password is stored in source control.
+    val playUploadKeystorePath = System.getenv("RANGEWATER_PLAY_UPLOAD_KEYSTORE_PATH")
+    val playUploadStorePassword = System.getenv("RANGEWATER_PLAY_UPLOAD_STORE_PASSWORD")
+    val playUploadKeyAlias = System.getenv("RANGEWATER_PLAY_UPLOAD_KEY_ALIAS")
+    val playUploadKeyPassword = System.getenv("RANGEWATER_PLAY_UPLOAD_KEY_PASSWORD")
+    val playUploadSigningValues = listOf(
+        playUploadKeystorePath,
+        playUploadStorePassword,
+        playUploadKeyAlias,
+        playUploadKeyPassword,
+    )
+    val playUploadSigningConfigured = playUploadSigningValues.all { !it.isNullOrBlank() }
+
+    val playUploadSigningConfig = if (playUploadSigningConfigured) {
+        signingConfigs.create("playUpload") {
+            storeFile = file(requireNotNull(playUploadKeystorePath))
+            storePassword = requireNotNull(playUploadStorePassword)
+            keyAlias = requireNotNull(playUploadKeyAlias)
+            keyPassword = requireNotNull(playUploadKeyPassword)
+        }
+    } else {
+        null
+    }
+
     defaultConfig {
         applicationId = "com.sagewire.rangewater"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.13.0"
+        versionCode = 17
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,6 +92,10 @@ android {
         getByName("debug") {
             // 🖍️ CI field artifacts remain debuggable but share one durable certificate.
             fieldSigningConfig?.let { signingConfig = it }
+        }
+        getByName("release") {
+            isMinifyEnabled = false
+            playUploadSigningConfig?.let { signingConfig = it }
         }
     }
 }

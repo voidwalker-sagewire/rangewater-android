@@ -12,11 +12,11 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.13.0
-- Version Code: 16
-- Active Feature Branch: codex/rw-tx-012-mch
+- App Version: 1.0.0 release candidate
+- Version Code: 17
+- Active Feature Branch: codex/rw-tx-013-ply
 - Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
-- Public Production: PAUSED pending RangeWater 1.0 operational scope
+- Public Production: RELEASE GATE ACTIVE — RW-TX-013-PLY
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -291,6 +291,16 @@ RULE:
       receives only the location grant selected by the operator and stores no cloud login.
     - Save As, Restore, Share Latest, emergency rollback, complete archive validation,
       replace-all semantics, and Room schema version 6 remain intact.
+25. Michael accepted RW-TX-012-MCH and approved the Google Play release gate.
+    - Galaxy S26 testing passed rotation and relaunch camera continuity, automatic ranch
+      framing, and pasture selection from the ranch overview without gate interference.
+    - Quick Backup, Share Latest, restore, Undo Last Restore, restart persistence, and
+      Galaxy S26-to-Tab S7 archive portability all passed physical-device testing.
+    - RangeWater enters a pre-publication feature freeze. Seasonal pasture weather and
+      live GPS field navigation remain approved post-launch candidates, not 1.0 blockers.
+    - RW-TX-013-PLY prepares the permanent Play package: production launcher identity,
+      release App Bundle, separate Play upload credential, accurate privacy disclosures,
+      store listing material, and internal-track verification.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -832,7 +842,7 @@ EVIDENCE STATUS:
   and restart persistence are field-verified across both target device classes.
 
 - RW-TX-012-MCH
-  Status: IMPLEMENTED — BUILD VERIFIED — PHYSICAL DEVICE CHECK PENDING
+  Status: CLOSED — ACCEPTED — BUILD VERIFIED — CROSS-DEVICE FIELD VERIFIED
   Scope: Persist and restore the settled map viewport, automatically frame existing ranch
   geometry when no viewport exists, correct overview gate-versus-pasture tap arbitration,
   and add a remembered Storage Access Framework folder with Quick Backup, Save As,
@@ -849,6 +859,26 @@ EVIDENCE STATUS:
   all passed.
   Build artifact: RangeWater-Field-APK 10758879883 (26,410,616 bytes), retained through
   2026-10-23.
+  Field acceptance: PASSED — Michael verified on the Galaxy S26 that rotation and cold
+  reopen preserve the settled ranch view, an established ranch is framed on first open,
+  and wide-view pasture taps select the pasture instead of an adjacent gate. Backup
+  creation, sharing, restore, undo, and restart persistence remained intact. The same
+  archives restored successfully on the Samsung Tab S7. Acceptance date: 2026-09-23.
+
+- RW-TX-013-PLY
+  Status: ACTIVE — RELEASE PREPARATION
+  Scope: Freeze the accepted 0.13.0 behavior as the RangeWater 1.0 product baseline;
+  replace placeholder launcher branding; configure a non-debug release App Bundle and
+  separate Play upload-signing path; prepare privacy, Data Safety, store listing, and
+  internal-testing evidence; preserve the tested .rangewater migration path.
+  Target release: RangeWater 1.0.0 (versionCode 17), Room schema version 6.
+  Feature branch: codex/rw-tx-013-ply.
+  Baseline: bc48945 (verified RW-TX-012 record).
+  Database delta: None. No product features or archive-format changes are authorized in
+  this transmission.
+  Migration constraint: the direct field APK and Play installation use different signing
+  identities. Existing field testers must create a separate .rangewater archive, uninstall
+  the field build, install from Google Play, and restore once; later Play updates are normal.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -902,11 +932,11 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Map continuity and easy device handoff
-- Working transmission: RW-TX-012-MCH
-- Implementation status: RANGEWATER 0.13.0 BUILD VERIFIED — DEVICE CHECK PENDING
-- Authoritative baseline: d091b31790a403b21df640cd317690239b3d753f
-- Feature branch: codex/rw-tx-012-mch
+- Current phase: Google Play release gate
+- Working transmission: RW-TX-013-PLY
+- Implementation status: RANGEWATER 1.0.0 RELEASE PREPARATION ACTIVE
+- Authoritative baseline: bc48945
+- Feature branch: codex/rw-tx-013-ply
 - Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
 - CI status: GREEN — certificate-verified field run 35879840262
 - Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
@@ -915,7 +945,8 @@ EVIDENCE STATUS:
   Galaxy S26; all earlier accepted transmissions remain intact.
 - Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
 - RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
-- Active transmission status: RW-TX-012-MCH BUILD VERIFIED — DEVICE CHECK PENDING
+- RW-TX-012-MCH status: CLOSED — CROSS-DEVICE FIELD VERIFIED
+- Active transmission status: RW-TX-013-PLY RELEASE PREPARATION ACTIVE
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -926,11 +957,13 @@ EVIDENCE STATUS:
 - Field-signing status: VERIFIED — repository secrets established; CI rebuilt the
   keystore, matched its configured fingerprint, signed the APK, and independently
   matched the completed APK to the permanent field certificate.
-- Next action: Install RangeWater 0.13.0 field artifact 10758879883 as an in-place update,
-  then test rotation continuity, cold-open ranch framing, overview pasture selection,
-  Quick Backup, Share Latest, and cross-device restore on the Galaxy S26 and Samsung Tab S7.
-- Resume point: Use only certificate-verified RangeWater-Field-APK artifacts for direct
-  field distribution. Stable-key updates preserve the existing local database.
+- Feature freeze: ACTIVE — seasonal weather and live GPS navigation are deferred until
+  after the first Google Play release.
+- Next action: Complete launcher branding, Play upload signing, release AAB generation,
+  privacy/Data Safety materials, and internal-track listing assets.
+- Resume point: Preserve the accepted 0.13.0 behavior while preparing version 1.0.0. Use
+  only certificate-verified field APKs for direct distribution until the Play internal
+  track is available.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

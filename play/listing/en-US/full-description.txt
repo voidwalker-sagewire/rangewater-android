@@ -1,0 +1,27 @@
+RangeWater helps cattle producers and rotational grazing managers understand how pasture water placement affects grazing access.
+
+Draw pasture boundaries, place water sources, and see the land within the preferred 800-foot planning distance. RangeWater also shows the 800-to-1,000-foot transition band and the acreage beyond planned coverage, giving you a practical view of where another water point may help.
+
+FIELD MAPPING
+• Draw and edit pasture boundaries over aerial imagery
+• Add water sources and assign them to accessible pastures
+• Add gates directly to fence segments
+• Preserve shared fence corners when boundaries change
+
+WATER COVERAGE
+• View preferred, transition, and beyond-planned coverage
+• Compare covered acreage and percentages for each pasture
+• Switch between physical-radius and accessible-pasture views
+
+HERD MOVEMENT
+• Create herds and record their current location
+• Plan movement through mapped gates
+• Complete or cancel movements while preserving history
+
+LOCAL-FIRST DATA SAFETY
+• Ranch records remain on your device
+• Create portable, checksummed RangeWater backup files
+• Restore records on another Android phone or tablet
+• Undo the most recent restore when an earlier archive was selected by mistake
+
+RangeWater is a planning aid. Its map estimates do not replace an on-site inspection, survey, engineering analysis, veterinary guidance, or professional grazing plan.
