@@ -832,7 +832,7 @@ EVIDENCE STATUS:
   and restart persistence are field-verified across both target device classes.
 
 - RW-TX-012-MCH
-  Status: AUTHORIZED — IMPLEMENTATION IN PROGRESS
+  Status: IMPLEMENTED — BUILD VERIFIED — PHYSICAL DEVICE CHECK PENDING
   Scope: Persist and restore the settled map viewport, automatically frame existing ranch
   geometry when no viewport exists, correct overview gate-versus-pasture tap arbitration,
   and add a remembered Storage Access Framework folder with Quick Backup, Save As,
@@ -841,6 +841,14 @@ EVIDENCE STATUS:
   Feature branch: codex/rw-tx-012-mch.
   Database delta: None. Camera and user-granted document locations remain device-local
   preferences; ranch archives and restore semantics remain format-compatible.
+  Verified source commit: 325cd79263887ef369848511e132d8249976d8b6.
+  Verified GitHub Actions run: 35879840262.
+  Result: SUCCESS — the imagery-gateway regression suite, JVM tests including overview
+  gate-hit policy, Android emulator persistence tests for camera and backup destinations,
+  stable-signed APK assembly, completed-APK certificate verification, and artifact upload
+  all passed.
+  Build artifact: RangeWater-Field-APK 10758879883 (26,410,616 bytes), retained through
+  2026-10-23.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -896,18 +904,18 @@ EVIDENCE STATUS:
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: Map continuity and easy device handoff
 - Working transmission: RW-TX-012-MCH
-- Implementation status: RANGEWATER 0.13.0 IMPLEMENTATION IN PROGRESS
-- Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
+- Implementation status: RANGEWATER 0.13.0 BUILD VERIFIED — DEVICE CHECK PENDING
+- Authoritative baseline: d091b31790a403b21df640cd317690239b3d753f
 - Feature branch: codex/rw-tx-012-mch
-- Verified implementation commit: 6eed3aa9f8f06115aa5363cecfca4269a9c343d7
-- CI status: GREEN — certificate-verified field run 35843199802
-- Build artifact: RangeWater-Field-APK version 0.12.0 (versionCode 15), artifact
-  10742511564 (26,392,141 bytes; expires 2026-10-23)
+- Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
+- CI status: GREEN — certificate-verified field run 35879840262
+- Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
+  10758879883 (26,410,616 bytes; expires 2026-10-23)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
 - Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
 - RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
-- Active transmission status: RW-TX-012-MCH AUTHORIZED — IMPLEMENTATION IN PROGRESS
+- Active transmission status: RW-TX-012-MCH BUILD VERIFIED — DEVICE CHECK PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -918,10 +926,9 @@ EVIDENCE STATUS:
 - Field-signing status: VERIFIED — repository secrets established; CI rebuilt the
   keystore, matched its configured fingerprint, signed the APK, and independently
   matched the completed APK to the permanent field certificate.
-- Next action: Compile and verify RW-TX-012-MCH through JVM, Android instrumentation,
-  imagery, APK, stable-signing, and certificate checks; then test rotation continuity,
-  cold-open ranch framing, overview pasture selection, Quick Backup, Share Latest, and
-  cross-device restore on the Galaxy S26 and Samsung Tab S7.
+- Next action: Install RangeWater 0.13.0 field artifact 10758879883 as an in-place update,
+  then test rotation continuity, cold-open ranch framing, overview pasture selection,
+  Quick Backup, Share Latest, and cross-device restore on the Galaxy S26 and Samsung Tab S7.
 - Resume point: Use only certificate-verified RangeWater-Field-APK artifacts for direct
   field distribution. Stable-key updates preserve the existing local database.
 
