@@ -38,7 +38,6 @@ jobs:
       RANGEWATER_FIELD_STORE_PASSWORD: ${{ secrets.RANGEWATER_FIELD_STORE_PASSWORD }}
       RANGEWATER_FIELD_KEY_ALIAS: ${{ secrets.RANGEWATER_FIELD_KEY_ALIAS }}
       RANGEWATER_FIELD_KEY_PASSWORD: ${{ secrets.RANGEWATER_FIELD_KEY_PASSWORD }}
-      RANGEWATER_FIELD_KEYSTORE_PATH: ${{ runner.temp }}/rangewater-field.jks
       RANGEWATER_FIELD_CERT_SHA256: 94B08C24083F621C7164E112617CDB31CA97155CC1E2CCE86EE50974F5D1F001
 
     steps:
@@ -65,13 +64,15 @@ jobs:
           test -n "$RANGEWATER_FIELD_STORE_PASSWORD"
           test -n "$RANGEWATER_FIELD_KEY_ALIAS"
           test -n "$RANGEWATER_FIELD_KEY_PASSWORD"
+          keystore_path="$RUNNER_TEMP/rangewater-field.jks"
+          echo "RANGEWATER_FIELD_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
           printf '%s' "$RANGEWATER_FIELD_KEYSTORE_BASE64" \
-            | base64 --decode > "$RANGEWATER_FIELD_KEYSTORE_PATH"
-          chmod 600 "$RANGEWATER_FIELD_KEYSTORE_PATH"
+            | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
 
           actual_fingerprint="$(
             keytool -list -v \
-              -keystore "$RANGEWATER_FIELD_KEYSTORE_PATH" \
+              -keystore "$keystore_path" \
               -storepass:env RANGEWATER_FIELD_STORE_PASSWORD \
               -alias "$RANGEWATER_FIELD_KEY_ALIAS" \
               | sed -n 's/.*SHA256: //p' \
