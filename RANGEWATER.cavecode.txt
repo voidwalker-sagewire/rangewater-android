@@ -12,9 +12,9 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 0.12.0
-- Version Code: 15
-- Active Feature Branch: codex/rw-tx-011-bkr
+- App Version: 0.13.0
+- Version Code: 16
+- Active Feature Branch: codex/rw-tx-012-mch
 - Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
 - Public Production: PAUSED pending RangeWater 1.0 operational scope
 - Package Notice: This is the intended permanent package identity. Once registered
@@ -278,7 +278,19 @@ RULE:
       validated before any live write; replacement is atomic and creates an internal
       emergency rollback first. Invalid or newer archives leave current data untouched.
     - A compact Data Safety menu exposes Create Backup, Restore Backup, and Undo Last
-      Restore. Room remains at schema version 6.
+    Restore. Room remains at schema version 6.
+24. Michael approved RW-TX-012-MCH map continuity and easy device handoff.
+    - The last settled map camera persists outside Room and restores after rotation and
+      ordinary relaunch. When no saved camera exists but ranch geometry does, RangeWater
+      frames the established ranch instead of opening at the continental default.
+    - Ranch-overview taps require a deliberate hit on the visible orange gate marker;
+      the expanded invisible gate target is reserved for detail zoom so it cannot consume
+      ordinary pasture-interior taps from a wide view.
+    - A user-selected Android document-provider folder may be remembered for timestamped
+      one-tap backups. The folder may be Google Drive, local storage, or USB; RangeWater
+      receives only the location grant selected by the operator and stores no cloud login.
+    - Save As, Restore, Share Latest, emergency rollback, complete archive validation,
+      replace-all semantics, and Room schema version 6 remain intact.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -794,7 +806,7 @@ EVIDENCE STATUS:
   Acceptance date: 2026-09-22.
 
 - RW-TX-011-BKR
-  Status: IMPLEMENTED — BUILD VERIFIED — FIELD RECOVERY TEST PENDING
+  Status: CLOSED — ACCEPTED — BUILD VERIFIED — CROSS-DEVICE FIELD VERIFIED
   Scope: Versioned and checksummed full-data archives, pre-write validation,
   foreign-key-safe atomic replacement, system document picker integration, preserved
   display settings, and an internal emergency rollback path.
@@ -804,6 +816,31 @@ EVIDENCE STATUS:
   Result: SUCCESS — archive JVM tests, complete Room round-trip and rollback
   instrumentation, APK assembly/upload, and imagery-gateway regression tests passed.
   Build artifact: RangeWater-Debug-APK 10688607580 (26,391,734 bytes).
+  Stable field-signing commit: d091b31790a403b21df640cd317690239b3d753f.
+  Stable field-signing verification run: 35843199802.
+  Field result: SUCCESS — repository secrets, keystore reconstruction, source tests,
+  38 Room instrumentation tests, APK assembly, final APK certificate verification,
+  imagery regression, and artifact upload passed.
+  Field artifact: RangeWater-Field-APK 10742511564 (26,392,141 bytes), retained through
+  2026-10-23. Verified APK certificate SHA-256:
+  94:B0:8C:24:08:3F:62:1C:71:64:E1:12:61:7C:DB:31:CA:97:15:5C:C1:E2:CC:E8:6E:E5:09:74:F5:D1:F0:01.
+  Field acceptance: PASSED — Michael created independently timed 05:45 and 06:00 archives
+  on the Galaxy S26. Restoring 05:45 removed the later Idaho pasture, Undo Last Restore
+  returned it, and the result survived close/reopen. He then transferred both archives
+  through Google Drive to the Samsung Tab S7, restored 05:45, undid that restore, and
+  restored 06:00 successfully. Archive portability, replacement, emergency rollback,
+  and restart persistence are field-verified across both target device classes.
+
+- RW-TX-012-MCH
+  Status: AUTHORIZED — IMPLEMENTATION IN PROGRESS
+  Scope: Persist and restore the settled map viewport, automatically frame existing ranch
+  geometry when no viewport exists, correct overview gate-versus-pasture tap arbitration,
+  and add a remembered Storage Access Framework folder with Quick Backup, Save As,
+  Restore, Change Folder, and Share Latest actions.
+  Target release: RangeWater 0.13.0 (versionCode 16), Room schema version 6.
+  Feature branch: codex/rw-tx-012-mch.
+  Database delta: None. Camera and user-granted document locations remain device-local
+  preferences; ranch archives and restore semantics remain format-compatible.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -840,33 +877,37 @@ EVIDENCE STATUS:
   resulting tablet imagery performance on 2026-09-20.
 - Device testing confirmed that zoom 22 enlarged source pixels without adding ground
   detail. REV3's mode-specific zoom limits passed physical-device acceptance.
-- RW-TX-004 stores water assets locally, but the database remains device-specific and is
-  not yet backed up or synchronized. Uninstalling the app removes its stored assets.
+- Ranch records remain local-first and are not live-synchronized. RW-TX-011 provides
+  explicit portable full-data archives and tested cross-device restoration; uninstalling
+  without a separate archive can still remove device-local records.
 - Destructive Room migration is prohibited. Any future schema version must include and
   test a data-preserving migration before release.
-- GitHub-hosted debug APKs currently inherit an ephemeral runner debug certificate. The
-  0.11.1 field build therefore required a one-time uninstall before installation instead
-  of updating the prior debug build in place. Before the next distributed APK, establish
-  a stable non-production field-test signing key; the eventual Play release key remains
-  separate and must never be committed to the repository.
+- GitHub-hosted field APKs use the permanent non-production RangeWater field key supplied
+  through encrypted repository secrets. The private key and its password are never
+  committed. CI reconstructs the keystore only in the runner's temporary directory,
+  verifies the configured key, signs the field APK, and verifies the certificate on the
+  completed APK before upload. The field certificate SHA-256 fingerprint is
+  94:B0:8C:24:08:3F:62:1C:71:64:E1:12:61:7C:DB:31:CA:97:15:5C:C1:E2:CC:E8:6E:E5:09:74:F5:D1:F0:01.
+  The eventual Google Play signing and upload keys remain separate.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Local data safety and recovery
-- Working transmission: RW-TX-011-BKR
-- Implementation status: RANGEWATER 0.12.0 BUILD VERIFIED — FIELD RECOVERY TEST PENDING
+- Current phase: Map continuity and easy device handoff
+- Working transmission: RW-TX-012-MCH
+- Implementation status: RANGEWATER 0.13.0 IMPLEMENTATION IN PROGRESS
 - Authoritative baseline: 47895ec22f69dd8cd401e807216fd918ef529c36
-- Feature branch: codex/rw-tx-011-bkr
+- Feature branch: codex/rw-tx-012-mch
 - Verified implementation commit: 6eed3aa9f8f06115aa5363cecfca4269a9c343d7
-- CI status: GREEN — backup/recovery run 35714482715
-- Build artifact: RangeWater-Debug-APK version 0.12.0 (versionCode 15), artifact
-  10688607580 (26,391,734 bytes)
+- CI status: GREEN — certificate-verified field run 35843199802
+- Build artifact: RangeWater-Field-APK version 0.12.0 (versionCode 15), artifact
+  10742511564 (26,392,141 bytes; expires 2026-10-23)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
   Galaxy S26; all earlier accepted transmissions remain intact.
 - Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
-- Active transmission status: RW-TX-011-BKR BUILD VERIFIED — FIELD RECOVERY TEST PENDING
+- RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
+- Active transmission status: RW-TX-012-MCH AUTHORIZED — IMPLEMENTATION IN PROGRESS
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -874,10 +915,15 @@ EVIDENCE STATUS:
   black-screen failure above zoom 15.0.
 - Shared-junction acceptance: PASSED — shared movement saved across connected pasture
   geometry and survived a full close and reopen on the Samsung Tab S7.
-- Next action: Establish stable field-test APK signing, then perform the focused physical
-  backup, destructive-change, restore, restart, and emergency-rollback acceptance test.
-- Resume point: Do not distribute the ephemeral-signed CI artifact as an in-place update;
-  preserve the installed database until the stable field-test package is available.
+- Field-signing status: VERIFIED — repository secrets established; CI rebuilt the
+  keystore, matched its configured fingerprint, signed the APK, and independently
+  matched the completed APK to the permanent field certificate.
+- Next action: Compile and verify RW-TX-012-MCH through JVM, Android instrumentation,
+  imagery, APK, stable-signing, and certificate checks; then test rotation continuity,
+  cold-open ranch framing, overview pasture selection, Quick Backup, Share Latest, and
+  cross-device restore on the Galaxy S26 and Samsung Tab S7.
+- Resume point: Use only certificate-verified RangeWater-Field-APK artifacts for direct
+  field distribution. Stable-key updates preserve the existing local database.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------

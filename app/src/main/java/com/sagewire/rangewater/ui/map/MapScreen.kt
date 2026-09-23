@@ -1,10 +1,14 @@
 package com.sagewire.rangewater.ui.map
 
 import android.content.ComponentCallbacks2
+import android.content.ClipData
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
+import android.net.Uri
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -12,6 +16,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -56,6 +62,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +77,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sagewire.rangewater.data.PastureCoordinate
+import com.sagewire.rangewater.data.BackupDestinationRepository
+import com.sagewire.rangewater.data.OpenRangeWaterBackupContract
 import com.sagewire.rangewater.data.PreparedRangeWaterRestore
 import com.sagewire.rangewater.data.RangeWaterArchiveCodec
 import com.sagewire.rangewater.data.RangeWaterBackupManager
@@ -110,6 +119,7 @@ import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.style.layers.Property
@@ -193,6 +203,12 @@ fun MapScreen(
     val backupManager = remember(appContext, database) {
         RangeWaterBackupManager(appContext, database, displayPreferencesRepository)
     }
+    val backupDestinationRepository = remember(appContext) {
+        BackupDestinationRepository(appContext)
+    }
+    val cameraStateRepository = remember(appContext) {
+        MapCameraStateRepository(appContext)
+    }
     var displayPreferences by remember {
         mutableStateOf(displayPreferencesRepository.getPreferences())
     }
@@ -203,6 +219,8 @@ fun MapScreen(
     var restoringEmergencyBackup by remember { mutableStateOf(false) }
     var dataOperationInProgress by remember { mutableStateOf(false) }
     var emergencyBackupAvailable by remember { mutableStateOf(backupManager.hasEmergencyBackup()) }
+    var backupFolderUri by remember { mutableStateOf(backupDestinationRepository.backupFolder()) }
+    var lastBackupUri by remember { mutableStateOf(backupDestinationRepository.lastBackup()) }
     var showAssignPasturesDialog by remember { mutableStateOf(false) }
     val assignmentDraftIds = remember { mutableStateListOf<Long>() }
 
@@ -212,6 +230,8 @@ fun MapScreen(
     var currentZoom by remember { mutableDoubleStateOf(initialZoom) }
     var isMapRendering by remember { mutableStateOf(true) }
     var hasLoadError by remember { mutableStateOf(false) }
+    var isMapStyleReady by remember { mutableStateOf(false) }
+    var initialViewportApplied by remember { mutableStateOf(false) }
 
     var selectedWaterId by remember { mutableStateOf<Long?>(null) }
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
@@ -337,6 +357,7 @@ fun MapScreen(
         }
     }
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
+    val currentMapInstance by rememberUpdatedState(mapInstance)
 
     fun replaceDraft(vertices: List<PastureCoordinate>) {
         draftVertices.clear()
@@ -360,21 +381,100 @@ fun MapScreen(
         ephemeralJunctionMoves.clear()
         undoSnapshots.clear()
         displayPreferences = displayPreferencesRepository.getPreferences()
+        cameraStateRepository.clear()
+        initialViewportApplied = false
+    }
+
+    fun backupFileName(): String {
+        val stamp = SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(Date())
+        return "RangeWater-$stamp${RangeWaterArchiveCodec.FILE_EXTENSION}"
+    }
+
+    fun retainUriPermission(uri: Uri, flags: Int) {
+        try {
+            context.contentResolver.takePersistableUriPermission(uri, flags)
+        } catch (_: SecurityException) {
+            // Some document providers keep the grant themselves but reject this optional call.
+        }
+    }
+
+    suspend fun writeBackup(uri: Uri) {
+        withContext(Dispatchers.IO) {
+            val output = requireNotNull(context.contentResolver.openOutputStream(uri, "w")) {
+                "The selected backup file could not be opened"
+            }
+            output.use { backupManager.writeManualBackup(it) }
+        }
+        backupDestinationRepository.saveLastBackup(uri)
+        lastBackupUri = uri
+    }
+
+    suspend fun createBackupInFolder(folder: Uri): Uri {
+        val createdUri = withContext(Dispatchers.IO) {
+            val parent = DocumentsContract.buildDocumentUriUsingTree(
+                folder,
+                DocumentsContract.getTreeDocumentId(folder)
+            )
+            requireNotNull(
+                DocumentsContract.createDocument(
+                    context.contentResolver,
+                    parent,
+                    RangeWaterArchiveCodec.MIME_TYPE,
+                    backupFileName()
+                )
+            ) { "The selected folder could not create a backup file" }
+        }
+        writeBackup(createdUri)
+        return createdUri
+    }
+
+    fun shareBackup(uri: Uri) {
+        val share = Intent(Intent.ACTION_SEND).apply {
+            type = RangeWaterArchiveCodec.MIME_TYPE
+            putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newUri(context.contentResolver, "RangeWater backup", uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(share, "Share RangeWater backup"))
+    }
+
+    val backupFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            retainUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            backupDestinationRepository.saveBackupFolder(uri)
+            backupFolderUri = uri
+            scope.launch {
+                dataOperationInProgress = true
+                try {
+                    createBackupInFolder(uri)
+                    Toast.makeText(context, "Backup folder saved and backup created", Toast.LENGTH_LONG).show()
+                    showDataSafetyDialog = false
+                } catch (error: Exception) {
+                    Toast.makeText(context, error.message ?: "Backup failed", Toast.LENGTH_LONG).show()
+                } finally {
+                    dataOperationInProgress = false
+                }
+            }
+        }
     }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(RangeWaterArchiveCodec.MIME_TYPE)
     ) { uri ->
         if (uri != null) {
+            retainUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
             scope.launch {
                 dataOperationInProgress = true
                 try {
-                    withContext(Dispatchers.IO) {
-                        val output = requireNotNull(context.contentResolver.openOutputStream(uri, "w")) {
-                            "The selected backup file could not be opened"
-                        }
-                        output.use { backupManager.writeManualBackup(it) }
-                    }
+                    writeBackup(uri)
                     Toast.makeText(context, "RangeWater backup created", Toast.LENGTH_LONG).show()
                     showDataSafetyDialog = false
                 } catch (error: Exception) {
@@ -387,9 +487,10 @@ fun MapScreen(
     }
 
     val openBackupLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
+        OpenRangeWaterBackupContract()
     ) { uri ->
         if (uri != null) {
+            retainUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             scope.launch {
                 dataOperationInProgress = true
                 try {
@@ -481,6 +582,9 @@ fun MapScreen(
         mapView.addOnDidFinishRenderingMapListener(didRenderListener)
         mapView.addOnDidFailLoadingMapListener(failedLoadListener)
         onDispose {
+            currentMapInstance?.cameraPosition?.let { camera ->
+                cameraStateRepository.save(camera.toSavedMapCamera())
+            }
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             appContext.unregisterComponentCallbacks(memoryCallbacks)
             mapView.removeOnWillStartRenderingMapListener(willRenderListener)
@@ -544,6 +648,42 @@ fun MapScreen(
                 isMovingWater = interactionState == InteractionState.WATER_MOVING
             )
         }
+    }
+    LaunchedEffect(
+        mapInstance,
+        isMapStyleReady,
+        initialViewportApplied,
+        pastures,
+        waterPoints
+    ) {
+        val map = mapInstance ?: return@LaunchedEffect
+        if (!isMapStyleReady || initialViewportApplied) return@LaunchedEffect
+        val ranchCoordinates = buildList {
+            pastures.forEach { pasture ->
+                pasture.vertices.forEach { vertex ->
+                    add(LatLng(vertex.junction.latitude, vertex.junction.longitude))
+                }
+            }
+            waterPoints.forEach { point -> add(LatLng(point.latitude, point.longitude)) }
+        }
+        if (ranchCoordinates.isEmpty()) return@LaunchedEffect
+
+        if (ranchCoordinates.size == 1) {
+            map.moveCamera(
+                CameraUpdateFactory.newCameraPosition(
+                    CameraPosition.Builder()
+                        .target(ranchCoordinates.first())
+                        .zoom(17.0)
+                        .build()
+                )
+            )
+        } else {
+            val bounds = LatLngBounds.Builder().includes(ranchCoordinates).build()
+            val padding = (72f * context.resources.displayMetrics.density).toInt()
+            map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
+        }
+        initialViewportApplied = true
+        cameraStateRepository.save(map.cameraPosition.toSavedMapCamera())
     }
 
     // 🎮 BLOCK 4 — MODE-AWARE MAP TAP ROUTING
@@ -727,12 +867,23 @@ fun MapScreen(
                     }
                     InteractionState.ORDINARY -> {
                         val screenPoint = map.projection.toScreenLocation(coordinate)
-                        val gateHit = queryFeaturesNear(
-                            map,
-                            screenPoint,
-                            24f * context.resources.displayMetrics.density,
-                            MapConfig.LAYER_GATE_TOUCH_TARGET
-                        ).firstOrNull()
+                        val gateHit = if (
+                            MapTapSelectionPolicy.useExpandedGateTarget(map.cameraPosition.zoom)
+                        ) {
+                            // The layer already supplies a 24-pixel target. Querying another
+                            // density-scaled box around it made gates consume nearby pastures.
+                            map.queryRenderedFeatures(
+                                screenPoint,
+                                MapConfig.LAYER_GATE_TOUCH_TARGET
+                            ).firstOrNull()
+                        } else {
+                            // At ranch overview zoom, only a deliberate tap on the visible
+                            // orange gate marker outranks the pasture polygon beneath it.
+                            map.queryRenderedFeatures(
+                                screenPoint,
+                                MapConfig.LAYER_GATE_OVERVIEW
+                            ).firstOrNull()
+                        }
                         if (gateHit != null) {
                             selectedGateId = gateHit.getNumberProperty("id").toLong()
                             selectedWaterId = null
@@ -896,10 +1047,21 @@ fun MapScreen(
                         map.setMaxZoomPreference(MapConfig.MAX_AERIAL_ZOOM)
                         map.setStyle(MapConfig.createStyleBuilder()) {
                             MapMarkerIcons.register(it)
-                            map.cameraPosition = CameraPosition.Builder()
-                                .target(LatLng(initialLat, initialLng))
-                                .zoom(initialZoom)
-                                .build()
+                            val savedCamera = cameraStateRepository.load()
+                            map.cameraPosition = if (savedCamera == null) {
+                                CameraPosition.Builder()
+                                    .target(LatLng(initialLat, initialLng))
+                                    .zoom(initialZoom)
+                                    .build()
+                            } else {
+                                initialViewportApplied = true
+                                CameraPosition.Builder()
+                                    .target(LatLng(savedCamera.latitude, savedCamera.longitude))
+                                    .zoom(savedCamera.zoom)
+                                    .bearing(savedCamera.bearing)
+                                    .tilt(savedCamera.tilt)
+                                    .build()
+                            }
                             applyMapMode(map, activeMode)
                             applyLayerVisibility(
                                 map = map,
@@ -924,10 +1086,12 @@ fun MapScreen(
                                 junctionUsageMap.filterValues { it.size > 1 }.keys,
                                 activeSnappedJunction
                             )
+                            isMapStyleReady = true
                         }
                         map.addOnCameraMoveListener { currentZoom = map.cameraPosition.zoom }
                         map.addOnCameraIdleListener {
                             currentZoom = map.cameraPosition.zoom
+                            cameraStateRepository.save(map.cameraPosition.toSavedMapCamera())
                         }
                     }
                 }
@@ -2340,28 +2504,79 @@ fun MapScreen(
             onDismissRequest = { if (!dataOperationInProgress) showDataSafetyDialog = false },
             title = { Text("Data Safety", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Text(
                         "Backups preserve every mapped asset, herd, movement record, audit timestamp, and display setting.",
                         fontSize = 13.sp
                     )
                     Button(
                         onClick = {
-                            val stamp = SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(Date())
-                            createBackupLauncher.launch("RangeWater-$stamp${RangeWaterArchiveCodec.FILE_EXTENSION}")
+                            val folder = backupFolderUri
+                            if (folder == null) {
+                                backupFolderLauncher.launch(null)
+                            } else {
+                                scope.launch {
+                                    dataOperationInProgress = true
+                                    try {
+                                        createBackupInFolder(folder)
+                                        Toast.makeText(context, "Quick backup created", Toast.LENGTH_LONG).show()
+                                        showDataSafetyDialog = false
+                                    } catch (error: Exception) {
+                                        Toast.makeText(context, error.message ?: "Backup failed", Toast.LENGTH_LONG).show()
+                                    } finally {
+                                        dataOperationInProgress = false
+                                    }
+                                }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !dataOperationInProgress
-                    ) { Text("Create Backup") }
+                    ) { Text(if (backupFolderUri == null) "Choose Backup Folder" else "Quick Backup") }
+                    Text(
+                        if (backupFolderUri == null) {
+                            "Choose Google Drive, local storage, or USB once. Later backups can be created there with one tap."
+                        } else {
+                            "Quick Backup creates a new timestamped archive in your saved folder."
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                    OutlinedButton(
+                        onClick = { createBackupLauncher.launch(backupFileName()) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !dataOperationInProgress
+                    ) { Text("Save Backup As…") }
                     OutlinedButton(
                         onClick = {
-                            openBackupLauncher.launch(
-                                arrayOf(RangeWaterArchiveCodec.MIME_TYPE, "application/zip", "application/octet-stream")
-                            )
+                            openBackupLauncher.launch(backupFolderUri)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !dataOperationInProgress
                     ) { Text("Restore Backup") }
+                    if (backupFolderUri != null || lastBackupUri != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            if (backupFolderUri != null) {
+                                TextButton(
+                                    onClick = { backupFolderLauncher.launch(backupFolderUri) },
+                                    enabled = !dataOperationInProgress
+                                ) { Text("Change Folder") }
+                            } else {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                            lastBackupUri?.let { backupUri ->
+                                TextButton(
+                                    onClick = { shareBackup(backupUri) },
+                                    enabled = !dataOperationInProgress
+                                ) { Text("Share Latest") }
+                            }
+                        }
+                    }
                     if (emergencyBackupAvailable) {
                         OutlinedButton(
                             onClick = {
@@ -3490,6 +3705,14 @@ private fun queryHerdFeatureAt(map: MapLibreMap, point: PointF): Feature? {
 }
 
 private fun LatLng.toPastureCoordinate() = PastureCoordinate(latitude, longitude)
+
+private fun CameraPosition.toSavedMapCamera() = SavedMapCamera(
+    latitude = target?.latitude ?: MapConfig.DEFAULT_LATITUDE,
+    longitude = target?.longitude ?: MapConfig.DEFAULT_LONGITUDE,
+    zoom = zoom,
+    bearing = bearing,
+    tilt = tilt
+)
 
 private fun applyMapMode(map: MapLibreMap, mode: ActiveMapMode) {
     when (mode) {
