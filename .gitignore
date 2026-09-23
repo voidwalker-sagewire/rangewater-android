@@ -12,6 +12,11 @@
 /imagery-gateway/node_modules/
 /imagery-gateway/.wrangler/
 
+# 🪨 BLOCK 3 — PRIVATE SIGNING MATERIAL
+# 🎮 Behavior: Private Android keys must come from external secret storage, never Git.
+*.jks
+*.keystore
+
 # 🪨 BLOCK 2 — GRADLE WRAPPER PRESERVATION
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties

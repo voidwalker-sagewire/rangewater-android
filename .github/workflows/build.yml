@@ -1,7 +1,7 @@
 # 🪨 BLOCK 1 — CONTINUOUS INTEGRATION BUILD RUNNER
 # 🎮 Behavior: Validates the wrapper, runs JVM and real Room database tests,
-#    builds a debug APK, and retains the artifact.
-name: Build RangeWater Debug APK
+#    builds a stable-signed field APK, verifies its certificate, and retains the artifact.
+name: Build RangeWater Field APK
 
 on:
   push:
@@ -33,6 +33,13 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      RANGEWATER_FIELD_KEYSTORE_BASE64: ${{ secrets.RANGEWATER_FIELD_KEYSTORE_BASE64 }}
+      RANGEWATER_FIELD_STORE_PASSWORD: ${{ secrets.RANGEWATER_FIELD_STORE_PASSWORD }}
+      RANGEWATER_FIELD_KEY_ALIAS: ${{ secrets.RANGEWATER_FIELD_KEY_ALIAS }}
+      RANGEWATER_FIELD_KEY_PASSWORD: ${{ secrets.RANGEWATER_FIELD_KEY_PASSWORD }}
+      RANGEWATER_FIELD_KEYSTORE_PATH: ${{ runner.temp }}/rangewater-field.jks
+      RANGEWATER_FIELD_CERT_SHA256: 94B08C24083F621C7164E112617CDB31CA97155CC1E2CCE86EE50974F5D1F001
 
     steps:
       - name: Checkout Repository
@@ -49,6 +56,28 @@ jobs:
 
       - name: Grant Execute Permission to Wrapper
         run: chmod +x ./gradlew
+
+      - name: Prepare Stable Field Signing Key
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RANGEWATER_FIELD_KEYSTORE_BASE64"
+          test -n "$RANGEWATER_FIELD_STORE_PASSWORD"
+          test -n "$RANGEWATER_FIELD_KEY_ALIAS"
+          test -n "$RANGEWATER_FIELD_KEY_PASSWORD"
+          printf '%s' "$RANGEWATER_FIELD_KEYSTORE_BASE64" \
+            | base64 --decode > "$RANGEWATER_FIELD_KEYSTORE_PATH"
+          chmod 600 "$RANGEWATER_FIELD_KEYSTORE_PATH"
+
+          actual_fingerprint="$(
+            keytool -list -v \
+              -keystore "$RANGEWATER_FIELD_KEYSTORE_PATH" \
+              -storepass:env RANGEWATER_FIELD_STORE_PASSWORD \
+              -alias "$RANGEWATER_FIELD_KEY_ALIAS" \
+              | sed -n 's/.*SHA256: //p' \
+              | tr -d ':'
+          )"
+          test "$actual_fingerprint" = "$RANGEWATER_FIELD_CERT_SHA256"
 
       - name: Run Debug JVM Unit Tests
         run: ./gradlew testDebugUnitTest --stacktrace
@@ -68,12 +97,28 @@ jobs:
           disable-animations: true
           script: ./gradlew connectedDebugAndroidTest --stacktrace
 
-      - name: Compile Debug APK
+      - name: Compile Stable-Signed Field APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload Debug APK Artifact
+      - name: Verify Built APK Certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          apksigner_path="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner_path"
+          actual_fingerprint="$(
+            "$apksigner_path" verify --print-certs app/build/outputs/apk/debug/app-debug.apk \
+              | sed -n 's/Signer #1 certificate SHA-256 digest: //p' \
+              | tr '[:lower:]' '[:upper:]'
+          )"
+          test "$actual_fingerprint" = "$RANGEWATER_FIELD_CERT_SHA256"
+          mkdir -p app/build/outputs/field
+          cp app/build/outputs/apk/debug/app-debug.apk \
+            app/build/outputs/field/RangeWater-0.12.0-field.apk
+
+      - name: Upload Stable Field APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RangeWater-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
+          name: RangeWater-Field-APK
+          path: app/build/outputs/field/RangeWater-0.12.0-field.apk
+          retention-days: 30

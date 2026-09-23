@@ -12,6 +12,32 @@ android {
     namespace = "com.sagewire.rangewater"
     compileSdk = 36
 
+    // 🪨 BLOCK 2A — STABLE FIELD-DISTRIBUTION SIGNING
+    // 🎮 Behavior: GitHub Actions supplies a permanent non-production key through
+    //    environment variables. Ordinary local builds keep Android's normal debug key.
+    val fieldKeystorePath = System.getenv("RANGEWATER_FIELD_KEYSTORE_PATH")
+    val fieldStorePassword = System.getenv("RANGEWATER_FIELD_STORE_PASSWORD")
+    val fieldKeyAlias = System.getenv("RANGEWATER_FIELD_KEY_ALIAS")
+    val fieldKeyPassword = System.getenv("RANGEWATER_FIELD_KEY_PASSWORD")
+    val fieldSigningValues = listOf(
+        fieldKeystorePath,
+        fieldStorePassword,
+        fieldKeyAlias,
+        fieldKeyPassword,
+    )
+    val fieldSigningConfigured = fieldSigningValues.all { !it.isNullOrBlank() }
+
+    val fieldSigningConfig = if (fieldSigningConfigured) {
+        signingConfigs.create("field") {
+            storeFile = file(requireNotNull(fieldKeystorePath))
+            storePassword = requireNotNull(fieldStorePassword)
+            keyAlias = requireNotNull(fieldKeyAlias)
+            keyPassword = requireNotNull(fieldKeyPassword)
+        }
+    } else {
+        null
+    }
+
     defaultConfig {
         applicationId = "com.sagewire.rangewater"
         minSdk = 24
@@ -33,6 +59,13 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    buildTypes {
+        getByName("debug") {
+            // 🖍️ CI field artifacts remain debuggable but share one durable certificate.
+            fieldSigningConfig?.let { signingConfig = it }
+        }
     }
 }
 
