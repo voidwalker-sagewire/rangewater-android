@@ -107,11 +107,17 @@ jobs:
           set -euo pipefail
           apksigner_path="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$apksigner_path"
+          certificate_output="$(
+            "$apksigner_path" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
+          )"
           actual_fingerprint="$(
-            "$apksigner_path" verify --print-certs app/build/outputs/apk/debug/app-debug.apk \
-              | sed -n 's/Signer #1 certificate SHA-256 digest: //p' \
+            printf '%s\n' "$certificate_output" \
+              | awk -F': ' '/certificate SHA-256 digest/ { print $NF; exit }' \
+              | tr -d '\r:' \
               | tr '[:lower:]' '[:upper:]'
           )"
+          test -n "$actual_fingerprint"
+          echo "Built APK certificate SHA-256: $actual_fingerprint"
           test "$actual_fingerprint" = "$RANGEWATER_FIELD_CERT_SHA256"
           mkdir -p app/build/outputs/field
           cp app/build/outputs/apk/debug/app-debug.apk \
