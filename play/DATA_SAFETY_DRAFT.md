@@ -19,5 +19,6 @@ This file is a release questionnaire aid, not a substitute for answering the cur
 1. Confirm whether Play's current definitions classify requested map-tile coordinates as approximate location collection even though RangeWater does not request Android location permission.
 2. Confirm whether the user-directed export/share flow is excluded from collection under the current Data safety definitions.
 3. Declare network encryption only after verifying every production endpoint uses HTTPS.
-4. Publish the final privacy policy at a stable public HTTPS URL and replace the draft contact placeholder.
+4. Privacy policy publication target: <https://sagewire.dev/rangewater/privacy/>,
+   with public contact `voidwalker@sagewiresyndicate.com`.
 5. Re-audit this form before adding live GPS, weather history, accounts, synchronization, analytics, or crash reporting.

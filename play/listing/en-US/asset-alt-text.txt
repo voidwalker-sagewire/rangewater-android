@@ -1,0 +1,20 @@
+RangeWater app icon
+Water droplet crossed by a magenta pasture boundary with three orange fence points.
+
+RangeWater feature graphic
+RangeWater title beside water-coverage rings and a water droplet crossed by a pasture boundary.
+
+01-ranch-overview.png
+Aerial ranch overview showing mapped pastures, gates, water sources, and water-coverage rings.
+
+02-pasture-water-coverage.png
+Illinois pasture details showing acreage within preferred, transition, and beyond-planned water coverage.
+
+03-coverage-rings.png
+Idaho pasture details over aerial imagery with assigned water source and coverage percentages.
+
+04-pasture-planning.png
+Illinois pasture boundary, gates, water source, coverage rings, acreage, and editing controls.
+
+05-backup-and-restore.png
+RangeWater Data Safety window with controls to create or restore a portable ranch backup.

@@ -34,4 +34,8 @@ If RangeWater's data practices change, this policy and the Google Play Data safe
 
 ## Contact
 
-Before publication, replace this paragraph with the public SageWire support email and privacy-policy URL that will be maintained for the application.
+Questions about RangeWater or this policy may be sent to
+[voidwalker@sagewiresyndicate.com](mailto:voidwalker@sagewiresyndicate.com).
+
+The public version of this policy is maintained at
+<https://sagewire.dev/rangewater/privacy/>.

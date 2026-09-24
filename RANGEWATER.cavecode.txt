@@ -886,6 +886,12 @@ EVIDENCE STATUS:
   certificate match all passed. Artifact `RangeWater-Play-AAB` 10783746305 is 22,273,237
   bytes, has SHA-256 digest 69774a14ac31003eed4f55a017e5c89a646a95dbad582dafac943a75c4b38cd4,
   and is retained by GitHub Actions through 2026-10-24.
+  Store preparation: the 512x512 Play icon and 1024x500 feature graphic are in
+  Google Play-compatible PNG encodings. Five 1080x1920 phone screenshots were prepared
+  from Michael's physical-device field captures; their publication awaits explicit
+  approval because the aerial imagery depicts the working ranch.
+  Privacy policy: LIVE at https://sagewire.dev/rangewater/privacy/ with public contact
+  voidwalker@sagewiresyndicate.com.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -977,9 +983,9 @@ EVIDENCE STATUS:
   GitHub Actions secrets configured, and CI signed and certificate-verified the release AAB.
 - Feature freeze: ACTIVE — seasonal weather and live GPS navigation are deferred until
   after the first Google Play release.
-- Next action: Finalize the privacy-policy contact and public URL, finish screenshots and
-  store-listing assets, create the Play Console app/internal track, and upload the verified
-  RangeWater 1.0.0 AAB.
+- Next action: Confirm whether the real-ranch field screenshots may be public, create the
+  Play Console app/internal track, upload the verified RangeWater 1.0.0 AAB and approved
+  listing assets, then complete the Data Safety and content declarations.
 - Resume point: Preserve the accepted 0.13.0 behavior while preparing version 1.0.0. Use
   only certificate-verified field APKs for direct distribution until the Play internal
   track is available.
