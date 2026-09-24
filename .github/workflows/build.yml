@@ -40,6 +40,11 @@ jobs:
       RANGEWATER_FIELD_KEY_ALIAS: ${{ secrets.RANGEWATER_FIELD_KEY_ALIAS }}
       RANGEWATER_FIELD_KEY_PASSWORD: ${{ secrets.RANGEWATER_FIELD_KEY_PASSWORD }}
       RANGEWATER_FIELD_CERT_SHA256: 94B08C24083F621C7164E112617CDB31CA97155CC1E2CCE86EE50974F5D1F001
+      RANGEWATER_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.RANGEWATER_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+      RANGEWATER_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.RANGEWATER_PLAY_UPLOAD_STORE_PASSWORD }}
+      RANGEWATER_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.RANGEWATER_PLAY_UPLOAD_KEY_ALIAS }}
+      RANGEWATER_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.RANGEWATER_PLAY_UPLOAD_KEY_PASSWORD }}
+      RANGEWATER_PLAY_UPLOAD_CERT_SHA256: 87F501E40E9CCB8CFE83560482D99770783B66F01E45730D139D206F4A392832
 
     steps:
       - name: Checkout Repository
@@ -131,21 +136,54 @@ jobs:
           path: app/build/outputs/field/RangeWater-1.0.0-field.apk
           retention-days: 30
 
-      - name: Compile Unsigned Play Release Bundle
-        run: ./gradlew bundleRelease --stacktrace
-
-      - name: Stage Unsigned Play Bundle
+      - name: Prepare Google Play Upload Key
         shell: bash
         run: |
           set -euo pipefail
-          test -f app/build/outputs/bundle/release/app-release.aab
-          mkdir -p app/build/outputs/play
-          cp app/build/outputs/bundle/release/app-release.aab \
-            app/build/outputs/play/RangeWater-1.0.0-unsigned.aab
+          test -n "$RANGEWATER_PLAY_UPLOAD_KEYSTORE_BASE64"
+          test -n "$RANGEWATER_PLAY_UPLOAD_STORE_PASSWORD"
+          test -n "$RANGEWATER_PLAY_UPLOAD_KEY_ALIAS"
+          test -n "$RANGEWATER_PLAY_UPLOAD_KEY_PASSWORD"
+          keystore_path="$RUNNER_TEMP/rangewater-play-upload.jks"
+          echo "RANGEWATER_PLAY_UPLOAD_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          printf '%s' "$RANGEWATER_PLAY_UPLOAD_KEYSTORE_BASE64" \
+            | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
 
-      - name: Upload Unsigned Play Bundle Artifact
+          actual_fingerprint="$(
+            keytool -list -v \
+              -keystore "$keystore_path" \
+              -storepass:env RANGEWATER_PLAY_UPLOAD_STORE_PASSWORD \
+              -alias "$RANGEWATER_PLAY_UPLOAD_KEY_ALIAS" \
+              | sed -n 's/.*SHA256: //p' \
+              | tr -d ':'
+          )"
+          test "$actual_fingerprint" = "$RANGEWATER_PLAY_UPLOAD_CERT_SHA256"
+
+      - name: Compile Signed Play Release Bundle
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Verify and Stage Signed Play Bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_path="app/build/outputs/bundle/release/app-release.aab"
+          test -f "$bundle_path"
+          jarsigner -verify -strict "$bundle_path"
+          actual_fingerprint="$(
+            keytool -printcert -jarfile "$bundle_path" \
+              | sed -n 's/.*SHA256: //p' \
+              | tr -d ':'
+          )"
+          test -n "$actual_fingerprint"
+          echo "Signed AAB certificate SHA-256: $actual_fingerprint"
+          test "$actual_fingerprint" = "$RANGEWATER_PLAY_UPLOAD_CERT_SHA256"
+          mkdir -p app/build/outputs/play
+          cp "$bundle_path" app/build/outputs/play/RangeWater-1.0.0-play-upload.aab
+
+      - name: Upload Signed Play Bundle Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RangeWater-Play-AAB-Unsigned
-          path: app/build/outputs/play/RangeWater-1.0.0-unsigned.aab
+          name: RangeWater-Play-AAB
+          path: app/build/outputs/play/RangeWater-1.0.0-play-upload.aab
           retention-days: 30

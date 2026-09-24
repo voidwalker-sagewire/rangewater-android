@@ -926,7 +926,15 @@ EVIDENCE STATUS:
   verifies the configured key, signs the field APK, and verifies the certificate on the
   completed APK before upload. The field certificate SHA-256 fingerprint is
   94:B0:8C:24:08:3F:62:1C:71:64:E1:12:61:7C:DB:31:CA:97:15:5C:C1:E2:CC:E8:6E:E5:09:74:F5:D1:F0:01.
-  The eventual Google Play signing and upload keys remain separate.
+  The Google Play signing and upload identities remain separate from this field key.
+- The RangeWater Google Play upload key was created on 2026-09-23 with alias
+  `rangewater-play-upload`. Its certificate SHA-256 fingerprint is
+  87:F5:01:E4:0E:9C:CB:8C:FE:83:56:04:82:D9:97:70:78:3B:66:F0:1E:45:73:0D:13:9D:20:6F:4A:39:28:32.
+  Its password-encrypted recovery materials are stored under SageSpine / 00 - Secure
+  Application Backups / 01 - App Signing Keys / RangeWater / 02 - Google Play Upload Key.
+  The password is intentionally excluded from Drive. Four encrypted GitHub Actions
+  secrets supply the keystore payload, store password, alias, and key password at build
+  time; the private key is reconstructed only in the temporary runner directory.
 
 🖍️ BLOCK 8 — CURRENT WORK AND RESUME POINT
 --------------------------------------------------------------------------------
@@ -957,6 +965,8 @@ EVIDENCE STATUS:
 - Field-signing status: VERIFIED — repository secrets established; CI rebuilt the
   keystore, matched its configured fingerprint, signed the APK, and independently
   matched the completed APK to the permanent field certificate.
+- Play-upload signing status: KEY CREATED — encrypted Drive recovery verified and four
+  encrypted GitHub Actions secrets configured; signed-AAB CI verification pending.
 - Feature freeze: ACTIVE — seasonal weather and live GPS navigation are deferred until
   after the first Google Play release.
 - Next action: Complete launcher branding, Play upload signing, release AAB generation,
