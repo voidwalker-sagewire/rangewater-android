@@ -12,11 +12,11 @@ Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 - Repository: voidwalker-sagewire/rangewater-android
 - Target Platform: Android Phones & Tablets (minSdk 24, targetSdk 36)
 - Package / App ID: com.sagewire.rangewater
-- App Version: 1.0.0 release candidate
+- App Version: 1.0.0 production
 - Version Code: 17
 - Active Feature Branch: codex/rw-tx-013-ply
 - Frozen Baseline Branch: codex/rw-tx-009-gte (47895ec)
-- Public Production: RELEASE GATE ACTIVE — RW-TX-013-PLY
+- Public Production: PUBLISHED — Google Play — 2026-09-24
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
 - Target Audience: Cattle producers, rotational grazing managers, pasture operators
@@ -866,7 +866,7 @@ EVIDENCE STATUS:
   archives restored successfully on the Samsung Tab S7. Acceptance date: 2026-09-23.
 
 - RW-TX-013-PLY
-  Status: ACTIVE — RELEASE PREPARATION
+  Status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
   Scope: Freeze the accepted 0.13.0 behavior as the RangeWater 1.0 product baseline;
   replace placeholder launcher branding; configure a non-debug release App Bundle and
   separate Play upload-signing path; prepare privacy, Data Safety, store listing, and
@@ -886,12 +886,23 @@ EVIDENCE STATUS:
   certificate match all passed. Artifact `RangeWater-Play-AAB` 10783746305 is 22,273,237
   bytes, has SHA-256 digest 69774a14ac31003eed4f55a017e5c89a646a95dbad582dafac943a75c4b38cd4,
   and is retained by GitHub Actions through 2026-10-24.
-  Store preparation: the 512x512 Play icon and 1024x500 feature graphic are in
-  Google Play-compatible PNG encodings. Five 1080x1920 phone screenshots were prepared
-  from Michael's physical-device field captures; their publication awaits explicit
-  approval because the aerial imagery depicts the working ranch.
+  Store publication: the 512x512 Play icon, 1024x500 feature graphic, and five 1080x1920
+  physical-device field screenshots were approved and published with the production
+  listing. The store description, privacy disclosures, Data Safety declaration, content
+  rating, target audience, app-access declaration, and Business category were completed.
   Privacy policy: LIVE at https://sagewire.dev/rangewater/privacy/ with public contact
   voidwalker@sagewiresyndicate.com.
+  Production repository commit: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833.
+  Production publication: PASSED — Google approved RangeWater 1.0.0 (versionCode 17),
+  and the United States production rollout reached 100% on 2026-09-24.
+  Public listing: https://play.google.com/store/apps/details?id=com.sagewire.rangewater
+  Migration acceptance: PASSED — a final field-build archive restored into the
+  Play-distributed application, survived close and reopen, and preserved pastures, water
+  sources and coverage, gates, herds, and movements. Cross-device archive restoration
+  also passed between the Galaxy S26 and Samsung Tab S7.
+  Independent public acceptance: PASSED — a non-tester located RangeWater through Google
+  Play, downloaded it, installed it, and opened it successfully on a separate device.
+  Closure date: 2026-09-24.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -953,13 +964,14 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: Google Play release gate
-- Working transmission: RW-TX-013-PLY
-- Implementation status: RANGEWATER 1.0.0 RELEASE PREPARATION ACTIVE
-- Authoritative baseline: bc48945
+- Current phase: PRODUCTION MAINTENANCE — RANGEWATER 1.0.0 PUBLISHED
+- Working transmission: NONE — RW-TX-013-PLY CLOSED
+- Implementation status: RANGEWATER 1.0.0 PRODUCTION PUBLISHED
+- Authoritative production repository commit: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Feature branch: codex/rw-tx-013-ply
 - Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
-- Verified release commit: a9ef4b67a43401ae13818337b0240bfed2f6dd39
+- Verified signed-AAB source commit: a9ef4b67a43401ae13818337b0240bfed2f6dd39
+- Production tag target: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - CI status: GREEN — signed Play release run 35937655379
 - Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
   10758879883 (26,410,616 bytes; expires 2026-10-23)
@@ -968,7 +980,7 @@ EVIDENCE STATUS:
 - Current transmission status: RW-TX-010-HRD-REV2B ACCEPTED & FIELD-VERIFIED
 - RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-012-MCH status: CLOSED — CROSS-DEVICE FIELD VERIFIED
-- Active transmission status: RW-TX-013-PLY RELEASE PREPARATION ACTIVE
+- RW-TX-013-PLY status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -981,14 +993,15 @@ EVIDENCE STATUS:
   matched the completed APK to the permanent field certificate.
 - Play-upload signing status: VERIFIED — encrypted Drive recovery verified, four encrypted
   GitHub Actions secrets configured, and CI signed and certificate-verified the release AAB.
-- Feature freeze: ACTIVE — seasonal weather and live GPS navigation are deferred until
-  after the first Google Play release.
-- Next action: Confirm whether the real-ranch field screenshots may be public, create the
-  Play Console app/internal track, upload the verified RangeWater 1.0.0 AAB and approved
-  listing assets, then complete the Data Safety and content declarations.
-- Resume point: Preserve the accepted 0.13.0 behavior while preparing version 1.0.0. Use
-  only certificate-verified field APKs for direct distribution until the Play internal
-  track is available.
+- Production status: LIVE — United States rollout 100%; independent non-tester discovery,
+  download, installation, and launch passed on 2026-09-24.
+- Feature freeze: COMPLETE — the accepted 1.0 behavior is the production maintenance
+  baseline. Seasonal weather, live GPS navigation, and other new product work require a
+  separately ratified post-1.0 transmission.
+- Next action: Preserve the 1.0 production baseline and open a 1.1 planning transmission
+  only after Michael selects and ratifies the next product scope.
+- Resume point: RangeWater 1.0.0 is publicly released on Google Play. Begin from the
+  v1.0.0 production tag and do not alter the live baseline without a new work order.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
