@@ -879,6 +879,13 @@ EVIDENCE STATUS:
   Migration constraint: the direct field APK and Play installation use different signing
   identities. Existing field testers must create a separate .rangewater archive, uninstall
   the field build, install from Google Play, and restore once; later Play updates are normal.
+  Signing verification: PASSED — remote commit
+  a9ef4b67a43401ae13818337b0240bfed2f6dd39, GitHub Actions run 35937655379.
+  Result: gateway checks, JVM tests, Android instrumentation, upload-key reconstruction,
+  release-bundle signing, standard JAR signature validation, and an exact completed-AAB
+  certificate match all passed. Artifact `RangeWater-Play-AAB` 10783746305 is 22,273,237
+  bytes, has SHA-256 digest 69774a14ac31003eed4f55a017e5c89a646a95dbad582dafac943a75c4b38cd4,
+  and is retained by GitHub Actions through 2026-10-24.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -946,7 +953,8 @@ EVIDENCE STATUS:
 - Authoritative baseline: bc48945
 - Feature branch: codex/rw-tx-013-ply
 - Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
-- CI status: GREEN — certificate-verified field run 35879840262
+- Verified release commit: a9ef4b67a43401ae13818337b0240bfed2f6dd39
+- CI status: GREEN — signed Play release run 35937655379
 - Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
   10758879883 (26,410,616 bytes; expires 2026-10-23)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
@@ -965,12 +973,13 @@ EVIDENCE STATUS:
 - Field-signing status: VERIFIED — repository secrets established; CI rebuilt the
   keystore, matched its configured fingerprint, signed the APK, and independently
   matched the completed APK to the permanent field certificate.
-- Play-upload signing status: KEY CREATED — encrypted Drive recovery verified and four
-  encrypted GitHub Actions secrets configured; signed-AAB CI verification pending.
+- Play-upload signing status: VERIFIED — encrypted Drive recovery verified, four encrypted
+  GitHub Actions secrets configured, and CI signed and certificate-verified the release AAB.
 - Feature freeze: ACTIVE — seasonal weather and live GPS navigation are deferred until
   after the first Google Play release.
-- Next action: Complete launcher branding, Play upload signing, release AAB generation,
-  privacy/Data Safety materials, and internal-track listing assets.
+- Next action: Finalize the privacy-policy contact and public URL, finish screenshots and
+  store-listing assets, create the Play Console app/internal track, and upload the verified
+  RangeWater 1.0.0 AAB.
 - Resume point: Preserve the accepted 0.13.0 behavior while preparing version 1.0.0. Use
   only certificate-verified field APKs for direct distribution until the Play internal
   track is available.
