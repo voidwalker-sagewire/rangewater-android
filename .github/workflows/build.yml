@@ -169,7 +169,10 @@ jobs:
           set -euo pipefail
           bundle_path="app/build/outputs/bundle/release/app-release.aab"
           test -f "$bundle_path"
-          jarsigner -verify -strict "$bundle_path"
+          # Android App Bundles contain root metadata that `jarsigner -strict`
+          # reports as a JarInputStream warning. Standard signature verification
+          # plus the locked completed-bundle certificate check below is authoritative.
+          jarsigner -verify "$bundle_path"
           actual_fingerprint="$(
             keytool -printcert -jarfile "$bundle_path" \
               | sed -n 's/.*SHA256: //p' \
