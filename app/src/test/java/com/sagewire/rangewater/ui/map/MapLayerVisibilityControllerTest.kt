@@ -17,7 +17,10 @@ class MapLayerVisibilityControllerTest {
         assertTrue(state.transitionFillVisible)
         assertTrue(state.ringsLineVisible)
         assertEquals(MapLayerVisibilityController.PASTURE_FILL_VISIBLE_OPACITY, state.pastureFillOpacity)
+        assertTrue(state.pastureBoundariesVisible)
         assertTrue(state.waterPinsVisible)
+        assertTrue(state.gatesVisible)
+        assertTrue(state.herdBadgesVisible)
     }
 
     @Test
@@ -75,5 +78,44 @@ class MapLayerVisibilityControllerTest {
         assertFalse(restored.preferredFillVisible)
         assertFalse(restored.transitionFillVisible)
         assertFalse(restored.ringsLineVisible)
+    }
+
+    @Test
+    fun individualAssetLayersCanBeHidden() {
+        val state = MapLayerVisibilityController.computeVisibility(
+            DisplayPreferences(
+                pastureBoundariesEnabled = false,
+                waterPointsEnabled = false,
+                gatesEnabled = false,
+                herdBadgesEnabled = false
+            ),
+            isMovingWater = false
+        )
+
+        assertFalse(state.pastureBoundariesVisible)
+        assertFalse(state.waterPinsVisible)
+        assertFalse(state.gatesVisible)
+        assertFalse(state.herdBadgesVisible)
+    }
+
+    @Test
+    fun activeEditingTemporarilyRevealsRequiredLayers() {
+        val preferences = DisplayPreferences(
+            pastureBoundariesEnabled = false,
+            waterPointsEnabled = false,
+            gatesEnabled = false
+        )
+
+        val editing = MapLayerVisibilityController.computeVisibility(
+            preferences,
+            isMovingWater = true,
+            isEditingWater = true,
+            isEditingPasture = true,
+            isEditingGate = true
+        )
+
+        assertTrue(editing.pastureBoundariesVisible)
+        assertTrue(editing.waterPinsVisible)
+        assertTrue(editing.gatesVisible)
     }
 }

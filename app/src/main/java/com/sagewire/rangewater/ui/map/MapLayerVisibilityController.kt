@@ -5,7 +5,10 @@ data class LayerVisibilityState(
     val transitionFillVisible: Boolean,
     val ringsLineVisible: Boolean,
     val pastureFillOpacity: Float,
-    val waterPinsVisible: Boolean = true
+    val pastureBoundariesVisible: Boolean,
+    val waterPinsVisible: Boolean,
+    val gatesVisible: Boolean,
+    val herdBadgesVisible: Boolean
 )
 
 object MapLayerVisibilityController {
@@ -14,7 +17,10 @@ object MapLayerVisibilityController {
 
     fun computeVisibility(
         preferences: DisplayPreferences,
-        isMovingWater: Boolean
+        isMovingWater: Boolean,
+        isEditingWater: Boolean = false,
+        isEditingPasture: Boolean = false,
+        isEditingGate: Boolean = false
     ): LayerVisibilityState {
         val effectiveCoverageMode = if (isMovingWater) {
             WaterCoverageMode.FULL
@@ -35,7 +41,11 @@ object MapLayerVisibilityController {
                 PASTURE_FILL_VISIBLE_OPACITY
             } else {
                 PASTURE_FILL_HIDDEN_OPACITY
-            }
+            },
+            pastureBoundariesVisible = preferences.pastureBoundariesEnabled || isEditingPasture,
+            waterPinsVisible = preferences.waterPointsEnabled || isMovingWater || isEditingWater,
+            gatesVisible = preferences.gatesEnabled || isEditingGate,
+            herdBadgesVisible = preferences.herdBadgesEnabled
         )
     }
 }

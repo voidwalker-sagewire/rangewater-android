@@ -85,6 +85,9 @@ object MapConfig {
     const val LAYER_GATE_LEAF_CASING = "layer-gate-leaf-casing"
     const val LAYER_GATE_LEAF = "layer-gate-leaf"
     const val LAYER_GATE_TOUCH_TARGET = "layer-gate-touch-target"
+    const val LAYER_HERD_BADGE_CASING_0 = "layer-herd-badge-casing-0"
+    const val LAYER_HERD_BADGE_CASING_1 = "layer-herd-badge-casing-1"
+    const val LAYER_HERD_BADGE_CASING_2 = "layer-herd-badge-casing-2"
     const val LAYER_HERD_BADGE_FILL_0 = "layer-herd-badge-fill-0"
     const val LAYER_HERD_BADGE_FILL_1 = "layer-herd-badge-fill-1"
     const val LAYER_HERD_BADGE_FILL_2 = "layer-herd-badge-fill-2"
@@ -194,7 +197,11 @@ object MapConfig {
               "type": "fill",
               "source": "$SOURCE_PASTURES",
               "paint": {
-                "fill-color": "#FF2D95",
+                "fill-color": [
+                  "case",
+                  ["get", "focused"], ["get", "focusColor"],
+                  "#FF2D95"
+                ],
                 "fill-opacity": 0.08
               }
             },
@@ -262,7 +269,8 @@ object MapConfig {
               "source": "$SOURCE_PASTURE_LINES",
               "paint": {
                 "line-color": "#151515",
-                "line-width": ["case", ["get", "selected"], 6.0, 4.0]
+                "line-width": ["case", ["get", "focused"], 8.0, ["get", "selected"], 6.0, 4.0],
+                "line-opacity": ["case", ["get", "dimmed"], 0.28, 1.0]
               }
             },
             {
@@ -270,8 +278,13 @@ object MapConfig {
               "type": "line",
               "source": "$SOURCE_PASTURE_LINES",
               "paint": {
-                "line-color": "#FF2D95",
-                "line-width": ["case", ["get", "selected"], 4.0, 2.0]
+                "line-color": [
+                  "case",
+                  ["get", "focused"], ["get", "focusColor"],
+                  "#FF2D95"
+                ],
+                "line-width": ["case", ["get", "focused"], 5.0, ["get", "selected"], 4.0, 2.0],
+                "line-opacity": ["case", ["get", "dimmed"], 0.28, 1.0]
               }
             },
             {
@@ -435,7 +448,7 @@ object MapConfig {
               }
             },
             {
-              "id": "layer-herd-badge-casing-0",
+              "id": "$LAYER_HERD_BADGE_CASING_0",
               "type": "circle",
               "source": "$SOURCE_HERD_BADGES",
               "filter": ["==", ["get", "stackIndex"], 0],
@@ -456,7 +469,7 @@ object MapConfig {
               "layout": { "icon-image": ["get", "markerIcon"], "icon-size": 0.42, "icon-allow-overlap": true, "icon-ignore-placement": true }
             },
             {
-              "id": "layer-herd-badge-casing-1",
+              "id": "$LAYER_HERD_BADGE_CASING_1",
               "type": "circle",
               "source": "$SOURCE_HERD_BADGES",
               "filter": ["==", ["get", "stackIndex"], 1],
@@ -477,7 +490,7 @@ object MapConfig {
               "layout": { "icon-image": ["get", "markerIcon"], "icon-size": 0.42, "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-translate": [0.0, -24.0] }
             },
             {
-              "id": "layer-herd-badge-casing-2",
+              "id": "$LAYER_HERD_BADGE_CASING_2",
               "type": "circle",
               "source": "$SOURCE_HERD_BADGES",
               "filter": ["==", ["get", "stackIndex"], 2],

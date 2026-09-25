@@ -8,6 +8,7 @@ import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.GateEntity
 import com.sagewire.rangewater.data.GateWithConnectivity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.maplibre.geojson.Polygon
@@ -33,6 +34,28 @@ class PastureFeatureConverterTest {
         assertEquals(ring.first(), ring.last())
         assertEquals(7L, feature.getNumberProperty("id").toLong())
         assertTrue(feature.getBooleanProperty("selected"))
+    }
+
+    @Test
+    fun herdFocusMarksCurrentPastureAndDimsOtherBoundaries() {
+        val focused = pasture(7, "Focused", -81.0)
+        val other = pasture(8, "Other", -80.0)
+
+        val features = PastureFeatureConverter.toPastureBoundaryLines(
+            pastures = listOf(focused, other),
+            gates = emptyList(),
+            selectedId = null,
+            focusedPastureId = 7,
+            focusColorHex = "#00E5FF"
+        ).features().orEmpty()
+
+        val focusedLine = features.first { it.getNumberProperty("id").toLong() == 7L }
+        val otherLine = features.first { it.getNumberProperty("id").toLong() == 8L }
+        assertTrue(focusedLine.getBooleanProperty("focused"))
+        assertFalse(focusedLine.getBooleanProperty("dimmed"))
+        assertEquals("#00E5FF", focusedLine.getStringProperty("focusColor"))
+        assertFalse(otherLine.getBooleanProperty("focused"))
+        assertTrue(otherLine.getBooleanProperty("dimmed"))
     }
 
     @Test
@@ -75,4 +98,22 @@ class PastureFeatureConverterTest {
             vertex = PastureVertexEntity(id, 7, sequence, id),
             junction = FenceJunctionEntity(id, latitude, longitude)
         )
+
+    private fun pasture(id: Long, name: String, longitude: Double) = PastureWithVertices(
+        pasture = PastureEntity(id = id, name = name, createdAt = 1, updatedAt = 1),
+        vertices = listOf(
+            PastureVertexWithJunction(
+                PastureVertexEntity(id * 10 + 1, id, 0, id * 10 + 1),
+                FenceJunctionEntity(id * 10 + 1, 40.0, longitude)
+            ),
+            PastureVertexWithJunction(
+                PastureVertexEntity(id * 10 + 2, id, 1, id * 10 + 2),
+                FenceJunctionEntity(id * 10 + 2, 40.0, longitude + 0.01)
+            ),
+            PastureVertexWithJunction(
+                PastureVertexEntity(id * 10 + 3, id, 2, id * 10 + 3),
+                FenceJunctionEntity(id * 10 + 3, 40.01, longitude + 0.01)
+            )
+        )
+    )
 }

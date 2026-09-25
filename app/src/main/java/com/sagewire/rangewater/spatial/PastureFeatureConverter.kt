@@ -13,7 +13,9 @@ import org.maplibre.geojson.Polygon
 object PastureFeatureConverter {
     fun toPastureFeatures(
         pastures: List<PastureWithVertices>,
-        selectedId: Long?
+        selectedId: Long?,
+        focusedPastureId: Long? = null,
+        focusColorHex: String? = null
     ): FeatureCollection = FeatureCollection.fromFeatures(
         pastures.mapNotNull { pasture ->
             val coordinates = pasture.orderedCoordinates()
@@ -22,6 +24,7 @@ object PastureFeatureConverter {
                 addProperty("id", pasture.pasture.id)
                 addProperty("name", pasture.pasture.name)
                 addProperty("selected", pasture.pasture.id == selectedId)
+                addFocusProperties(pasture.pasture.id, focusedPastureId, focusColorHex)
                 addProperty("acres", AcreageCalculator.calculateAcres(coordinates))
             }
             Feature.fromGeometry(coordinates.toPolygon(), properties)
@@ -65,7 +68,9 @@ object PastureFeatureConverter {
     fun toPastureBoundaryLines(
         pastures: List<PastureWithVertices>,
         gates: List<GateWithConnectivity>,
-        selectedId: Long?
+        selectedId: Long?,
+        focusedPastureId: Long? = null,
+        focusColorHex: String? = null
     ): FeatureCollection {
         val features = mutableListOf<Feature>()
         pastures.forEach pastureLoop@ { pasture ->
@@ -82,6 +87,7 @@ object PastureFeatureConverter {
                 val properties = JsonObject().apply {
                     addProperty("id", pasture.pasture.id)
                     addProperty("selected", pasture.pasture.id == selectedId)
+                    addFocusProperties(pasture.pasture.id, focusedPastureId, focusColorHex)
                 }
                 if (gatesOnSegment.isEmpty()) {
                     features += lineFeature(start.longitude, start.latitude, end.longitude, end.latitude, properties)
@@ -129,6 +135,17 @@ object PastureFeatureConverter {
         ),
         properties.deepCopy()
     )
+
+    private fun JsonObject.addFocusProperties(
+        pastureId: Long,
+        focusedPastureId: Long?,
+        focusColorHex: String?
+    ) {
+        val focusActive = focusedPastureId != null
+        addProperty("focused", pastureId == focusedPastureId)
+        addProperty("dimmed", focusActive && pastureId != focusedPastureId)
+        addProperty("focusColor", focusColorHex ?: "#FF2D95")
+    }
 
     fun emptyCollection(): FeatureCollection = FeatureCollection.fromFeatures(emptyList<Feature>())
 

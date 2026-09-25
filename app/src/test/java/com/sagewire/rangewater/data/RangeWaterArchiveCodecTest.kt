@@ -122,7 +122,11 @@ class RangeWaterArchiveCodecTest {
             displayPreferences = DisplayPreferences(
                 WaterCoverageMode.LINES_ONLY,
                 SpatialCoverageScope.ACCESSIBLE_COVERAGE,
-                pastureFillEnabled = false
+                pastureFillEnabled = false,
+                pastureBoundariesEnabled = false,
+                waterPointsEnabled = false,
+                gatesEnabled = false,
+                herdBadgesEnabled = false
             )
         )
     }

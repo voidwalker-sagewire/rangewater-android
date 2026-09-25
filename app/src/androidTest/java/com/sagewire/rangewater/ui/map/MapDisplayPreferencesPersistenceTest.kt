@@ -35,6 +35,10 @@ class MapDisplayPreferencesPersistenceTest {
         assertEquals(WaterCoverageMode.FULL, preferences.coverageMode)
         assertEquals(SpatialCoverageScope.PHYSICAL_RADIUS, preferences.coverageScope)
         assertTrue(preferences.pastureFillEnabled)
+        assertTrue(preferences.pastureBoundariesEnabled)
+        assertTrue(preferences.waterPointsEnabled)
+        assertTrue(preferences.gatesEnabled)
+        assertTrue(preferences.herdBadgesEnabled)
     }
 
     @Test
@@ -69,6 +73,20 @@ class MapDisplayPreferencesPersistenceTest {
 
         repository.savePastureFillEnabled(true)
         assertTrue(DisplayPreferencesRepository(context).getPreferences().pastureFillEnabled)
+    }
+
+    @Test
+    fun assetLayerPreferencesPersistAcrossRepositoryInstances() {
+        repository.savePastureBoundariesEnabled(false)
+        repository.saveWaterPointsEnabled(false)
+        repository.saveGatesEnabled(false)
+        repository.saveHerdBadgesEnabled(false)
+
+        val restored = DisplayPreferencesRepository(context).getPreferences()
+        assertFalse(restored.pastureBoundariesEnabled)
+        assertFalse(restored.waterPointsEnabled)
+        assertFalse(restored.gatesEnabled)
+        assertFalse(restored.herdBadgesEnabled)
     }
 
     private fun clearPreferences() {

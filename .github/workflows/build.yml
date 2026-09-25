@@ -6,7 +6,7 @@ name: Build RangeWater Field APK and Play Bundle
 
 on:
   push:
-    branches: [ "main", "codex/rw-tx-008-jct-rev2", "codex/rw-tx-009-gte", "codex/rw-tx-010-hrd", "codex/rw-tx-011-bkr", "codex/rw-tx-012-mch", "codex/rw-tx-013-ply" ]
+    branches: [ "main", "codex/rw-tx-008-jct-rev2", "codex/rw-tx-009-gte", "codex/rw-tx-010-hrd", "codex/rw-tx-011-bkr", "codex/rw-tx-012-mch", "codex/rw-tx-013-ply", "codex/rw-1.0.1-map-control" ]
   workflow_dispatch:
 
 jobs:
@@ -127,13 +127,13 @@ jobs:
           test "$actual_fingerprint" = "$RANGEWATER_FIELD_CERT_SHA256"
           mkdir -p app/build/outputs/field
           cp app/build/outputs/apk/debug/app-debug.apk \
-            app/build/outputs/field/RangeWater-1.0.0-field.apk
+            app/build/outputs/field/RangeWater-1.0.1-field.apk
 
       - name: Upload Stable Field APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: RangeWater-Field-APK
-          path: app/build/outputs/field/RangeWater-1.0.0-field.apk
+          path: app/build/outputs/field/RangeWater-1.0.1-field.apk
           retention-days: 30
 
       - name: Prepare Google Play Upload Key
@@ -182,11 +182,11 @@ jobs:
           echo "Signed AAB certificate SHA-256: $actual_fingerprint"
           test "$actual_fingerprint" = "$RANGEWATER_PLAY_UPLOAD_CERT_SHA256"
           mkdir -p app/build/outputs/play
-          cp "$bundle_path" app/build/outputs/play/RangeWater-1.0.0-play-upload.aab
+          cp "$bundle_path" app/build/outputs/play/RangeWater-1.0.1-play-upload.aab
 
       - name: Upload Signed Play Bundle Artifact
         uses: actions/upload-artifact@v4
         with:
           name: RangeWater-Play-AAB
-          path: app/build/outputs/play/RangeWater-1.0.0-play-upload.aab
+          path: app/build/outputs/play/RangeWater-1.0.1-play-upload.aab
           retention-days: 30

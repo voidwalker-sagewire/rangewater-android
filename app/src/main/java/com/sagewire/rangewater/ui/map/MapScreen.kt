@@ -237,6 +237,7 @@ fun MapScreen(
     var selectedPastureId by remember { mutableStateOf<Long?>(null) }
     var selectedGateId by remember { mutableStateOf<Long?>(null) }
     var selectedHerdId by remember { mutableStateOf<Long?>(null) }
+    var focusedHerdId by remember { mutableStateOf<Long?>(null) }
     var selectedMovementId by remember { mutableStateOf<Long?>(null) }
     var herdManagerPastureFilterId by remember { mutableStateOf<Long?>(null) }
     var showHerdManagerDialog by remember { mutableStateOf(false) }
@@ -286,6 +287,10 @@ fun MapScreen(
     val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
     val selectedHerd = herds.firstOrNull { it.id == selectedHerdId }
+    val focusedHerd = herds.firstOrNull { it.id == focusedHerdId }
+    val herdFocus = remember(focusedHerd, assignmentMap) {
+        HerdFocusController.derive(focusedHerd, assignmentMap)
+    }
     val activeMovement = movements.firstOrNull { it.id == selectedMovementId }
     val selectedPastureMetrics = remember(selectedPasture, waterPoints, assignmentMap) {
         selectedPasture?.let { pasture ->
@@ -356,6 +361,15 @@ fun MapScreen(
             else -> resolvedGates
         }
     }
+    val focusedWaterPoints = remember(effectiveWaterPoints, herdFocus) {
+        HerdFocusController.filterWaterPoints(effectiveWaterPoints, herdFocus)
+    }
+    val focusedGates = remember(displayedGates, herdFocus) {
+        HerdFocusController.filterGates(displayedGates, herdFocus)
+    }
+    val focusedHerds = remember(herds, herdFocus) {
+        HerdFocusController.filterHerds(herds, herdFocus)
+    }
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
     val currentMapInstance by rememberUpdatedState(mapInstance)
 
@@ -371,6 +385,7 @@ fun MapScreen(
         selectedPastureId = null
         selectedGateId = null
         selectedHerdId = null
+        focusedHerdId = null
         selectedMovementId = null
         candidateGate = null
         movingGate = null
@@ -596,15 +611,16 @@ fun MapScreen(
 
     // 🎮 BLOCK 3 — ROOM-TO-MAP SYNCHRONIZATION
     LaunchedEffect(
-        effectiveWaterPoints,
+        focusedWaterPoints,
         effectivePastures,
         selectedWaterId,
         selectedPastureId,
         selectedGateId,
-        herds,
+        focusedHerds,
         selectedHerdId,
+        herdFocus,
         activeMovement,
-        displayedGates,
+        focusedGates,
         selectedVertexIndex,
         draftRevision,
         interactionState,
@@ -615,14 +631,17 @@ fun MapScreen(
     ) {
         pushAllOverlays(
             map = mapInstance,
-            waterPoints = effectiveWaterPoints,
+            waterPoints = focusedWaterPoints,
             selectedWaterId = selectedWaterId,
             pastures = effectivePastures,
             selectedPastureId = selectedPastureId,
-            gates = displayedGates,
+            gates = focusedGates,
+            boundaryGates = displayedGates,
             selectedGateId = selectedGateId,
-            herds = herds,
+            herds = focusedHerds,
             selectedHerdId = selectedHerdId,
+            focusedPastureId = herdFocus?.pastureId,
+            focusColorHex = herdFocus?.colorHex,
             activeMovement = activeMovement,
             draftVertices = draftVertices.toList(),
             selectedVertexIndex = selectedVertexIndex,
@@ -632,20 +651,30 @@ fun MapScreen(
             activeSnappedJunction = activeSnappedJunction
         )
     }
-    LaunchedEffect(waterPoints, pastures, gates, herds, movements, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, selectedMovementId) {
+    LaunchedEffect(waterPoints, pastures, gates, herds, movements, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, focusedHerdId, selectedMovementId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
         if (selectedGateId != null && gates.none { it.id == selectedGateId }) selectedGateId = null
         if (selectedHerdId != null && selectedHerd == null) selectedHerdId = null
+        if (focusedHerdId != null && focusedHerd == null) focusedHerdId = null
         if (selectedMovementId != null && movements.none { it.id == selectedMovementId }) selectedMovementId = null
         if (selectedWater == null) showAssignPasturesDialog = false
+    }
+    LaunchedEffect(interactionState) {
+        if (interactionState != InteractionState.ORDINARY) focusedHerdId = null
     }
     LaunchedEffect(displayPreferences, interactionState, mapInstance) {
         mapInstance?.let { map ->
             applyLayerVisibility(
                 map = map,
                 preferences = displayPreferences,
-                isMovingWater = interactionState == InteractionState.WATER_MOVING
+                isMovingWater = interactionState == InteractionState.WATER_MOVING,
+                isEditingWater = interactionState == InteractionState.WATER_PLACEMENT ||
+                    interactionState == InteractionState.WATER_MOVING,
+                isEditingPasture = interactionState == InteractionState.PASTURE_DRAWING ||
+                    interactionState == InteractionState.PASTURE_EDITING,
+                isEditingGate = interactionState == InteractionState.GATE_PLACEMENT ||
+                    interactionState == InteractionState.GATE_MOVING
             )
         }
     }
@@ -1066,25 +1095,34 @@ fun MapScreen(
                             applyLayerVisibility(
                                 map = map,
                                 preferences = displayPreferences,
-                                isMovingWater = interactionState == InteractionState.WATER_MOVING
+                                isMovingWater = interactionState == InteractionState.WATER_MOVING,
+                                isEditingWater = interactionState == InteractionState.WATER_PLACEMENT ||
+                                    interactionState == InteractionState.WATER_MOVING,
+                                isEditingPasture = interactionState == InteractionState.PASTURE_DRAWING ||
+                                    interactionState == InteractionState.PASTURE_EDITING,
+                                isEditingGate = interactionState == InteractionState.GATE_PLACEMENT ||
+                                    interactionState == InteractionState.GATE_MOVING
                             )
                             pushAllOverlays(
-                                map,
-                                effectiveWaterPoints,
-                                selectedWaterId,
-                                effectivePastures,
-                                selectedPastureId,
-                                displayedGates,
-                                selectedGateId,
-                                herds,
-                                selectedHerdId,
-                                activeMovement,
-                                draftVertices.toList(),
-                                selectedVertexIndex,
-                                displayPreferences.coverageScope,
-                                assignmentMap,
-                                junctionUsageMap.filterValues { it.size > 1 }.keys,
-                                activeSnappedJunction
+                                map = map,
+                                waterPoints = focusedWaterPoints,
+                                selectedWaterId = selectedWaterId,
+                                pastures = effectivePastures,
+                                selectedPastureId = selectedPastureId,
+                                gates = focusedGates,
+                                boundaryGates = displayedGates,
+                                selectedGateId = selectedGateId,
+                                herds = focusedHerds,
+                                selectedHerdId = selectedHerdId,
+                                focusedPastureId = herdFocus?.pastureId,
+                                focusColorHex = herdFocus?.colorHex,
+                                activeMovement = activeMovement,
+                                draftVertices = draftVertices.toList(),
+                                selectedVertexIndex = selectedVertexIndex,
+                                coverageScope = displayPreferences.coverageScope,
+                                assignments = assignmentMap,
+                                sharedJunctionIds = junctionUsageMap.filterValues { it.size > 1 }.keys,
+                                activeSnappedJunction = activeSnappedJunction
                             )
                             isMapStyleReady = true
                         }
@@ -1106,8 +1144,9 @@ fun MapScreen(
             hasLoadError = hasLoadError,
             interactionState = interactionState,
             coverageMode = displayPreferences.coverageMode,
-            coverageScope = displayPreferences.coverageScope,
             pastureFillEnabled = displayPreferences.pastureFillEnabled,
+            focusedHerdName = focusedHerd?.takeIf { herdFocus != null }?.name,
+            focusedHerdColorHex = focusedHerd?.takeIf { herdFocus != null }?.markerColorHex,
             onModeSelected = { mode ->
                 activeMode = mode
                 mapInstance?.let { applyMapMode(it, mode) }
@@ -1511,6 +1550,24 @@ fun MapScreen(
                         ?: herd.locationKind.name
                     Text("Location: $location", color = Color(0xFF00E5FF), fontSize = 12.sp)
                     if (herd.notes.isNotBlank()) Text(herd.notes, color = Color.Gray, fontSize = 11.sp)
+                    if (herd.locationKind == HerdLocationKind.PASTURE && herd.currentPastureId != null) {
+                        val focusActive = focusedHerdId == herd.id
+                        Button(
+                            onClick = { focusedHerdId = if (focusActive) null else herd.id },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (focusActive) {
+                                    Color(0xFF424242)
+                                } else {
+                                    Color(android.graphics.Color.parseColor(herd.markerColorHex))
+                                },
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 7.dp)
+                        ) {
+                            Text(if (focusActive) "Clear Map Focus" else "Focus Map on This Herd", fontSize = 11.sp)
+                        }
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Button(
                             onClick = { showPlanMoveDialog = true },
@@ -2700,7 +2757,10 @@ fun MapScreen(
             onDismissRequest = { showLayersDialog = false },
             title = { Text("Map Layers", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text("Coverage Scope", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2769,6 +2829,55 @@ fun MapScreen(
                             }
                         )
                     }
+                    MapLayerToggle(
+                        label = "Pasture Boundaries",
+                        description = "Hide fence outlines without removing pasture records.",
+                        checked = displayPreferences.pastureBoundariesEnabled,
+                        onCheckedChange = { enabled ->
+                            displayPreferences = displayPreferences.copy(
+                                pastureBoundariesEnabled = enabled
+                            )
+                            displayPreferencesRepository.savePastureBoundariesEnabled(enabled)
+                        }
+                    )
+                    MapLayerToggle(
+                        label = "Water Points",
+                        description = "Coverage rings remain controlled separately above.",
+                        checked = displayPreferences.waterPointsEnabled,
+                        onCheckedChange = { enabled ->
+                            displayPreferences = displayPreferences.copy(waterPointsEnabled = enabled)
+                            displayPreferencesRepository.saveWaterPointsEnabled(enabled)
+                        }
+                    )
+                    MapLayerToggle(
+                        label = "Gates",
+                        description = "Gate placement and movement temporarily reveal this layer.",
+                        checked = displayPreferences.gatesEnabled,
+                        onCheckedChange = { enabled ->
+                            displayPreferences = displayPreferences.copy(gatesEnabled = enabled)
+                            displayPreferencesRepository.saveGatesEnabled(enabled)
+                        }
+                    )
+                    MapLayerToggle(
+                        label = "Herd Badges",
+                        description = "Herd records and movement history remain unchanged.",
+                        checked = displayPreferences.herdBadgesEnabled,
+                        onCheckedChange = { enabled ->
+                            displayPreferences = displayPreferences.copy(herdBadgesEnabled = enabled)
+                            displayPreferencesRepository.saveHerdBadgesEnabled(enabled)
+                        }
+                    )
+                    if (focusedHerd != null) {
+                        OutlinedButton(
+                            onClick = {
+                                focusedHerdId = null
+                                showLayersDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear Herd Focus: ${focusedHerd.name}", maxLines = 1)
+                        }
+                    }
                     if (interactionState == InteractionState.WATER_MOVING) {
                         Text(
                             "Full coverage stays visible while moving water, then your setting returns.",
@@ -2785,14 +2894,40 @@ fun MapScreen(
     }
 }
 
+@Composable
+private fun MapLayerToggle(
+    label: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(description, color = Color.Gray, fontSize = 11.sp)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
 private fun applyLayerVisibility(
     map: MapLibreMap,
     preferences: DisplayPreferences,
-    isMovingWater: Boolean
+    isMovingWater: Boolean,
+    isEditingWater: Boolean,
+    isEditingPasture: Boolean,
+    isEditingGate: Boolean
 ) {
     val layerState = MapLayerVisibilityController.computeVisibility(
         preferences = preferences,
-        isMovingWater = isMovingWater
+        isMovingWater = isMovingWater,
+        isEditingWater = isEditingWater,
+        isEditingPasture = isEditingPasture,
+        isEditingGate = isEditingGate
     )
     map.getStyle { style ->
         style.getLayer(MapConfig.LAYER_WATER_PREFERRED_FILL)?.setProperties(
@@ -2807,16 +2942,39 @@ private fun applyLayerVisibility(
         style.getLayer(MapConfig.LAYER_PASTURE_FILL)?.setProperties(
             fillOpacity(layerState.pastureFillOpacity)
         )
-        if (layerState.waterPinsVisible) {
-            style.getLayer(MapConfig.LAYER_WATER_POINTS_HIGHLIGHT)?.setProperties(
-                visibility(Property.VISIBLE)
-            )
-            style.getLayer(MapConfig.LAYER_WATER_POINTS)?.setProperties(
-                visibility(Property.VISIBLE)
-            )
-            style.getLayer(MapConfig.LAYER_WATER_POINT_ICONS)?.setProperties(
-                visibility(Property.VISIBLE)
-            )
+        val pastureBoundaryVisibility = if (layerState.pastureBoundariesVisible) Property.VISIBLE else Property.NONE
+        style.getLayer(MapConfig.LAYER_PASTURE_CASING)?.setProperties(visibility(pastureBoundaryVisibility))
+        style.getLayer(MapConfig.LAYER_PASTURE_LINE)?.setProperties(visibility(pastureBoundaryVisibility))
+
+        val waterVisibility = if (layerState.waterPinsVisible) Property.VISIBLE else Property.NONE
+        style.getLayer(MapConfig.LAYER_WATER_POINTS_HIGHLIGHT)?.setProperties(visibility(waterVisibility))
+        style.getLayer(MapConfig.LAYER_WATER_POINTS)?.setProperties(visibility(waterVisibility))
+        style.getLayer(MapConfig.LAYER_WATER_POINT_ICONS)?.setProperties(visibility(waterVisibility))
+
+        val gateVisibility = if (layerState.gatesVisible) Property.VISIBLE else Property.NONE
+        listOf(
+            MapConfig.LAYER_GATE_OVERVIEW,
+            MapConfig.LAYER_GATE_ARC,
+            MapConfig.LAYER_GATE_LEAF_CASING,
+            MapConfig.LAYER_GATE_LEAF,
+            MapConfig.LAYER_GATE_TOUCH_TARGET
+        ).forEach { layerId ->
+            style.getLayer(layerId)?.setProperties(visibility(gateVisibility))
+        }
+
+        val herdVisibility = if (layerState.herdBadgesVisible) Property.VISIBLE else Property.NONE
+        listOf(
+            MapConfig.LAYER_HERD_BADGE_CASING_0,
+            MapConfig.LAYER_HERD_BADGE_FILL_0,
+            MapConfig.LAYER_HERD_BADGE_ICON_0,
+            MapConfig.LAYER_HERD_BADGE_CASING_1,
+            MapConfig.LAYER_HERD_BADGE_FILL_1,
+            MapConfig.LAYER_HERD_BADGE_ICON_1,
+            MapConfig.LAYER_HERD_BADGE_CASING_2,
+            MapConfig.LAYER_HERD_BADGE_FILL_2,
+            MapConfig.LAYER_HERD_BADGE_ICON_2
+        ).forEach { layerId ->
+            style.getLayer(layerId)?.setProperties(visibility(herdVisibility))
         }
     }
 }
@@ -2829,8 +2987,9 @@ private fun MapStatusAndModeControls(
     hasLoadError: Boolean,
     interactionState: InteractionState,
     coverageMode: WaterCoverageMode,
-    coverageScope: SpatialCoverageScope,
     pastureFillEnabled: Boolean,
+    focusedHerdName: String?,
+    focusedHerdColorHex: String?,
     onModeSelected: (ActiveMapMode) -> Unit,
     onLayersClick: () -> Unit,
     onDataClick: () -> Unit,
@@ -2846,6 +3005,7 @@ private fun MapStatusAndModeControls(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
+                modifier = Modifier.weight(1f).padding(end = 6.dp),
                 shape = RoundedCornerShape(20.dp),
                 color = Color.Black.copy(alpha = 0.75f),
                 contentColor = Color.White
@@ -2864,6 +3024,9 @@ private fun MapStatusAndModeControls(
                                     interactionState == InteractionState.WATER_MOVING -> Color(0xFF00E5FF)
                                 interactionState == InteractionState.GATE_PLACEMENT ||
                                     interactionState == InteractionState.GATE_MOVING -> Color(0xFFFF9100)
+                                focusedHerdColorHex != null -> Color(
+                                    android.graphics.Color.parseColor(focusedHerdColorHex)
+                                )
                                 activeMode == ActiveMapMode.LABELED -> Color(0xFFFFC107)
                                 currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> Color(0xFF4CAF50)
                                 else -> Color(0xFF2196F3)
@@ -2882,11 +3045,13 @@ private fun MapStatusAndModeControls(
                             interactionState == InteractionState.WATER_MOVING -> "Move water • z$zoom"
                             interactionState == InteractionState.GATE_PLACEMENT -> "Tap fence for gate • z$zoom"
                             interactionState == InteractionState.GATE_MOVING -> "Tap fence to move gate • z$zoom"
+                            focusedHerdName != null -> "$focusedHerdName • z$zoom"
                             activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
                             currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
                             else -> "USGS Overview • z$zoom"
                         },
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1
                     )
                     if (isMapRendering) {
                         Spacer(Modifier.width(7.dp))
@@ -2927,12 +3092,8 @@ private fun MapStatusAndModeControls(
                     WaterCoverageMode.LINES_ONLY -> "Lines"
                     WaterCoverageMode.OFF -> "Off"
                 }
-                val scopeLabel = when (coverageScope) {
-                    SpatialCoverageScope.PHYSICAL_RADIUS -> "Physical"
-                    SpatialCoverageScope.ACCESSIBLE_COVERAGE -> "Accessible"
-                }
                 Text(
-                    "Layers • $scopeLabel • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
+                    "Layers • $coverageLabel${if (pastureFillEnabled) "" else " • No fill"}",
                     color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -3564,9 +3725,12 @@ private fun pushAllOverlays(
     pastures: List<PastureWithVertices>,
     selectedPastureId: Long?,
     gates: List<GateWithConnectivity>,
+    boundaryGates: List<GateWithConnectivity>,
     selectedGateId: Long?,
     herds: List<HerdEntity>,
     selectedHerdId: Long?,
+    focusedPastureId: Long?,
+    focusColorHex: String?,
     activeMovement: CattleMovementEntity?,
     draftVertices: List<PastureCoordinate>,
     selectedVertexIndex: Int?,
@@ -3589,9 +3753,24 @@ private fun pushAllOverlays(
                 )
             )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURES)
-            ?.setGeoJson(PastureFeatureConverter.toPastureFeatures(pastures, selectedPastureId))
+            ?.setGeoJson(
+                PastureFeatureConverter.toPastureFeatures(
+                    pastures = pastures,
+                    selectedId = selectedPastureId,
+                    focusedPastureId = focusedPastureId,
+                    focusColorHex = focusColorHex
+                )
+            )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_LINES)
-            ?.setGeoJson(PastureFeatureConverter.toPastureBoundaryLines(pastures, gates, selectedPastureId))
+            ?.setGeoJson(
+                PastureFeatureConverter.toPastureBoundaryLines(
+                    pastures = pastures,
+                    gates = boundaryGates,
+                    selectedId = selectedPastureId,
+                    focusedPastureId = focusedPastureId,
+                    focusColorHex = focusColorHex
+                )
+            )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_GATES)
             ?.setGeoJson(GateFeatureConverter.toGateFeatures(gates, selectedGateId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_HERD_BADGES)

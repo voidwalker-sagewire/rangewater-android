@@ -88,7 +88,11 @@ class BackupDaoTest {
             displayPreferences = DisplayPreferences(
                 WaterCoverageMode.LINES_ONLY,
                 SpatialCoverageScope.ACCESSIBLE_COVERAGE,
-                false
+                pastureFillEnabled = false,
+                pastureBoundariesEnabled = false,
+                waterPointsEnabled = false,
+                gatesEnabled = false,
+                herdBadgesEnabled = false
             )
         )
         val archiveBytes = RangeWaterArchiveCodec.toByteArray(replacement, "0.12.0")
@@ -113,7 +117,11 @@ class BackupDaoTest {
         val expectedPreferences = DisplayPreferences(
             WaterCoverageMode.OFF,
             SpatialCoverageScope.ACCESSIBLE_COVERAGE,
-            false
+            pastureFillEnabled = false,
+            pastureBoundariesEnabled = false,
+            waterPointsEnabled = false,
+            gatesEnabled = false,
+            herdBadgesEnabled = false
         )
         preferences.replacePreferences(expectedPreferences)
         val output = ByteArrayOutputStream()
