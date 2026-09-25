@@ -905,7 +905,7 @@ EVIDENCE STATUS:
   Closure date: 2026-09-24.
 
 - RW-TX-014-MCT
-  Status: RATIFIED — IMPLEMENTATION IN PROGRESS
+  Status: IMPLEMENTED — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
   Scope: RangeWater 1.0.1 Map Control. Add persistent visibility controls for pasture
   boundaries, water points, gates, and herd badges while preserving the existing water
   coverage and pasture-fill controls. Add temporary Herd Focus for a herd currently mapped
@@ -926,6 +926,12 @@ EVIDENCE STATUS:
   restore with all new layer controls enabled by default; 1.0.1 archives must round-trip
   the expanded display preferences; hidden layers must not delete or alter ranch records;
   active water, pasture, and gate editing must reveal the required working layers.
+  Implementation evidence: local authoring commit 72b9e16; GitHub source commit
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2; GitHub Actions run 36131911052 (run 102)
+  completed successfully on 2026-09-25. Gateway tests, JVM unit tests, Room instrumentation
+  tests, stable field signing/certificate verification, and Play AAB signing/staging passed.
+  Artifacts: RangeWater-Field-APK and RangeWater-Play-AAB. Production rollout remains blocked
+  until physical-glass Map Control acceptance and explicit release approval.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -988,14 +994,14 @@ EVIDENCE STATUS:
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: PRODUCTION MAINTENANCE — RANGEWATER 1.0.1 MAP CONTROL
-- Working transmission: RW-TX-014-MCT — IMPLEMENTATION IN PROGRESS
-- Implementation status: RANGEWATER 1.0.1 SOURCE UNDER DEVELOPMENT
+- Working transmission: RW-TX-014-MCT — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
+- Implementation status: RANGEWATER 1.0.1 SIGNED TEST ARTIFACTS READY
 - Authoritative production repository commit: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Feature branch: codex/rw-1.0.1-map-control
 - Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
 - Verified signed-AAB source commit: a9ef4b67a43401ae13818337b0240bfed2f6dd39
 - Production tag target: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
-- CI status: GREEN — signed Play release run 35937655379
+- CI status: GREEN — RangeWater 1.0.1 run 36131911052 (run 102)
 - Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
   10758879883 (26,410,616 bytes; expires 2026-10-23)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
@@ -1004,7 +1010,7 @@ EVIDENCE STATUS:
 - RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-012-MCH status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-013-PLY status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
-- RW-TX-014-MCT status: RATIFIED — IMPLEMENTATION IN PROGRESS
+- RW-TX-014-MCT status: IMPLEMENTED — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -1021,10 +1027,13 @@ EVIDENCE STATUS:
   download, installation, and launch passed on 2026-09-24.
 - Feature freeze: LIFTED ONLY FOR RW-TX-014-MCT. Seasonal weather, live GPS navigation,
   Grazing Circuits, seasonal pasture roles, and other product work remain outside scope.
-- Next action: Complete source tests, archive compatibility, signed artifact verification,
-  and physical-device acceptance for RangeWater 1.0.1 Map Control.
-- Resume point: Continue RW-TX-014-MCT on codex/rw-1.0.1-map-control from the sealed
-  v1.0.0 production baseline. Do not introduce a Room schema change in this transmission.
+- Next action: Install the signed 1.0.1 test build through an appropriate test path and verify
+  persistent independent layer controls, Herd Focus filtering/color, compact phone controls,
+  edit-mode layer reveal, restart persistence, and 1.0 archive restore behavior.
+- Resume point: Continue RW-TX-014-MCT on codex/rw-1.0.1-map-control from GitHub source
+  commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. Do not promote or publish 1.0.1 until
+  physical-glass acceptance and explicit release approval. Do not introduce a Room schema
+  change in this transmission.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
