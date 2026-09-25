@@ -905,7 +905,7 @@ EVIDENCE STATUS:
   Closure date: 2026-09-24.
 
 - RW-TX-014-MCT
-  Status: IMPLEMENTED — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
+  Status: ACCEPTED — PHYSICAL-GLASS VERIFIED — PRODUCTION REVIEW PENDING
   Scope: RangeWater 1.0.1 Map Control. Add persistent visibility controls for pasture
   boundaries, water points, gates, and herd badges while preserving the existing water
   coverage and pasture-fill controls. Add temporary Herd Focus for a herd currently mapped
@@ -927,11 +927,24 @@ EVIDENCE STATUS:
   the expanded display preferences; hidden layers must not delete or alter ranch records;
   active water, pasture, and gate editing must reveal the required working layers.
   Implementation evidence: local authoring commit 72b9e16; GitHub source commit
-  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2; GitHub Actions run 36131911052 (run 102)
-  completed successfully on 2026-09-25. Gateway tests, JVM unit tests, Room instrumentation
-  tests, stable field signing/certificate verification, and Play AAB signing/staging passed.
-  Artifacts: RangeWater-Field-APK and RangeWater-Play-AAB. Production rollout remains blocked
-  until physical-glass Map Control acceptance and explicit release approval.
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2; GitHub Actions runs 36131911052 (run 102)
+  and 36132494440 (run 103) completed successfully on 2026-09-25. Gateway tests, JVM unit
+  tests, Room instrumentation tests, stable field signing/certificate verification, and
+  Play AAB signing/staging passed. Artifacts: RangeWater-Field-APK and RangeWater-Play-AAB.
+  Internal testing evidence: versionCode 18 / versionName 1.0.1 published to the Google Play
+  internal track on 2026-09-25 and installed as an in-place upgrade on physical Samsung
+  hardware. Existing pastures, waters, gates, herds, and other ranch records survived.
+  Physical acceptance: PASSED. Independent pasture-boundary, water-point, gate, and herd-
+  badge visibility controls worked; settings persisted across restart; Herd Focus retained
+  only the selected herd and its current-pasture context; Clear Focus restored the full map;
+  the compact phone header passed; the 1.0.1 portable backup restored layer preferences and
+  ranch records; and Undo Last Restore returned the pre-restore state. Michael explicitly
+  accepted all transmission tests on 2026-09-25.
+  Production submission: the already-tested versionCode 18 bundle was promoted without
+  rebuilding to `RangeWater 1.0.1 (18) – Production`, configured for a 100% rollout in all
+  targeted countries, and sent to Google for review on 2026-09-25. Google Play reports
+  `Changes in review`. Managed Publishing remains enabled, so approval will not publish the
+  release until a separate explicit publish action.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -993,15 +1006,16 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: CREATED
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: PRODUCTION MAINTENANCE — RANGEWATER 1.0.1 MAP CONTROL
-- Working transmission: RW-TX-014-MCT — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
-- Implementation status: RANGEWATER 1.0.1 SIGNED TEST ARTIFACTS READY
+- Current phase: PRODUCTION MAINTENANCE — RANGEWATER 1.0.1 GOOGLE REVIEW
+- Working transmission: RW-TX-014-MCT — ACCEPTED — PHYSICAL-GLASS VERIFIED
+- Implementation status: RANGEWATER 1.0.1 PRODUCTION REVIEW PENDING
 - Authoritative production repository commit: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Feature branch: codex/rw-1.0.1-map-control
-- Verified implementation commit: 325cd79263887ef369848511e132d8249976d8b6
-- Verified signed-AAB source commit: a9ef4b67a43401ae13818337b0240bfed2f6dd39
+- Verified implementation commit: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
+- Verified signed-AAB source commit: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
 - Production tag target: 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
-- CI status: GREEN — RangeWater 1.0.1 run 36131911052 (run 102)
+- CI status: GREEN — RangeWater 1.0.1 runs 36131911052 (run 102) and 36132494440
+  (run 103)
 - Build artifact: RangeWater-Field-APK version 0.13.0 (versionCode 16), artifact
   10758879883 (26,410,616 bytes; expires 2026-10-23)
 - Functional device verification: RW-TX-009-GTE-REV3 PASSED on Samsung Tab S7 and
@@ -1010,7 +1024,7 @@ EVIDENCE STATUS:
 - RW-TX-011-BKR status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-012-MCH status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-013-PLY status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
-- RW-TX-014-MCT status: IMPLEMENTED — CI VERIFIED — AWAITING PHYSICAL-GLASS ACCEPTANCE
+- RW-TX-014-MCT status: ACCEPTED — PHYSICAL-GLASS VERIFIED — PRODUCTION REVIEW PENDING
 - Imagery gateway: DEPLOYED — health returned service rangewater-imagery-gateway,
   status ok at rangewater-imagery-gateway.voidwalker.workers.dev.
 - Tablet imagery acceptance: PASSED — the gateway-enabled APK installed on the Samsung
@@ -1023,17 +1037,18 @@ EVIDENCE STATUS:
   matched the completed APK to the permanent field certificate.
 - Play-upload signing status: VERIFIED — encrypted Drive recovery verified, four encrypted
   GitHub Actions secrets configured, and CI signed and certificate-verified the release AAB.
-- Production status: LIVE — United States rollout 100%; independent non-tester discovery,
-  download, installation, and launch passed on 2026-09-24.
-- Feature freeze: LIFTED ONLY FOR RW-TX-014-MCT. Seasonal weather, live GPS navigation,
-  Grazing Circuits, seasonal pasture roles, and other product work remain outside scope.
-- Next action: Install the signed 1.0.1 test build through an appropriate test path and verify
-  persistent independent layer controls, Herd Focus filtering/color, compact phone controls,
-  edit-mode layer reveal, restart persistence, and 1.0 archive restore behavior.
-- Resume point: Continue RW-TX-014-MCT on codex/rw-1.0.1-map-control from GitHub source
-  commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. Do not promote or publish 1.0.1 until
-  physical-glass acceptance and explicit release approval. Do not introduce a Room schema
-  change in this transmission.
+- Production status: RangeWater 1.0.0 remains live at 100%; RangeWater 1.0.1 versionCode 18
+  was promoted from the accepted internal-test bundle and sent to Google for review on
+  2026-09-25. Managed Publishing is on.
+- Feature freeze: REINSTATED while the exact accepted versionCode 18 production candidate is
+  under review. Seasonal weather, live GPS navigation, Grazing Circuits, seasonal pasture
+  roles, and other product work remain outside scope.
+- Next action: Wait for Google to approve RangeWater 1.0.1. When approval moves the release
+  into `Changes ready to publish`, obtain explicit approval, publish through Managed
+  Publishing, verify the public version, then tag and close the 1.0.1 release state.
+- Resume point: RW-TX-014-MCT is accepted and submitted from the exact tested versionCode 18
+  bundle. Do not rebuild or replace the production candidate while review is pending. Do not
+  introduce a Room schema change in this transmission.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
