@@ -25,6 +25,9 @@ interface HerdDao {
     @Query("SELECT COUNT(*) FROM cattle_movements WHERE herdId = :herdId AND status = 'PLANNED'")
     suspend fun countPlannedMovementsForHerd(herdId: Long): Int
 
+    @Query("DELETE FROM herd_grazing_circuit_assignments WHERE herdId = :herdId")
+    suspend fun clearCircuitAssignmentRaw(herdId: Long)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRaw(herd: HerdEntity): Long
 
@@ -75,6 +78,7 @@ interface HerdDao {
         if (countPlannedMovementsForHerd(id) > 0) {
             throw IllegalStateException("Cannot archive herd: It has active planned movements. Cancel or complete them first.")
         }
+        clearCircuitAssignmentRaw(id)
         updateRaw(
             existing.copy(
                 locationKind = HerdLocationKind.UNKNOWN,

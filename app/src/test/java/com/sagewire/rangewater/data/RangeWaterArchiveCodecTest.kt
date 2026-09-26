@@ -6,6 +6,9 @@ import com.sagewire.rangewater.ui.map.SpatialCoverageScope
 import com.sagewire.rangewater.ui.map.WaterCoverageMode
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -69,6 +72,68 @@ class RangeWaterArchiveCodecTest {
         }
     }
 
+    @Test
+    fun missingCircuitMembershipRelationship_isRejectedBeforeRestore() {
+        val broken = completeData().copy(circuitPastures = emptyList())
+        try {
+            RangeWaterBackupValidator.validate(broken)
+            fail("Expected circuit relationship rejection")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message!!.contains("membership"))
+        }
+    }
+
+    @Test
+    fun formatOneArchive_restoresWithEmptySeasonalCollections() {
+        val gson = Gson()
+        val legacyData = completeData().copy(
+            grazingCircuits = emptyList(),
+            circuitPastures = emptyList(),
+            circuitPastureRoles = emptyList(),
+            herdCircuitAssignments = emptyList(),
+            pastureForageObservations = emptyList()
+        )
+        val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply {
+            remove("grazingCircuits")
+            remove("circuitPastures")
+            remove("circuitPastureRoles")
+            remove("herdCircuitAssignments")
+            remove("pastureForageObservations")
+        }
+        val dataBytes = gson.toJson(dataJson).toByteArray(StandardCharsets.UTF_8)
+        val legacyCounts = legacyData.recordCounts()
+        val manifest = RangeWaterBackupManifest(
+            formatId = RangeWaterArchiveCodec.FORMAT_ID,
+            formatVersion = 1,
+            databaseSchemaVersion = 6,
+            appVersionName = "1.0.1",
+            createdAt = 123L,
+            dataSha256 = sha256(dataBytes),
+            recordCounts = legacyCounts
+        )
+        val manifestJson = gson.toJsonTree(manifest).asJsonObject.apply {
+            getAsJsonObject("recordCounts").apply {
+                remove("grazingCircuits")
+                remove("circuitPastures")
+                remove("circuitPastureRoles")
+                remove("herdCircuitAssignments")
+                remove("pastureForageObservations")
+            }
+        }
+        val archive = zip(
+            linkedMapOf(
+                "manifest.json" to gson.toJson(manifestJson).toByteArray(StandardCharsets.UTF_8),
+                "data.json" to dataBytes
+            )
+        )
+
+        val restored = RangeWaterArchiveCodec.read(ByteArrayInputStream(archive))
+
+        assertEquals(legacyData, restored.data)
+        assertTrue(restored.data.grazingCircuits.isEmpty())
+        assertTrue(restored.data.pastureForageObservations.isEmpty())
+    }
+
     private fun completeData(): RangeWaterBackupData {
         val now = 100L
         return RangeWaterBackupData(
@@ -119,6 +184,36 @@ class RangeWaterArchiveCodecTest {
                     updatedAt = now
                 )
             ),
+            grazingCircuits = listOf(
+                GrazingCircuitEntity(70, "Cow Rotation", "Seasonal circuit", now, now)
+            ),
+            circuitPastures = listOf(
+                GrazingCircuitPastureEntity(70, 10, 0, now)
+            ),
+            circuitPastureRoles = listOf(
+                GrazingCircuitPastureRoleEntity(70, 10, SeasonalPastureRole.ROTATION),
+                GrazingCircuitPastureRoleEntity(70, 10, SeasonalPastureRole.STOCKPILED_WINTER)
+            ),
+            herdCircuitAssignments = listOf(
+                HerdGrazingCircuitAssignmentEntity(50, 70, now)
+            ),
+            pastureForageObservations = listOf(
+                PastureForageObservationEntity(
+                    id = 80,
+                    pastureId = 10,
+                    observedAt = now,
+                    averageHeightInches = 8.0,
+                    sampleCount = 5,
+                    forageStandType = ForageStandType.TALL_FESCUE_CLOVER,
+                    standCondition = ForageStandCondition.GOOD,
+                    dmPerAcreInchLow = 300.0,
+                    dmPerAcreInchHigh = 350.0,
+                    calibrationSource = ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK,
+                    acreageSnapshot = 21.8,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            ),
             displayPreferences = DisplayPreferences(
                 WaterCoverageMode.LINES_ONLY,
                 SpatialCoverageScope.ACCESSIBLE_COVERAGE,
@@ -153,4 +248,8 @@ class RangeWaterArchiveCodecTest {
         }
         output.toByteArray()
     }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { String.format(Locale.US, "%02x", it.toInt() and 0xff) }
 }

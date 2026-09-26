@@ -10,6 +10,8 @@ object RangeWaterBackupValidator {
         val gateIds = uniquePositiveIds("gate", data.gates.map { it.id })
         val herdIds = uniquePositiveIds("herd", data.herds.map { it.id })
         uniquePositiveIds("movement", data.movements.map { it.id })
+        val circuitIds = uniquePositiveIds("grazing circuit", data.grazingCircuits.map { it.id })
+        uniquePositiveIds("forage observation", data.pastureForageObservations.map { it.id })
 
         data.waterPoints.forEach { point ->
             requireCoordinate(point.latitude, point.longitude, "Water point #${point.id}")
@@ -90,6 +92,87 @@ object RangeWaterBackupValidator {
             require(movement.quantity > 0) { "Movement #${movement.id} has an invalid quantity" }
             require(movement.originNameSnapshot.isNotBlank() && movement.destinationNameSnapshot.isNotBlank()) {
                 "Movement #${movement.id} is missing an audit snapshot"
+            }
+        }
+
+        val circuitNames = mutableSetOf<String>()
+        data.grazingCircuits.forEach { circuit ->
+            require(circuit.name.isNotBlank()) { "Grazing Circuit #${circuit.id} has no name" }
+            require(circuitNames.add(circuit.name.lowercase())) {
+                "Backup contains duplicate Grazing Circuit names"
+            }
+        }
+
+        val membershipKeys = mutableSetOf<Pair<Long, Long>>()
+        val sequencesByCircuit = mutableMapOf<Long, MutableList<Int>>()
+        data.circuitPastures.forEach { membership ->
+            require(membership.circuitId in circuitIds) { "Circuit membership references a missing circuit" }
+            require(membership.pastureId in pastureIds) { "Circuit membership references a missing pasture" }
+            require(membership.sequence >= 0) { "Circuit membership has a negative sequence" }
+            require(membershipKeys.add(membership.circuitId to membership.pastureId)) {
+                "Backup contains duplicate circuit membership"
+            }
+            sequencesByCircuit.getOrPut(membership.circuitId) { mutableListOf() } += membership.sequence
+        }
+        sequencesByCircuit.forEach { (circuitId, sequences) ->
+            require(sequences.sorted() == sequences.indices.toList()) {
+                "Grazing Circuit #$circuitId has a broken pasture sequence"
+            }
+        }
+
+        val roleKeys = mutableSetOf<Triple<Long, Long, SeasonalPastureRole>>()
+        data.circuitPastureRoles.forEach { role ->
+            require((role.circuitId to role.pastureId) in membershipKeys) {
+                "Seasonal role references a missing circuit membership"
+            }
+            require(roleKeys.add(Triple(role.circuitId, role.pastureId, role.role))) {
+                "Backup contains a duplicate seasonal role"
+            }
+        }
+
+        val assignedHerdIds = mutableSetOf<Long>()
+        data.herdCircuitAssignments.forEach { assignment ->
+            require(assignment.herdId in herdIds) { "Circuit assignment references a missing herd" }
+            require(assignment.circuitId in circuitIds) { "Circuit assignment references a missing circuit" }
+            require(assignedHerdIds.add(assignment.herdId)) { "A herd has multiple circuit assignments" }
+            val herd = data.herds.first { it.id == assignment.herdId }
+            val circuit = data.grazingCircuits.first { it.id == assignment.circuitId }
+            require(herd.archivedAt == null) { "An archived herd has an active circuit assignment" }
+            require(circuit.archivedAt == null) { "An archived circuit has an active herd assignment" }
+            require(membershipKeys.any { it.first == assignment.circuitId }) {
+                "A herd is assigned to an empty Grazing Circuit"
+            }
+        }
+
+        data.pastureForageObservations.forEach { observation ->
+            require(observation.pastureId in pastureIds) {
+                "Forage observation #${observation.id} references a missing pasture"
+            }
+            require(observation.observedAt > 0) { "Forage observation #${observation.id} has an invalid date" }
+            require(observation.averageHeightInches.isFinite() && observation.averageHeightInches > 0.0) {
+                "Forage observation #${observation.id} has an invalid height"
+            }
+            require(observation.sampleCount > 0) { "Forage observation #${observation.id} has no samples" }
+            require(observation.residualHeightInches.isFinite() && observation.residualHeightInches >= 0.0) {
+                "Forage observation #${observation.id} has an invalid residual"
+            }
+            require(observation.dmPerAcreInchLow.isFinite() && observation.dmPerAcreInchLow > 0.0) {
+                "Forage observation #${observation.id} has an invalid low calibration"
+            }
+            require(observation.dmPerAcreInchHigh.isFinite() &&
+                observation.dmPerAcreInchHigh >= observation.dmPerAcreInchLow
+            ) { "Forage observation #${observation.id} has an invalid calibration range" }
+            require(observation.acreageSnapshot.isFinite() && observation.acreageSnapshot > 0.0) {
+                "Forage observation #${observation.id} has an invalid acreage snapshot"
+            }
+            if (observation.calibrationSource == ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK) {
+                val expected = ForageCalculator.ohioCalibration(
+                    observation.forageStandType,
+                    observation.standCondition
+                )
+                require(observation.dmPerAcreInchLow == expected.low &&
+                    observation.dmPerAcreInchHigh == expected.high
+                ) { "Forage observation #${observation.id} has a mismatched Ohio preset" }
             }
         }
     }

@@ -269,7 +269,7 @@ object MapConfig {
               "source": "$SOURCE_PASTURE_LINES",
               "paint": {
                 "line-color": "#151515",
-                "line-width": ["case", ["get", "focused"], 8.0, ["get", "selected"], 6.0, 4.0],
+                "line-width": ["case", ["get", "focusCurrent"], 8.0, ["get", "focused"], 6.0, ["get", "selected"], 6.0, 4.0],
                 "line-opacity": ["case", ["get", "dimmed"], 0.28, 1.0]
               }
             },
@@ -283,7 +283,7 @@ object MapConfig {
                   ["get", "focused"], ["get", "focusColor"],
                   "#FF2D95"
                 ],
-                "line-width": ["case", ["get", "focused"], 5.0, ["get", "selected"], 4.0, 2.0],
+                "line-width": ["case", ["get", "focusCurrent"], 5.0, ["get", "focused"], 3.5, ["get", "selected"], 4.0, 2.0],
                 "line-opacity": ["case", ["get", "dimmed"], 0.28, 1.0]
               }
             },
