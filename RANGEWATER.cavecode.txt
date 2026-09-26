@@ -1035,6 +1035,21 @@ ROADMAP GUARD:
   all RangeWater 1.0.1 production tests passed on 2026-09-25.
   Closure date: 2026-09-25.
 
+- RW-TX-015-SGR
+  Status: PROPOSED — AWAITING MICHAEL'S RATIFICATION — NOT IMPLEMENTED
+  Scope: RangeWater 1.1.0 Seasonal Grazing contract covering named Grazing Circuits,
+  ordered many-to-many pasture membership, multiple seasonal roles per membership,
+  one active circuit per herd, circuit-aware Herd Focus, Room schema 6-to-7 migration,
+  archive format 2 with format-1 restore compatibility, and physical-glass acceptance.
+  Proposed release: RangeWater 1.1.0 (versionCode 19), Room schema version 7.
+  Proposed feature branch: codex/rw-tx-015-sgr.
+  Required baseline: accepted RangeWater 1.0.1 released source
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+  Contract: workorders/RW-TX-015-SGR.cavecode.
+  Contract commit: 3f74997db1ac5d85ff60c962e8b40d42307d2ab8.
+  Implementation authority: NOT GRANTED. No source, schema, archive, build, or release
+  mutation is authorized until Michael ratifies or amends the contract.
+
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
 - First CI run 35268226473 reached dependency resolution and exposed an invalid
@@ -1096,7 +1111,7 @@ ROADMAP GUARD:
 - Repository: ACTIVE — PUBLIC
 - Repository access: VERIFIED — Ash has administrator and push permission
 - Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — CONTRACT DESIGN
-- Working transmission: NONE — 1.1.0 identifier and work order are not yet ratified
+- Working transmission: RW-TX-015-SGR — PROPOSED — AWAITING RATIFICATION
 - Implementation status: RANGEWATER 1.0.1 PRODUCTION PUBLISHED AND PHYSICALLY ACCEPTED
 - Default branch: main — synchronized through this 1.0.1 closeout
 - Release lineage branch: codex/rw-1.0.1-map-control
@@ -1135,9 +1150,8 @@ ROADMAP GUARD:
 - Third-party handoff rule: begin from default branch `main` after this closeout. Treat
   commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2 as the exact released application source.
   Do not rebuild from the historical v1.0.0 tag or the old 0.8.0 main-branch state.
-- Next action: draft and ratify the RangeWater 1.1.0 Seasonal Grazing work order covering
-  the circuit data model, many-to-many pasture membership, herd association, seasonal
-  roles, map behavior, non-destructive Room migration, archive changes, and device tests.
+- Next action: Michael reviews RW-TX-015-SGR, then ratifies it as written or amends
+  specific blocks. Implementation remains prohibited until that decision is recorded.
 - Resume point: Build One is closed. Resume with Build Two — RangeWater 1.1.0 Seasonal
   Grazing — from the accepted 1.0.1 source baseline. Do not begin implementation until its
   exact data and interaction contract is ratified.
