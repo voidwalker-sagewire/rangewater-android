@@ -1,0 +1,499 @@
+================================================================================
+RANGEWATER TRANSMISSION CONTRACT
+RW-TX-015-SGR — RANGEWATER 1.1.0 SEASONAL GRAZING
+================================================================================
+Format: CaveCode v1.0 project contract
+Status: PROPOSED — AWAITING MICHAEL'S RATIFICATION — DO NOT IMPLEMENT
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Prepared: 2026-09-26
+
+🪨 BLOCK 1 — IDENTITY AND RELEASE BOUNDARY
+--------------------------------------------------------------------------------
+- Product: RangeWater
+- Release: 1.1.0
+- Proposed versionCode: 19
+- Package identity: com.sagewire.rangewater — unchanged
+- Proposed feature branch: codex/rw-tx-015-sgr
+- Required baseline: accepted RangeWater 1.0.1 released source
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
+- Current Room schema: 6
+- Proposed Room schema: 7
+- Current archive format: 1
+- Proposed archive write format: 2, with explicit read support for formats 1 and 2
+- Primary device classes: compatible Android phones and tablets
+
+MISSION:
+- Let an operator group mapped pastures into named Grazing Circuits, assign a herd to
+  one active circuit, label each member pasture for its seasonal purpose, and focus the
+  map on the whole operational grazing group without losing the herd's true current
+  location or movement history.
+
+NON-GOAL:
+- This release does not calculate feed demand, prescribe grazing dates, decide when
+  forage is ready, or replace the operator's judgment.
+
+🪨 BLOCK 2 — RATIFIED PRODUCT INTENT REPRESENTED BY THIS PROPOSAL
+--------------------------------------------------------------------------------
+The contract implements the previously ratified 1.1.0 direction:
+1. Named Grazing Circuits.
+2. Many-to-many pasture membership in those circuits.
+3. Association of herds with a Grazing Circuit.
+4. Seasonal pasture roles:
+   - Winter
+   - Calving
+   - Rotation
+   - Stockpiled Winter Grazing
+5. Herd-colored map context for the selected herd and its circuit.
+6. Non-destructive migration and complete .rangewater archive compatibility.
+
+PRODUCT LANGUAGE:
+- A Grazing Circuit is an operator-defined planning group of mapped pastures.
+- Circuit membership is not pasture ownership.
+- Circuit membership is not proof that two pastures are physically connected.
+- A seasonal role describes intended use, not current biological readiness.
+- Herd location remains controlled only by the accepted herd/movement system.
+- Assigning a herd to a circuit never moves the herd and never creates a movement.
+
+🪨 BLOCK 3 — LOCKED DATA MODEL IF RATIFIED
+--------------------------------------------------------------------------------
+3A. GRAZING CIRCUIT
+
+Table: grazing_circuits
+Entity: GrazingCircuitEntity
+
+Fields:
+- id: Long, auto-generated primary key
+- name: String, required, trimmed, unique NOCASE
+- notes: String, default empty
+- createdAt: Long, required
+- updatedAt: Long, required
+- archivedAt: Long?, nullable
+
+Rules:
+- Blank names are rejected.
+- Circuit names are unique without regard to letter case, including archived circuits.
+- A circuit owns no geometry and no independent map color.
+- The focused herd's markerColorHex is the authoritative focus color.
+- Archived circuits are retained for backup/history but cannot receive new assignments.
+
+3B. ORDERED CIRCUIT-PASTURE MEMBERSHIP
+
+Table: grazing_circuit_pastures
+Entity: GrazingCircuitPastureEntity
+
+Fields:
+- circuitId: Long, part of composite primary key
+- pastureId: Long, part of composite primary key
+- sequence: Int, required, zero-based
+- assignedAt: Long, required
+
+Foreign keys:
+- circuitId -> grazing_circuits.id, ON DELETE CASCADE
+- pastureId -> pastures.id, ON DELETE RESTRICT / NO ACTION
+
+Indices and constraints:
+- unique (circuitId, pastureId)
+- unique (circuitId, sequence)
+- indexed pastureId
+
+Rules:
+- A pasture may belong to multiple circuits.
+- Within one circuit, a pasture appears once.
+- Sequence values are contiguous from zero after every saved reorder.
+- Sequence is planning order only. It does not assert gate connectivity or create a
+  movement route.
+- A circuit must contain at least one pasture before it may be assigned to a herd.
+- Removing a pasture membership also removes its roles in that circuit atomically.
+
+3C. MULTI-ROLE SEASONAL LABELS
+
+Table: grazing_circuit_pasture_roles
+Entity: GrazingCircuitPastureRoleEntity
+
+Composite primary key:
+- circuitId
+- pastureId
+- role
+
+Role enum: SeasonalPastureRole
+- WINTER
+- CALVING
+- ROTATION
+- STOCKPILED_WINTER
+
+Foreign key:
+- (circuitId, pastureId) -> grazing_circuit_pastures(circuitId, pastureId),
+  ON DELETE CASCADE
+
+Rules:
+- A member pasture may have zero, one, or multiple roles.
+- Multiple roles are intentional. A pasture may, for example, serve both WINTER and
+  CALVING purposes.
+- Duplicate roles for the same circuit/pasture are rejected.
+- Roles never alter acreage, water coverage, gate topology, or herd location.
+
+3D. ACTIVE HERD-TO-CIRCUIT ASSIGNMENT
+
+Table: herd_grazing_circuit_assignments
+Entity: HerdGrazingCircuitAssignmentEntity
+
+Fields:
+- herdId: Long, primary key
+- circuitId: Long, required
+- assignedAt: Long, required
+
+Foreign keys:
+- herdId -> herds.id, ON DELETE CASCADE
+- circuitId -> grazing_circuits.id, ON DELETE RESTRICT / NO ACTION
+
+Rules:
+- Each active herd has zero or one active Grazing Circuit.
+- One circuit may be assigned to multiple herds.
+- Assigning a new circuit replaces only that herd's previous circuit assignment.
+- Circuit assignment does not modify HerdEntity.currentPastureId or locationKind.
+- An archived herd may not receive a circuit assignment.
+- Archiving a herd clears its active circuit assignment in the same transaction.
+- A circuit assigned to any active herd cannot be archived until those assignments
+  are removed or changed.
+
+3E. NO CHANGES TO EXISTING HISTORICAL RECORDS
+
+- HerdEntity remains the source of current herd identity, color, count, class, and
+  current location.
+- CattleMovementEntity remains the source of planned/completed/canceled movements.
+- PastureEntity and canonical fence junctions remain the source of mapped geometry.
+- No seasonal fields are added directly to HerdEntity, PastureEntity, or movement rows.
+- Existing movement snapshots are never rewritten when a circuit changes.
+
+🎮 BLOCK 4 — CORE OPERATOR WORKFLOWS
+--------------------------------------------------------------------------------
+4A. CREATE A GRAZING CIRCUIT
+
+1. Open Herds.
+2. Open Grazing Circuits.
+3. Tap Create Circuit.
+4. Enter a unique name and optional notes.
+5. Select one or more mapped pastures.
+6. Arrange the selected pastures in the intended planning order.
+7. Assign zero or more seasonal roles to each selected pasture.
+8. Review and Save.
+
+Save is disabled when:
+- the name is blank or duplicates another active circuit name;
+- no pasture is selected;
+- a pasture appears twice;
+- sequence values cannot be normalized safely.
+
+4B. EDIT A GRAZING CIRCUIT
+
+The operator may:
+- rename the circuit;
+- edit notes;
+- add or remove pasture memberships;
+- reorder member pastures;
+- add or remove seasonal roles.
+
+Editing a circuit:
+- never moves a herd;
+- never creates or modifies movement history;
+- never changes water assignments;
+- never changes fence or gate geometry.
+
+If an assigned herd's current pasture is removed from its circuit, Save is allowed but
+the operator receives a clear warning that the herd is currently outside its assigned
+circuit. The true herd location is preserved.
+
+4C. ASSIGN A HERD TO A CIRCUIT
+
+1. Open an active herd.
+2. Choose Assign Circuit or Change Circuit.
+3. Select one active, non-empty circuit or choose No Circuit.
+4. Save.
+
+The herd inspection view shows:
+- current physical location;
+- assigned circuit name, or No Circuit;
+- number of pastures in that circuit;
+- the herd's circuit position if its current pasture is a member;
+- a warning if the herd is in a mapped pasture outside the assigned circuit.
+
+4D. CIRCUIT-AWARE HERD FOCUS
+
+When Map Focus is selected for a herd with an assigned active circuit:
+- retain the selected herd badge;
+- hide other herd badges as in accepted 1.0.1 Herd Focus;
+- render every circuit-member pasture boundary using the herd's marker color;
+- emphasize the herd's current pasture with the strongest stroke/fill treatment;
+- render other circuit pastures with the same color at reduced emphasis;
+- dim unrelated pasture boundaries rather than deleting or mutating them;
+- retain water points assigned to any circuit-member pasture;
+- retain gates connected to any circuit-member pasture;
+- include the herd's actual current pasture even if it lies outside the assigned circuit;
+- show a compact focus label containing herd name and circuit name;
+- Clear Focus restores the exact ordinary map state and saved layer preferences.
+
+Fallback:
+- If the herd has no active circuit, Map Focus behaves exactly like accepted 1.0.1:
+  current pasture plus its related waters and gates.
+
+Layer safety:
+- Circuit Focus is derived display state only.
+- It does not overwrite persistent layer visibility settings.
+- Active editing must reveal the layers required for safe editing.
+
+4E. ARCHIVE AND DELETE SAFETY
+
+- Circuits use archive behavior rather than destructive deletion from normal UI.
+- A circuit assigned to an active herd cannot be archived.
+- A pasture cannot be deleted while it remains in any circuit; the UI identifies the
+  blocking circuit names and instructs the operator to remove those memberships first.
+- Archiving a herd clears its active circuit assignment but preserves the herd and all
+  movement history.
+- Restoring a complete backup restores circuits, memberships, roles, assignments, and
+  the existing ranch records as one validated data set.
+
+🎮 BLOCK 5 — PHONE AND TABLET INTERACTION CONTRACT
+--------------------------------------------------------------------------------
+- Existing top-map controls remain unchanged unless a proven width defect requires a
+  separate ratified correction.
+- Grazing Circuits live inside the Herds workflow; no new permanent top-map pill is added.
+- Circuit management uses phone-safe bottom sheets or full-height dialogs with controls
+  no smaller than the app's accepted touch targets.
+- Pasture selection is a scrollable checklist showing pasture name and acreage.
+- Selected pasture order uses explicit Move Up / Move Down actions or another accessible
+  deterministic control; drag-only ordering is prohibited.
+- Seasonal roles use labeled chips with full text. Color alone may not communicate role.
+- The interface must fit a narrow portrait phone without horizontal scrolling.
+- The tablet layout may use additional width but must preserve the same data and actions.
+- Unsaved edits are held in memory. Cancel performs no database write.
+- Back navigation with unsaved changes asks whether to discard them.
+
+🌐 BLOCK 6 — REQUIRED USER-FACING LANGUAGE
+--------------------------------------------------------------------------------
+Primary labels:
+- Grazing Circuits
+- Create Circuit
+- Assign Circuit
+- Change Circuit
+- No Circuit
+- Map Focus
+- Clear Focus
+- Winter
+- Calving
+- Rotation
+- Stockpiled Winter Grazing
+
+Required explanations:
+- "A Grazing Circuit groups pastures for planning. It does not move the herd."
+- "Seasonal roles describe intended use and do not determine forage readiness."
+- Outside-circuit warning:
+  "This herd is currently outside its assigned Grazing Circuit."
+- Blocking archive message:
+  "This circuit is assigned to an active herd. Change or remove that assignment first."
+- Blocking pasture deletion message:
+  "This pasture belongs to one or more Grazing Circuits. Remove it from those circuits first."
+
+🔧 BLOCK 7 — DATABASE MIGRATION CONTRACT
+--------------------------------------------------------------------------------
+- Add GrazingCircuitEntity, GrazingCircuitPastureEntity,
+  GrazingCircuitPastureRoleEntity, and HerdGrazingCircuitAssignmentEntity.
+- Advance RangeWaterDatabase from version 6 to version 7.
+- Add an explicit MIGRATION_6_7.
+- Register MIGRATION_6_7 in the database builder after every existing migration.
+- Migration creates only the four new empty tables and their required indices.
+- Migration must not modify existing water, pasture, junction, vertex, assignment,
+  gate, herd, or movement rows.
+- Destructive migration and fallbackToDestructiveMigration remain prohibited.
+
+Required migration evidence:
+- Begin with a real schema-6 database populated with at least one record from every
+  existing entity type.
+- Upgrade through MIGRATION_6_7.
+- Prove every preexisting row and relationship remains unchanged.
+- Prove all four new tables are empty and writable.
+- Prove foreign-key enforcement and unique indices operate after upgrade.
+
+🔧 BLOCK 8 — ARCHIVE AND RESTORE CONTRACT
+--------------------------------------------------------------------------------
+- RangeWater 1.1.0 writes archive format version 2.
+- The archive continues to use the same .rangewater extension and MIME type.
+- Format 2 adds these collections and record counts:
+  - grazingCircuits
+  - circuitPastures
+  - circuitPastureRoles
+  - herdCircuitAssignments
+- Database schema identity advances to 7.
+- The reader must accept archive format 1 and format 2.
+- A format-1 archive is upgraded in memory with empty circuit collections before
+  validation and restore.
+- Format-1 count validation uses its original eight record categories.
+- Format-2 count validation covers all existing and new collections.
+- Archives with a format version newer than 2 remain rejected before live writes.
+- New referential validation must reject:
+  - duplicate circuit IDs or circuit names;
+  - missing circuit, pasture, or herd references;
+  - duplicate memberships or roles;
+  - negative, duplicate, or non-contiguous sequence values;
+  - assignments to archived or empty circuits;
+  - assignments to archived herds;
+  - unsupported seasonal role values.
+- BackupDao snapshot and replaceAll include all new tables.
+- Delete and insert order must follow the complete foreign-key graph.
+- Restore remains replace-all, validated before writing, transactional, and protected by
+  the accepted emergency pre-restore archive.
+- Undo Last Restore must return both old and new records to their pre-restore state.
+
+🔧 BLOCK 9 — DAO AND TRANSACTION RULES
+--------------------------------------------------------------------------------
+Required DAO operations:
+- observe active circuits with ordered pasture membership and roles;
+- get circuit by ID;
+- create circuit atomically;
+- update name and notes with case-insensitive uniqueness checks;
+- replace membership, order, and roles atomically;
+- assign, change, or remove a herd's circuit atomically;
+- archive a circuit only after assignment checks;
+- report circuit names blocking pasture deletion;
+- clear a circuit assignment during herd archival.
+
+Transaction invariants:
+- No partial circuit may survive a failed save.
+- No duplicate name, sequence, membership, role, or herd assignment may be committed.
+- Reordering must normalize sequence values in the same transaction.
+- A failed archive, assignment, or membership update leaves prior state unchanged.
+- UI code may request an operation but may not bypass DAO-owned validation.
+
+🔧 BLOCK 10 — MAP DERIVATION RULES
+--------------------------------------------------------------------------------
+- Circuit map geometry is derived from existing PastureWithVertices records.
+- No polygon coordinates are copied into circuit tables.
+- Herd color is read from the selected HerdEntity at render time.
+- Circuit focus pasture IDs are the union of:
+  - active circuit memberships; and
+  - the herd's true currentPastureId when mapped.
+- Relevant water IDs are derived from water_pasture_assignments intersecting the focus
+  pasture set.
+- Relevant gates are gates whose canonical segment belongs to at least one focus pasture.
+- No route line is invented between sequential circuit pastures.
+- Seasonal role display must not obscure water coverage, selected assets, gate symbols,
+  MapLibre attribution, or required provider attribution.
+- Existing Full / Lines Only / Off, Physical / Accessible, Pasture Fill, independent
+  asset visibility, Aerial, and Labeled behavior remains intact.
+
+🔧 BLOCK 11 — AUTOMATED ACCEPTANCE GATES
+--------------------------------------------------------------------------------
+JVM / UNIT TESTS:
+1. Circuit names trim and remain unique NOCASE.
+2. One pasture may belong to multiple circuits.
+3. One circuit rejects duplicate pasture membership and duplicate sequence.
+4. Membership sequences normalize to contiguous zero-based order.
+5. One membership accepts multiple distinct seasonal roles.
+6. Duplicate seasonal roles are rejected.
+7. One herd has at most one active circuit; one circuit may serve multiple herds.
+8. Circuit assignment never changes herd location.
+9. Circuit focus derives the correct pasture, water, gate, and herd sets.
+10. Herd current pasture remains visible when outside its circuit.
+11. A herd without a circuit retains exact 1.0.1 focus behavior.
+12. Clear Focus restores ordinary display inputs.
+
+ANDROID ROOM TESTS:
+1. MIGRATION_6_7 preserves every schema-6 entity and relationship.
+2. New tables, indices, composite keys, and foreign keys match the contract.
+3. Create, edit, reorder, role replacement, herd assignment, and circuit archive rules
+   persist across database close and reopen.
+4. Pasture deletion is blocked while circuit membership exists.
+5. Herd archival clears active circuit assignment without changing movement history.
+6. Failed multi-table writes roll back completely.
+
+ARCHIVE TESTS:
+1. A real format-1 RangeWater 1.0/1.0.1 archive restores into schema 7 with empty circuit
+   collections and all former records intact.
+2. A format-2 archive round-trips all existing and new records with stable IDs.
+3. Record counts and SHA-256 integrity include the correct version-specific model.
+4. Every malformed new relationship is rejected before replacement.
+5. Restore and Undo Last Restore preserve circuits, order, roles, herd assignments,
+   display preferences, and all preexisting ranch records.
+
+BUILD GATES:
+- Imagery-gateway regression suite passes.
+- JVM tests pass.
+- Android Room instrumentation tests pass.
+- Debug and stable field APKs compile.
+- Play AAB compiles, signs, and matches the configured upload certificate.
+- No private signing material is committed.
+
+🎮 BLOCK 12 — PHYSICAL-GLASS ACCEPTANCE
+--------------------------------------------------------------------------------
+Test devices:
+- Primary phone: Michael's current Samsung Galaxy phone
+- Tablet: Samsung Tab S7
+
+Required sequence:
+1. Upgrade an existing RangeWater 1.0.1 installation containing pastures, waters, gates,
+   herds, movements, and saved display preferences.
+2. Confirm every existing record and map control survives.
+3. Create a named circuit with at least four pastures.
+4. Assign multiple roles to at least one pasture.
+5. Reorder the circuit and verify order survives full close and cold reopen.
+6. Assign a herd to the circuit and verify its location does not change.
+7. Enter Map Focus and confirm all circuit pastures use the herd color, the current
+   pasture is strongest, unrelated context dims, and relevant waters/gates remain.
+8. Clear Focus and confirm the full ranch map and saved layer preferences return.
+9. Move the herd through the accepted movement workflow; confirm movement history and
+   currentPastureId update while circuit membership remains unchanged.
+10. Move the herd to a pasture outside the circuit and confirm the warning and truthful
+    map rendering.
+11. Confirm circuit archive and pasture deletion safety messages.
+12. Create a format-2 backup, restore it on the other device, and confirm the full circuit,
+    roles, order, herd assignment, current location, and historical records.
+13. Undo Last Restore and confirm the pre-restore state returns.
+14. Confirm layouts remain usable in phone portrait, phone landscape, and tablet views.
+
+Acceptance authority:
+- CI success proves compilation and automated contracts.
+- Michael's physical-glass report is required before the transmission is accepted.
+- Internal testing precedes any production promotion.
+
+🪨 BLOCK 13 — EXPLICITLY OUT OF SCOPE
+--------------------------------------------------------------------------------
+- Rest Clock calculations or recovery-color thresholds
+- date-effective or calendar-based grazing plans
+- automatic rotation scheduling
+- stocking-density or forage-demand calculations
+- temporary polywire and paddock slicing
+- non-grazable holes or land-cover classification
+- gate-open/closed water-access propagation
+- live GPS, background location, or distance-to-water
+- rainfall, historical weather, or pasture weather records
+- elevation, pipe pressure, or hydraulic calculations
+- cloud accounts, live synchronization, shared ranch tenancy, or server storage
+- RFID, individual animal records, veterinary records, or HerdMate ownership transfer
+- iPhone/iPad implementation
+
+These remain separate proposals. They may not enter RW-TX-015-SGR without Michael's
+explicit scope amendment.
+
+🖍️ BLOCK 14 — RATIFICATION CARD
+--------------------------------------------------------------------------------
+Current decision state:
+- Contract status: PROPOSED
+- Implementation authority: NOT GRANTED
+- Database mutation authority: NOT GRANTED
+- Archive format mutation authority: NOT GRANTED
+- Release authority: NOT GRANTED
+
+Michael may ratify this contract as written or amend any block before implementation.
+
+Ratification phrase:
+"I ratify RW-TX-015-SGR for RangeWater 1.1.0 Seasonal Grazing."
+
+Upon ratification, the implementation agent must:
+1. Record the ratification in RANGEWATER.cavecode.txt.
+2. Create or confirm branch codex/rw-tx-015-sgr from the accepted 1.0.1 baseline.
+3. Implement only this contract.
+4. Run every automated gate.
+5. Deliver signed physical-test artifacts without publishing to production.
+
+================================================================================
+END — RW-TX-015-SGR — PROPOSED CONTRACT
+================================================================================
