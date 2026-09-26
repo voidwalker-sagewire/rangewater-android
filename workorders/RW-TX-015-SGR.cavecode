@@ -3,10 +3,11 @@ RANGEWATER TRANSMISSION CONTRACT
 RW-TX-015-SGR — RANGEWATER 1.1.0 SEASONAL GRAZING
 ================================================================================
 Format: CaveCode v1.0 project contract
-Status: PROPOSED REVISION 1 — AWAITING MICHAEL'S RATIFICATION — DO NOT IMPLEMENT
+Status: RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED — NOT YET IMPLEMENTED
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 Prepared: 2026-09-26
 Revised: 2026-09-26 — added recorded-rest and Ohio grazing-stick forage scope
+Ratified: 2026-09-26 by Michael
 
 🪨 BLOCK 1 — IDENTITY AND RELEASE BOUNDARY
 --------------------------------------------------------------------------------
@@ -36,10 +37,9 @@ NON-GOAL:
   forage biologically ready, or replace the operator's judgment. Forage figures are
   operator-entered field estimates with their assumptions shown, not measured inventory.
 
-🪨 BLOCK 2 — RATIFIED PRODUCT INTENT REPRESENTED BY THIS PROPOSAL
+🪨 BLOCK 2 — RATIFIED PRODUCT INTENT AND SCOPE
 --------------------------------------------------------------------------------
-Items 1 through 6 implement the previously ratified 1.1.0 direction. Items 7 and 8 are
-the Revision 1 scope amendment awaiting Michael's ratification:
+All eight items below are ratified as the RangeWater 1.1.0 implementation boundary:
 1. Named Grazing Circuits.
 2. Many-to-many pasture membership in those circuits.
 3. Association of herds with a Grazing Circuit.
@@ -675,24 +675,31 @@ explicit scope amendment.
 🖍️ BLOCK 15 — RATIFICATION CARD
 --------------------------------------------------------------------------------
 Current decision state:
-- Contract status: PROPOSED REVISION 1
-- Implementation authority: NOT GRANTED
-- Database mutation authority: NOT GRANTED
-- Archive format mutation authority: NOT GRANTED
-- Release authority: NOT GRANTED
+- Contract status: RATIFIED REVISION 1
+- Implementation authority: GRANTED for this contract only
+- Database mutation authority: GRANTED for the specified schema 6-to-7 migration
+- Archive format mutation authority: GRANTED for format 2 with format-1 read support
+- Signed field/internal-test artifact authority: GRANTED
+- Production release authority: NOT GRANTED; physical acceptance and a separate
+  production-promotion instruction remain required
 
-Michael may ratify this contract as written or amend any block before implementation.
+Ratification record:
+- Michael stated on 2026-09-26:
+  "I ratify RWA-TX-015-SRG Revision 1 for Range Water 1.1.0 seasonal grazing."
+- The transposed `RWA` / `SRG` letters and spaced product name are normalized to the only
+  matching prepared contract: RW-TX-015-SGR Revision 1 for RangeWater 1.1.0 Seasonal
+  Grazing. No competing RWA-TX-015-SRG contract exists.
 
 Ratification phrase:
 "I ratify RW-TX-015-SGR Revision 1 for RangeWater 1.1.0 Seasonal Grazing."
 
-Upon ratification, the implementation agent must:
-1. Record the ratification in RANGEWATER.cavecode.txt.
+The implementation agent must:
+1. Preserve this ratification in RANGEWATER.cavecode.txt.
 2. Create or confirm branch codex/rw-tx-015-sgr from the accepted 1.0.1 baseline.
 3. Implement only this contract.
 4. Run every automated gate.
 5. Deliver signed physical-test artifacts without publishing to production.
 
 ================================================================================
-END — RW-TX-015-SGR — PROPOSED REVISION 1 CONTRACT
+END — RW-TX-015-SGR — RATIFIED REVISION 1 CONTRACT
 ================================================================================
