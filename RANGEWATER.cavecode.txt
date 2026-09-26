@@ -4,7 +4,7 @@ RANGEWATER MASTER STATE & PROJECT MEMORY
 File: RANGEWATER.cavecode.txt
 Format: CaveCode v1.0 project master map
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
-Ledger State: CURRENT — RANGEWATER 1.1.0 CONTRACT DESIGN — 2026-09-26
+Ledger State: CURRENT — RANGEWATER 1.1.0 FIELD CANDIDATE — 2026-09-26
 
 🪨 BLOCK 1 — PROJECT IDENTITY
 --------------------------------------------------------------------------------
@@ -21,6 +21,9 @@ Ledger State: CURRENT — RANGEWATER 1.1.0 CONTRACT DESIGN — 2026-09-26
 - Historical 1.0.0 Tag: v1.0.0 at 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Public Production: PUBLISHED — Google Play — 2026-09-25
 - Next Planned Release: RangeWater 1.1.0 — Seasonal Grazing
+- Current Field Candidate: RangeWater 1.1.0 (19) — CI ACCEPTED — PHYSICAL TEST PENDING
+- Field Candidate Branch: codex/rw-tx-015-sgr
+- Field Candidate Commit: b15a61ae8fe80489ad147434c9a0f35c5deb4019
 - Public Listing: https://play.google.com/store/apps/details?id=com.sagewire.rangewater
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
@@ -1064,7 +1067,7 @@ ROADMAP GUARD:
   Closure date: 2026-09-25.
 
 - RW-TX-015-SGR
-  Status: RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED — NOT YET IMPLEMENTED
+  Status: IMPLEMENTED — AUTOMATED ACCEPTANCE PASSED — PHYSICAL ACCEPTANCE PENDING
   Scope: RangeWater 1.1.0 Seasonal Grazing contract covering named Grazing Circuits,
   ordered many-to-many pasture membership, multiple seasonal roles per membership,
   one active circuit per herd, circuit-aware Herd Focus, recorded-rest derivation,
@@ -1081,6 +1084,13 @@ ROADMAP GUARD:
   Implementation authority: GRANTED for this contract. Schema 7, archive format 2, and
   signed field/internal-test artifacts are authorized. Production publication remains
   prohibited until physical acceptance and a separate promotion instruction.
+  Implementation evidence: field-candidate commit
+  b15a61ae8fe80489ad147434c9a0f35c5deb4019 on codex/rw-tx-015-sgr.
+  CI evidence: workflow run 36269468596 (run 113) passed imagery gateway, JVM tests,
+  Android Room instrumentation tests, stable-field APK compilation/certificate check,
+  and signed Play AAB compilation/certificate check on 2026-09-26.
+  Signed artifacts: RangeWater-1.1.0-field.apk and RangeWater-1.1.0-play-upload.aab.
+  Draft review: https://github.com/voidwalker-sagewire/rangewater-android/pull/2.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -1142,9 +1152,14 @@ ROADMAP GUARD:
 --------------------------------------------------------------------------------
 - Repository: ACTIVE — PUBLIC
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — IMPLEMENTATION AUTHORIZED
+- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — PHYSICAL ACCEPTANCE
 - Working transmission: RW-TX-015-SGR REVISION 1 — RATIFIED
-- Implementation status: 1.1.0 NOT YET IMPLEMENTED; 1.0.1 REMAINS PRODUCTION BASELINE
+- Implementation status: 1.1.0 FIELD CANDIDATE BUILT AND CI ACCEPTED; PHYSICAL TEST PENDING
+- Candidate branch: codex/rw-tx-015-sgr
+- Candidate commit: b15a61ae8fe80489ad147434c9a0f35c5deb4019
+- Candidate release identity: versionName 1.1.0; versionCode 19
+- Candidate database/archive identity: Room schema 7; archive write format 2; format 1 and
+  format 2 restore support
 - Default branch: main — synchronized through this 1.0.1 closeout
 - Release lineage branch: codex/rw-1.0.1-map-control
 - Authoritative released source commit: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
@@ -1157,6 +1172,8 @@ ROADMAP GUARD:
   portability remain accepted
 - CI status: GREEN — RangeWater 1.0.1 runs 36131911052 (run 102) and 36132494440
   (run 103)
+- RangeWater 1.1.0 CI status: GREEN — workflow run 36269468596 (run 113); imagery,
+  JVM, Android Room, signed field APK, and signed Play AAB gates all passed
 - Production artifact: the exact signed RangeWater-Play-AAB 1.0.1 (versionCode 18) tested
   on the internal track was promoted without rebuilding and published to production
 - Functional device verification: PASSED — existing pastures, waters, gates, herds,
@@ -1180,15 +1197,15 @@ ROADMAP GUARD:
   Grazing Circuits, seasonal roles, recorded rest, and forage observations are ratified
   for 1.1.0 in RW-TX-015-SGR Revision 1. Seasonal weather, live GPS, and polywire slicing
   stay deferred.
-- Third-party handoff rule: begin from default branch `main` after this closeout. Treat
-  commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2 as the exact released application source.
-  Do not rebuild from the historical v1.0.0 tag or the old 0.8.0 main-branch state.
-- Next action: Implement RW-TX-015-SGR Revision 1 on codex/rw-tx-015-sgr, beginning with
-  the schema-7 entities, explicit MIGRATION_6_7, DAO transactions, archive-format-2 model,
-  and automated migration/archive tests before connecting the phone and tablet workflows.
-- Resume point: Build One is closed. Resume with Build Two — RangeWater 1.1.0 Seasonal
-  Grazing — from the accepted 1.0.1 source baseline under the now-ratified Revision 1
-  contract. Do not publish to production without physical acceptance and explicit approval.
+- Third-party handoff rule: for production maintenance use main and released commit
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. For active 1.1.0 work use branch
+  codex/rw-tx-015-sgr at candidate commit b15a61ae8fe80489ad147434c9a0f35c5deb4019.
+- Next action: install the stable-signed RangeWater-1.1.0-field.apk over the accepted 1.0.1
+  field installation and execute Block 12 of workorders/RW-TX-015-SGR.cavecode on Samsung
+  phone and Tab S7. Record pass/fail evidence before internal testing or production action.
+- Resume point: automated acceptance is complete. Resume at RW-TX-015-SGR physical-glass
+  step 1. Production publication is not authorized without physical acceptance and an
+  explicit promotion instruction from Michael.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
