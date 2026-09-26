@@ -3344,20 +3344,6 @@ private fun BoxScope.PastureGeometryControls(
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
-            if (restStatus?.state == PastureRestState.RESTING && restStatus.restStartedAt != null) {
-                Text(
-                    "Based on recorded herd movements • departure " +
-                        SimpleDateFormat("MMM d, yyyy", Locale.US).format(Date(restStatus.restStartedAt)),
-                    color = Color.LightGray,
-                    fontSize = 10.sp
-                )
-            } else if (restStatus?.state == PastureRestState.NO_RECORDED_DEPARTURE) {
-                Text(
-                    "Direct edits or unrecorded field moves can make this history incomplete.",
-                    color = Color.Gray,
-                    fontSize = 10.sp
-                )
-            }
             Text(
                 when {
                     addCornerArmed -> "Tap the fence line where the new corner belongs"
@@ -4008,6 +3994,20 @@ private fun BoxScope.PastureInspectionCard(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
+            if (restStatus?.state == PastureRestState.RESTING && restStatus.restStartedAt != null) {
+                Text(
+                    "Based on recorded herd movements • departure " +
+                        SimpleDateFormat("MMM d, yyyy", Locale.US).format(Date(restStatus.restStartedAt)),
+                    color = Color.LightGray,
+                    fontSize = 10.sp
+                )
+            } else if (restStatus?.state == PastureRestState.NO_RECORDED_DEPARTURE) {
+                Text(
+                    "Direct edits or unrecorded field moves can make this history incomplete.",
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
+            }
             latestForageObservation?.let { observation ->
                 val estimate = ForageCalculator.estimate(observation)
                 Text(
