@@ -4,7 +4,7 @@ RANGEWATER MASTER STATE & PROJECT MEMORY
 File: RANGEWATER.cavecode.txt
 Format: CaveCode v1.0 project master map
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
-Ledger State: CURRENT — RANGEWATER 1.0.1 PRODUCTION — 2026-09-25
+Ledger State: CURRENT — RANGEWATER 1.1.0 CONTRACT DESIGN — 2026-09-26
 
 🪨 BLOCK 1 — PROJECT IDENTITY
 --------------------------------------------------------------------------------
@@ -20,6 +20,7 @@ Ledger State: CURRENT — RANGEWATER 1.0.1 PRODUCTION — 2026-09-25
 - Released Source Commit: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
 - Historical 1.0.0 Tag: v1.0.0 at 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Public Production: PUBLISHED — Google Play — 2026-09-25
+- Next Planned Release: RangeWater 1.1.0 — Seasonal Grazing
 - Public Listing: https://play.google.com/store/apps/details?id=com.sagewire.rangewater
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
@@ -310,6 +311,28 @@ RULE:
       release App Bundle, separate Play upload credential, accurate privacy disclosures,
       store listing material, and internal-track verification.
 
+26. Michael ratified the post-1.0 two-build product sequence on 2026-09-25.
+    - Build One was RangeWater 1.0.1 — Map Control. Its scope was independent persistent
+      visibility controls for pasture boundaries, water points, gates, and herd badges;
+      a temporary Herd Focus derived from the herd's current pasture and related water and
+      gate records; restoration through Clear Focus; and a compact phone header.
+    - RangeWater 1.0.1 did not create permanent herd ownership of pastures and did not
+      change Room schema version 6.
+    - Build Two is RangeWater 1.1.0 — Seasonal Grazing. It is the next product build.
+    - Its ratified product direction is named Grazing Circuits, many-to-many pasture
+      membership in those circuits, association of herds with a grazing circuit, and
+      seasonal pasture roles including Winter, Calving, Rotation, and Stockpiled Winter
+      Grazing.
+    - The 1.1.0 design must preserve existing records through a tested non-destructive
+      Room migration and must update the .rangewater archive and restore path for every
+      new durable record.
+    - Circuit and herd color cues belong in the 1.1.0 map design, but exact precedence
+      between ordinary pasture styling, Herd Focus, and seasonal/circuit colors remains
+      a design decision to settle before implementation.
+    - Rest Clock may be evaluated with 1.1.0, but it was not locked into the initial
+      1.1.0 scope. Date-effective grazing plans, live GPS, background location, and
+      temporary polywire slicing remain outside the ratified initial scope.
+
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
   materials, and the USDA-NRCS National Range and Pasture Handbook were named in
@@ -356,6 +379,60 @@ EVIDENCE STATUS:
    - Future profiles may support cattle, horses, goats, sheep, bison, and other stock.
    - Each profile requires evidence-backed distance thresholds and must not inherit the
      cattle 800-foot baseline without validation.
+🔧 BLOCK 5A — RATIFIED ROADMAP AND PRIORITIZED PRODUCT BACKLOG
+--------------------------------------------------------------------------------
+PURPOSE:
+- Preserve the post-launch review and Michael's operating decisions outside transient
+  chat so another AI or developer can resume the correct work without reconstructing it.
+- The ranked backlog records relative product importance. It is not a command to place
+  all ten items into the next release.
+
+RATIFIED RELEASE SEQUENCE:
+1. RangeWater 1.0.1 — Map Control — COMPLETE, PUBLISHED, PHYSICALLY ACCEPTED.
+2. RangeWater 1.1.0 — Seasonal Grazing — NEXT BUILD.
+
+RANGEWATER 1.1.0 INITIAL PRODUCT SCOPE:
+1. Named Grazing Circuits.
+2. Many-to-many assignment of pastures to Grazing Circuits.
+3. Association of a herd with a Grazing Circuit without duplicating animal records.
+4. Seasonal pasture roles: Winter, Calving, Rotation, and Stockpiled Winter Grazing.
+5. Map cues that make the selected herd, its circuit, and its relevant pastures legible;
+   exact color and display precedence must be settled in the work order.
+6. A tested, non-destructive Room migration and complete backup/archive compatibility.
+7. Rest Clock is a candidate to evaluate, not a locked initial requirement.
+
+PRIORITIZED PRODUCT BACKLOG — AGREED 2026-09-25:
+1. Put the core water-planning answer directly on the map.
+   - Make beyond-planned acreage visible without requiring the pasture detail sheet.
+2. Support non-grazable exclusions.
+   - Exclude or distinguish roads, woods, buildings, ponds, and other unusable acreage.
+3. Make gate state affect accessible water coverage.
+   - A closed gate blocks access; an open gate may connect valid pasture access.
+4. Improve boundary-drawing precision.
+   - Improve snapping, polygon closure, vertex handling, and accidental-segment defenses.
+5. Improve backup confidence.
+   - Surface the last successful backup and warn when ranch data has gone too long
+     without a portable backup.
+6. Automate common field entry.
+   - Suggest names and types, preselect obvious pasture assignments, provide standard
+     gate-width choices, and reduce keyboard use.
+7. Improve phone ergonomics.
+   - Reduce control crowding, improve outdoor contrast, and evaluate an offset drawing
+     crosshair. The compact 1.0.1 header partially advances this item.
+8. Add live GPS and distance-to-water.
+   - Show the operator's position and distance to the nearest relevant assigned water.
+9. Add a Pasture Recovery Clock.
+   - Track days since grazing and eventually support recovery-status map cues.
+10. Add temporary polywire / paddock slicing.
+    - Divide a pasture with a temporary line and calculate acreage on both sides.
+
+ROADMAP GUARD:
+- Do not replace this sequence because a later conversation mentions an attractive new
+  feature. New ideas enter this block as proposals until Michael explicitly changes the
+  priority or release scope.
+- The next implementation step is to write and ratify the RangeWater 1.1.0 Seasonal
+  Grazing data, interaction, migration, archive, and acceptance contract before coding.
+
 🎮 BLOCK 6 — TRANSMISSIONS AND WORK LOG
 --------------------------------------------------------------------------------
 - RW-TX-001
@@ -1018,8 +1095,8 @@ EVIDENCE STATUS:
 --------------------------------------------------------------------------------
 - Repository: ACTIVE — PUBLIC
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: PRODUCTION MAINTENANCE — RANGEWATER 1.0.1 LIVE
-- Working transmission: NONE — RW-TX-014-MCT IS CLOSED
+- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — CONTRACT DESIGN
+- Working transmission: NONE — 1.1.0 identifier and work order are not yet ratified
 - Implementation status: RANGEWATER 1.0.1 PRODUCTION PUBLISHED AND PHYSICALLY ACCEPTED
 - Default branch: main — synchronized through this 1.0.1 closeout
 - Release lineage branch: codex/rw-1.0.1-map-control
@@ -1052,18 +1129,18 @@ EVIDENCE STATUS:
   SageSpine Drive location; GitHub Actions uses encrypted secrets and temporary reconstruction
 - Production status: LIVE — RangeWater 1.0.1 (18) is published through Google Play and its
   post-publication physical acceptance test passed on 2026-09-25
-- Scope boundary: seasonal weather, live GPS navigation, Grazing Circuits, seasonal pasture
-  roles, Rest Clock logic, temporary polywire slicing, and other new product work remain
-  outside RangeWater 1.0.1 and require a separately ratified transmission
+- Scope boundary: RangeWater 1.0.1 remains frozen as the accepted production baseline.
+  Grazing Circuits and seasonal pasture roles are the approved 1.1.0 direction; Rest Clock
+  remains a candidate, while seasonal weather, live GPS, and polywire slicing stay deferred.
 - Third-party handoff rule: begin from default branch `main` after this closeout. Treat
   commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2 as the exact released application source.
   Do not rebuild from the historical v1.0.0 tag or the old 0.8.0 main-branch state.
-- Next action: preserve the accepted 1.0.1 production baseline. Open a new numbered
-  transmission only after Michael selects and ratifies the next product scope.
-- Resume point: RangeWater 1.0.1 is live, data-compatible with the accepted version-6
-  archive model, and has no active development transmission. A future contributor should
-  read this ledger, inspect the released source commit, run the full CI suite, and avoid
-  schema, signing, backup-format, or production changes without a new ratified work order.
+- Next action: draft and ratify the RangeWater 1.1.0 Seasonal Grazing work order covering
+  the circuit data model, many-to-many pasture membership, herd association, seasonal
+  roles, map behavior, non-destructive Room migration, archive changes, and device tests.
+- Resume point: Build One is closed. Resume with Build Two — RangeWater 1.1.0 Seasonal
+  Grazing — from the accepted 1.0.1 source baseline. Do not begin implementation until its
+  exact data and interaction contract is ratified.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
