@@ -90,9 +90,21 @@ import com.sagewire.rangewater.data.MovementStatus
 import com.sagewire.rangewater.data.StockClass
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.FenceJunctionEntity
+import com.sagewire.rangewater.data.ForageCalibrationSource
+import com.sagewire.rangewater.data.ForageCalculator
+import com.sagewire.rangewater.data.ForageStandCondition
+import com.sagewire.rangewater.data.ForageStandType
 import com.sagewire.rangewater.data.GateEntity
 import com.sagewire.rangewater.data.GateWithConnectivity
+import com.sagewire.rangewater.data.GrazingCircuitEntity
+import com.sagewire.rangewater.data.GrazingCircuitPastureEntity
+import com.sagewire.rangewater.data.GrazingCircuitPastureDraft
+import com.sagewire.rangewater.data.GrazingCircuitPastureRoleEntity
+import com.sagewire.rangewater.data.PastureForageObservationEntity
+import com.sagewire.rangewater.data.PastureRestState
+import com.sagewire.rangewater.data.PastureRestStatus
 import com.sagewire.rangewater.data.RangeWaterDatabase
+import com.sagewire.rangewater.data.SeasonalPastureRole
 import com.sagewire.rangewater.data.WaterPointEntity
 import com.sagewire.rangewater.data.WaterSourceType
 import com.sagewire.rangewater.spatial.AcreageCalculator
@@ -182,6 +194,16 @@ fun MapScreen(
     val gates by gateDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val herds by database.herdDao().observeActiveHerds().collectAsStateWithLifecycle(initialValue = emptyList())
     val movements by database.movementDao().observeAllMovements().collectAsStateWithLifecycle(initialValue = emptyList())
+    val grazingCircuits by database.grazingCircuitDao().observeActiveCircuits()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val circuitPastures by database.grazingCircuitDao().observeAllMemberships()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val circuitRoles by database.grazingCircuitDao().observeAllRoles()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val herdCircuitAssignments by database.grazingCircuitDao().observeAllHerdAssignments()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val forageObservations by database.forageObservationDao().observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
     }
@@ -241,6 +263,11 @@ fun MapScreen(
     var selectedMovementId by remember { mutableStateOf<Long?>(null) }
     var herdManagerPastureFilterId by remember { mutableStateOf<Long?>(null) }
     var showHerdManagerDialog by remember { mutableStateOf(false) }
+    var showCircuitManagerDialog by remember { mutableStateOf(false) }
+    var showCircuitEditorDialog by remember { mutableStateOf(false) }
+    var editingCircuitId by remember { mutableStateOf<Long?>(null) }
+    var showAssignCircuitDialog by remember { mutableStateOf(false) }
+    var showForageObservationDialog by remember { mutableStateOf(false) }
     var showHerdCreateEditDialog by remember { mutableStateOf(false) }
     var herdBeingEdited by remember { mutableStateOf<HerdEntity?>(null) }
     var showPlanMoveDialog by remember { mutableStateOf(false) }
@@ -288,10 +315,30 @@ fun MapScreen(
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
     val selectedHerd = herds.firstOrNull { it.id == selectedHerdId }
     val focusedHerd = herds.firstOrNull { it.id == focusedHerdId }
-    val herdFocus = remember(focusedHerd, assignmentMap) {
-        HerdFocusController.derive(focusedHerd, assignmentMap)
+    val focusedCircuitPastureIds = remember(focusedHerd, herdCircuitAssignments, circuitPastures) {
+        val circuitId = herdCircuitAssignments.firstOrNull { it.herdId == focusedHerd?.id }?.circuitId
+        circuitPastures.filter { it.circuitId == circuitId }.map { it.pastureId }.toSet()
+    }
+    val herdFocus = remember(focusedHerd, assignmentMap, focusedCircuitPastureIds) {
+        HerdFocusController.derive(focusedHerd, assignmentMap, focusedCircuitPastureIds)
     }
     val activeMovement = movements.firstOrNull { it.id == selectedMovementId }
+    var selectedPastureRestStatus by remember { mutableStateOf<PastureRestStatus?>(null) }
+    LaunchedEffect(selectedPastureId, herds, movements) {
+        selectedPastureRestStatus = selectedPastureId?.let { pastureId ->
+            withContext(Dispatchers.IO) { database.pastureRestDao().status(pastureId) }
+        }
+    }
+    val selectedPastureLatestForage = remember(selectedPastureId, forageObservations) {
+        forageObservations
+            .filter { it.pastureId == selectedPastureId }
+            .maxWithOrNull(compareBy<PastureForageObservationEntity> { it.observedAt }.thenBy { it.id })
+    }
+    val selectedPastureIsStockpiledWinter = remember(selectedPastureId, circuitRoles) {
+        circuitRoles.any {
+            it.pastureId == selectedPastureId && it.role == SeasonalPastureRole.STOCKPILED_WINTER
+        }
+    }
     val selectedPastureMetrics = remember(selectedPasture, waterPoints, assignmentMap) {
         selectedPasture?.let { pasture ->
             val assignedWater = waterPoints.filter { point ->
@@ -641,6 +688,7 @@ fun MapScreen(
             herds = focusedHerds,
             selectedHerdId = selectedHerdId,
             focusedPastureId = herdFocus?.pastureId,
+            focusedPastureIds = herdFocus?.pastureIds.orEmpty(),
             focusColorHex = herdFocus?.colorHex,
             activeMovement = activeMovement,
             draftVertices = draftVertices.toList(),
@@ -1115,6 +1163,7 @@ fun MapScreen(
                                 herds = focusedHerds,
                                 selectedHerdId = selectedHerdId,
                                 focusedPastureId = herdFocus?.pastureId,
+                                focusedPastureIds = herdFocus?.pastureIds.orEmpty(),
                                 focusColorHex = herdFocus?.colorHex,
                                 activeMovement = activeMovement,
                                 draftVertices = draftVertices.toList(),
@@ -1145,7 +1194,11 @@ fun MapScreen(
             interactionState = interactionState,
             coverageMode = displayPreferences.coverageMode,
             pastureFillEnabled = displayPreferences.pastureFillEnabled,
-            focusedHerdName = focusedHerd?.takeIf { herdFocus != null }?.name,
+            focusedHerdName = focusedHerd?.takeIf { herdFocus != null }?.let { herd ->
+                val circuitId = herdCircuitAssignments.firstOrNull { it.herdId == herd.id }?.circuitId
+                val circuitName = grazingCircuits.firstOrNull { it.id == circuitId }?.name
+                if (circuitName == null) herd.name else "${herd.name} • $circuitName"
+            },
             focusedHerdColorHex = focusedHerd?.takeIf { herdFocus != null }?.markerColorHex,
             onModeSelected = { mode ->
                 activeMode = mode
@@ -1467,6 +1520,9 @@ fun MapScreen(
                 PastureInspectionCard(
                     pasture = pasture,
                     metrics = selectedPastureMetrics ?: return@let,
+                    restStatus = selectedPastureRestStatus,
+                    latestForageObservation = selectedPastureLatestForage,
+                    isStockpiledWinter = selectedPastureIsStockpiledWinter,
                     onClose = { selectedPastureId = null },
                     onAddGate = {
                         candidateGate = null
@@ -1478,6 +1534,7 @@ fun MapScreen(
                         pastureEditNotes = pasture.pasture.notes
                         showPastureDetailsDialog = true
                     },
+                    onRecordForage = { showForageObservationDialog = true },
                     onEditBoundary = {
                         interactionState = InteractionState.PASTURE_EDITING
                         replaceDraft(pasture.orderedCoordinates())
@@ -1549,6 +1606,36 @@ fun MapScreen(
                     val location = pastures.find { it.pasture.id == herd.currentPastureId }?.pasture?.name
                         ?: herd.locationKind.name
                     Text("Location: $location", color = Color(0xFF00E5FF), fontSize = 12.sp)
+                    val assignedCircuitId = herdCircuitAssignments.firstOrNull { it.herdId == herd.id }?.circuitId
+                    val assignedCircuit = grazingCircuits.firstOrNull { it.id == assignedCircuitId }
+                    val assignedCircuitMembers = circuitPastures
+                        .filter { it.circuitId == assignedCircuitId }
+                        .sortedBy { it.sequence }
+                    val circuitPosition = assignedCircuitMembers.indexOfFirst { it.pastureId == herd.currentPastureId }
+                    Text(
+                        "Grazing Circuit: ${assignedCircuit?.name ?: "None"}",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 12.sp
+                    )
+                    if (assignedCircuit != null) {
+                        Text(
+                            if (circuitPosition >= 0) {
+                                "${assignedCircuitMembers.size} pastures • Current position ${circuitPosition + 1}"
+                            } else {
+                                "${assignedCircuitMembers.size} pastures"
+                            },
+                            color = Color.LightGray,
+                            fontSize = 11.sp
+                        )
+                        if (herd.locationKind == HerdLocationKind.PASTURE && circuitPosition < 0) {
+                            Text(
+                                "This herd is currently outside its assigned Grazing Circuit.",
+                                color = Color(0xFFFF9100),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
                     if (herd.notes.isNotBlank()) Text(herd.notes, color = Color.Gray, fontSize = 11.sp)
                     if (herd.locationKind == HerdLocationKind.PASTURE && herd.currentPastureId != null) {
                         val focusActive = focusedHerdId == herd.id
@@ -1585,6 +1672,11 @@ fun MapScreen(
                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
                         ) { Text("History", fontSize = 11.sp) }
                         OutlinedButton(
+                            onClick = { showAssignCircuitDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
+                        ) { Text("Circuit", fontSize = 10.sp) }
+                        OutlinedButton(
                             onClick = { showArchiveHerdConfirmDialog = true },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
@@ -1613,6 +1705,13 @@ fun MapScreen(
                         onClick = { herdBeingEdited = null; showHerdCreateEditDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("+ Create New Herd") }
+                    OutlinedButton(
+                        onClick = {
+                            showHerdManagerDialog = false
+                            showCircuitManagerDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Manage Grazing Circuits") }
                     Spacer(Modifier.width(8.dp))
                     if (displayedHerds.isEmpty()) {
                         Text("No active herds in this view.", color = Color.Gray)
@@ -1648,6 +1747,99 @@ fun MapScreen(
             confirmButton = {
                 TextButton(onClick = { showHerdManagerDialog = false; herdManagerPastureFilterId = null }) { Text("Close") }
             }
+        )
+    }
+
+    if (showCircuitManagerDialog) {
+        GrazingCircuitManagerDialog(
+            circuits = grazingCircuits,
+            memberships = circuitPastures,
+            pastures = pastures,
+            onCreate = {
+                editingCircuitId = null
+                showCircuitEditorDialog = true
+            },
+            onEdit = { circuitId ->
+                editingCircuitId = circuitId
+                showCircuitEditorDialog = true
+            },
+            onArchive = { circuitId ->
+                scope.launch {
+                    try {
+                        withContext(Dispatchers.IO) { database.grazingCircuitDao().archiveCircuit(circuitId) }
+                    } catch (error: Exception) {
+                        Toast.makeText(context, error.message ?: "Could not archive circuit", Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+            onClose = { showCircuitManagerDialog = false }
+        )
+    }
+
+    if (showCircuitEditorDialog) {
+        val editingCircuit = grazingCircuits.firstOrNull { it.id == editingCircuitId }
+        GrazingCircuitEditorDialog(
+            circuit = editingCircuit,
+            memberships = circuitPastures.filter { it.circuitId == editingCircuitId },
+            roles = circuitRoles.filter { it.circuitId == editingCircuitId },
+            pastures = pastures,
+            onDismiss = { showCircuitEditorDialog = false },
+            onSave = { name, notes, drafts ->
+                scope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            if (editingCircuit == null) {
+                                database.grazingCircuitDao().createCircuit(name, notes, drafts)
+                            } else {
+                                database.grazingCircuitDao().updateCircuit(editingCircuit.id, name, notes, drafts)
+                            }
+                        }
+                        showCircuitEditorDialog = false
+                    } catch (error: Exception) {
+                        Toast.makeText(context, error.message ?: "Could not save circuit", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+
+    if (showAssignCircuitDialog && selectedHerd != null) {
+        HerdCircuitAssignmentDialog(
+            herd = selectedHerd,
+            circuits = grazingCircuits,
+            assignedCircuitId = herdCircuitAssignments.firstOrNull { it.herdId == selectedHerd.id }?.circuitId,
+            onDismiss = { showAssignCircuitDialog = false },
+            onAssign = { circuitId ->
+                scope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            database.grazingCircuitDao().assignHerd(selectedHerd.id, circuitId)
+                        }
+                        showAssignCircuitDialog = false
+                    } catch (error: Exception) {
+                        Toast.makeText(context, error.message ?: "Could not assign circuit", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+
+    if (showForageObservationDialog && selectedPasture != null && selectedPastureMetrics != null) {
+        ForageObservationDialog(
+            pastureName = selectedPasture.pasture.name,
+            acreage = selectedPastureMetrics.totalAcreage,
+            onDismiss = { showForageObservationDialog = false },
+            onSave = { observation ->
+                scope.launch {
+                    try {
+                        withContext(Dispatchers.IO) { database.forageObservationDao().record(observation) }
+                        showForageObservationDialog = false
+                    } catch (error: Exception) {
+                        Toast.makeText(context, error.message ?: "Could not record forage", Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+            pastureId = selectedPasture.pasture.id
         )
     }
 
@@ -3152,6 +3344,20 @@ private fun BoxScope.PastureGeometryControls(
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
+            if (restStatus?.state == PastureRestState.RESTING && restStatus.restStartedAt != null) {
+                Text(
+                    "Based on recorded herd movements • departure " +
+                        SimpleDateFormat("MMM d, yyyy", Locale.US).format(Date(restStatus.restStartedAt)),
+                    color = Color.LightGray,
+                    fontSize = 10.sp
+                )
+            } else if (restStatus?.state == PastureRestState.NO_RECORDED_DEPARTURE) {
+                Text(
+                    "Direct edits or unrecorded field moves can make this history incomplete.",
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
+            }
             Text(
                 when {
                     addCornerArmed -> "Tap the fence line where the new corner belongs"
@@ -3382,12 +3588,388 @@ private fun BoxScope.WaterMoveControls(
 }
 
 @Composable
+private fun GrazingCircuitManagerDialog(
+    circuits: List<GrazingCircuitEntity>,
+    memberships: List<GrazingCircuitPastureEntity>,
+    pastures: List<PastureWithVertices>,
+    onCreate: () -> Unit,
+    onEdit: (Long) -> Unit,
+    onArchive: (Long) -> Unit,
+    onClose: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Grazing Circuits") },
+        text = {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "A Grazing Circuit groups pastures for planning. It does not move the herd.",
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+                Button(onClick = onCreate, modifier = Modifier.fillMaxWidth()) { Text("Create Circuit") }
+                if (circuits.isEmpty()) {
+                    Text("No Grazing Circuits yet.", color = Color.Gray)
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                        items(circuits) { circuit ->
+                            val memberNames = memberships
+                                .filter { it.circuitId == circuit.id }
+                                .sortedBy { it.sequence }
+                                .mapNotNull { member ->
+                                    pastures.firstOrNull { it.pasture.id == member.pastureId }?.pasture?.name
+                                }
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    .clickable { onEdit(circuit.id) },
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF252525)
+                            ) {
+                                Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(circuit.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            "${memberNames.size} pastures • ${memberNames.joinToString(" → ")}",
+                                            color = Color.LightGray,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    TextButton(onClick = { onArchive(circuit.id) }) {
+                                        Text("Archive", color = Color(0xFFFF6B6B), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("Close") } }
+    )
+}
+
+@Composable
+private fun GrazingCircuitEditorDialog(
+    circuit: GrazingCircuitEntity?,
+    memberships: List<GrazingCircuitPastureEntity>,
+    roles: List<GrazingCircuitPastureRoleEntity>,
+    pastures: List<PastureWithVertices>,
+    onDismiss: () -> Unit,
+    onSave: (String, String, List<GrazingCircuitPastureDraft>) -> Unit
+) {
+    var name by remember(circuit?.id) { mutableStateOf(circuit?.name.orEmpty()) }
+    var notes by remember(circuit?.id) { mutableStateOf(circuit?.notes.orEmpty()) }
+    val selectedIds = remember(circuit?.id) {
+        mutableStateListOf<Long>().apply {
+            addAll(memberships.sortedBy { it.sequence }.map { it.pastureId })
+        }
+    }
+    val roleSelections = remember(circuit?.id) {
+        mutableStateMapOf<Long, Set<SeasonalPastureRole>>().apply {
+            roles.groupBy { it.pastureId }.forEach { (pastureId, rows) ->
+                put(pastureId, rows.map { it.role }.toSet())
+            }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (circuit == null) "Create Circuit" else "Edit Grazing Circuit") },
+        text = {
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = 560.dp)) {
+                item {
+                    Text(
+                        "Seasonal roles describe intended use and do not determine forage readiness.",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                    OutlinedTextField(name, { name = it }, label = { Text("Circuit name") }, singleLine = true)
+                    OutlinedTextField(notes, { notes = it }, label = { Text("Notes (optional)") })
+                    Text("Pastures and planning order", fontWeight = FontWeight.Bold)
+                }
+                items(pastures) { pasture ->
+                    val pastureId = pasture.pasture.id
+                    val selected = pastureId in selectedIds
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (selected) Color(0xFF263238) else Color.Transparent
+                    ) {
+                        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = selected,
+                                    onCheckedChange = { checked ->
+                                        if (checked) selectedIds.add(pastureId) else {
+                                            selectedIds.remove(pastureId)
+                                            roleSelections.remove(pastureId)
+                                        }
+                                    }
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(pasture.pasture.name, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        String.format(Locale.US, "%.1f mapped acres", AcreageCalculator.calculateAcres(pasture.orderedCoordinates())),
+                                        color = Color.Gray,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                if (selected) {
+                                    val index = selectedIds.indexOf(pastureId)
+                                    TextButton(
+                                        enabled = index > 0,
+                                        onClick = {
+                                            selectedIds.removeAt(index)
+                                            selectedIds.add(index - 1, pastureId)
+                                        }
+                                    ) { Text("Up") }
+                                    TextButton(
+                                        enabled = index >= 0 && index < selectedIds.lastIndex,
+                                        onClick = {
+                                            selectedIds.removeAt(index)
+                                            selectedIds.add(index + 1, pastureId)
+                                        }
+                                    ) { Text("Down") }
+                                }
+                            }
+                            if (selected) {
+                                SeasonalPastureRole.entries.forEach { role ->
+                                    val checked = role in roleSelections[pastureId].orEmpty()
+                                    FilterChip(
+                                        selected = checked,
+                                        onClick = {
+                                            val current = roleSelections[pastureId].orEmpty()
+                                            roleSelections[pastureId] = if (checked) current - role else current + role
+                                        },
+                                        label = { Text(role.displayLabel(), fontSize = 10.sp) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = name.isNotBlank() && selectedIds.isNotEmpty(),
+                onClick = {
+                    onSave(
+                        name,
+                        notes,
+                        selectedIds.map { pastureId ->
+                            GrazingCircuitPastureDraft(pastureId, roleSelections[pastureId].orEmpty())
+                        }
+                    )
+                }
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun HerdCircuitAssignmentDialog(
+    herd: HerdEntity,
+    circuits: List<GrazingCircuitEntity>,
+    assignedCircuitId: Long?,
+    onDismiss: () -> Unit,
+    onAssign: (Long?) -> Unit
+) {
+    var selectedId by remember(herd.id, assignedCircuitId) { mutableStateOf(assignedCircuitId) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Assign Circuit — ${herd.name}") },
+        text = {
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
+                item {
+                    Text(
+                        "A Grazing Circuit groups pastures for planning. It does not move the herd.",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selectedId == null, { selectedId = null })
+                        Text("No Circuit")
+                    }
+                }
+                items(circuits) { circuit ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selectedId == circuit.id, { selectedId = circuit.id })
+                        Text(circuit.name)
+                    }
+                }
+            }
+        },
+        confirmButton = { Button(onClick = { onAssign(selectedId) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun ForageObservationDialog(
+    pastureId: Long,
+    pastureName: String,
+    acreage: Double,
+    onDismiss: () -> Unit,
+    onSave: (PastureForageObservationEntity) -> Unit
+) {
+    var heightText by remember(pastureId) { mutableStateOf("8") }
+    var sampleCountText by remember(pastureId) { mutableStateOf("5") }
+    var residualText by remember(pastureId) { mutableStateOf("3") }
+    var customLowText by remember(pastureId) { mutableStateOf("") }
+    var customHighText by remember(pastureId) { mutableStateOf("") }
+    var standType by remember(pastureId) { mutableStateOf(ForageStandType.TALL_FESCUE_CLOVER) }
+    var condition by remember(pastureId) { mutableStateOf(ForageStandCondition.GOOD) }
+    var notes by remember(pastureId) { mutableStateOf("") }
+    val height = heightText.toDoubleOrNull()
+    val sampleCount = sampleCountText.toIntOrNull()
+    val residual = residualText.toDoubleOrNull()
+    val calibration = if (standType == ForageStandType.OTHER_CUSTOM) {
+        val low = customLowText.toDoubleOrNull()
+        val high = customHighText.toDoubleOrNull()
+        if (low != null && high != null && low > 0 && high >= low) {
+            com.sagewire.rangewater.data.ForageCalibrationRange(low, high)
+        } else null
+    } else {
+        ForageCalculator.ohioCalibration(standType, condition)
+    }
+    val estimate = if (height != null && height > 0 && residual != null && residual >= 0 && acreage > 0 && calibration != null) {
+        ForageCalculator.estimate(height, residual, calibration, acreage)
+    } else null
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Record Forage — $pastureName") },
+        text = {
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = 560.dp)) {
+                item {
+                    Text("Measure representative undisturbed points with the grazing stick.", color = Color.Gray, fontSize = 11.sp)
+                    OutlinedTextField(heightText, { heightText = it }, label = { Text("Average height (inches)") }, singleLine = true)
+                    OutlinedTextField(sampleCountText, { sampleCountText = it }, label = { Text("Number of samples") }, singleLine = true)
+                    Text("Stand type", fontWeight = FontWeight.Bold)
+                    ForageStandType.entries.forEach { type ->
+                        FilterChip(
+                            selected = standType == type,
+                            onClick = { standType = type },
+                            label = { Text(type.displayLabel(), fontSize = 10.sp) }
+                        )
+                    }
+                    Text("Stand condition", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ForageStandCondition.entries.forEach { value ->
+                            FilterChip(
+                                selected = condition == value,
+                                onClick = { condition = value },
+                                label = { Text(value.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                            )
+                        }
+                    }
+                    OutlinedTextField(residualText, { residualText = it }, label = { Text("Residual retained (inches)") }, singleLine = true)
+                    if (standType == ForageStandType.OTHER_CUSTOM) {
+                        OutlinedTextField(customLowText, { customLowText = it }, label = { Text("Custom low lb DM/acre/in") }, singleLine = true)
+                        OutlinedTextField(customHighText, { customHighText = it }, label = { Text("Custom high lb DM/acre/in") }, singleLine = true)
+                    } else if (calibration != null) {
+                        Text(
+                            "Ohio USDA-NRCS/GLCI calibration: ${calibration.low.toInt()}–${calibration.high.toInt()} lb DM/acre/in",
+                            color = Color(0xFFFFD54F),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Text(String.format(Locale.US, "Mapped acreage snapshot: %.1f acres", acreage), fontSize = 11.sp)
+                    estimate?.let {
+                        Text("Estimated available dry matter", fontWeight = FontWeight.Bold)
+                        Text(
+                            String.format(
+                                Locale.US,
+                                "max(%.1f − %.1f, 0) × %d–%d = %.0f–%.0f lb DM/acre",
+                                height,
+                                residual,
+                                requireNotNull(calibration).low.toInt(),
+                                requireNotNull(calibration).high.toInt(),
+                                it.availableDmLowLbsPerAcre,
+                                it.availableDmHighLbsPerAcre
+                            ),
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            String.format(
+                                Locale.US,
+                                "Mapped-area estimate: %.0f–%.0f lb (%.1f–%.1f tons)",
+                                it.mappedStockpileLowLbs,
+                                it.mappedStockpileHighLbs,
+                                it.mappedStockpileLowTons,
+                                it.mappedStockpileHighTons
+                            ),
+                            color = Color(0xFF81C784),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    }
+                    Text(
+                        "Estimate uses mapped pasture acres. Unmapped roads, woods, ponds, and other ungrazable areas are not automatically removed.",
+                        color = Color.Gray,
+                        fontSize = 10.sp
+                    )
+                    OutlinedTextField(notes, { notes = it }, label = { Text("Notes (optional)") })
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = height != null && height > 0 && sampleCount != null && sampleCount > 0 &&
+                    residual != null && residual >= 0 && acreage > 0 && calibration != null,
+                onClick = {
+                    onSave(
+                        PastureForageObservationEntity(
+                            pastureId = pastureId,
+                            observedAt = System.currentTimeMillis(),
+                            averageHeightInches = requireNotNull(height),
+                            sampleCount = requireNotNull(sampleCount),
+                            forageStandType = standType,
+                            standCondition = condition,
+                            residualHeightInches = requireNotNull(residual),
+                            dmPerAcreInchLow = requireNotNull(calibration).low,
+                            dmPerAcreInchHigh = requireNotNull(calibration).high,
+                            calibrationSource = if (standType == ForageStandType.OTHER_CUSTOM) {
+                                ForageCalibrationSource.CUSTOM_OPERATOR_VALUE
+                            } else {
+                                ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK
+                            },
+                            acreageSnapshot = acreage,
+                            notes = notes
+                        )
+                    )
+                }
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+private fun SeasonalPastureRole.displayLabel(): String = when (this) {
+    SeasonalPastureRole.WINTER -> "Winter"
+    SeasonalPastureRole.CALVING -> "Calving"
+    SeasonalPastureRole.ROTATION -> "Rotation"
+    SeasonalPastureRole.STOCKPILED_WINTER -> "Stockpiled Winter Grazing"
+}
+
+private fun ForageStandType.displayLabel(): String = when (this) {
+    ForageStandType.PERENNIAL_RYEGRASS_CLOVER -> "Perennial ryegrass & clover"
+    ForageStandType.TALL_FESCUE_NITROGEN -> "Tall fescue & nitrogen"
+    ForageStandType.TALL_FESCUE_CLOVER -> "Tall fescue & clover"
+    ForageStandType.OTHER_CUSTOM -> "Other / Custom"
+}
+
+@Composable
 private fun BoxScope.PastureInspectionCard(
     pasture: PastureWithVertices,
     metrics: PastureCoverageMetrics,
+    restStatus: PastureRestStatus?,
+    latestForageObservation: PastureForageObservationEntity?,
+    isStockpiledWinter: Boolean,
     onClose: () -> Unit,
     onAddGate: () -> Unit,
     onEditDetails: () -> Unit,
+    onRecordForage: () -> Unit,
     onEditBoundary: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -3414,6 +3996,32 @@ private fun BoxScope.PastureInspectionCard(
             }
             if (pasture.pasture.notes.isNotBlank()) {
                 Text(pasture.pasture.notes, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+            }
+            Text(
+                when (restStatus?.state) {
+                    PastureRestState.OCCUPIED -> "Recorded rest: occupied now"
+                    PastureRestState.RESTING -> "Recorded rest: ${restStatus.daysSinceRecordedDeparture} days since departure"
+                    PastureRestState.NO_RECORDED_DEPARTURE -> "Recorded rest: no completed departure recorded"
+                    null -> "Recorded rest: loading…"
+                },
+                color = Color(0xFFFFD54F),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            latestForageObservation?.let { observation ->
+                val estimate = ForageCalculator.estimate(observation)
+                Text(
+                    String.format(
+                        Locale.US,
+                        "%s: %.1f in avg • %.0f–%.0f lb DM/ac available",
+                        if (isStockpiledWinter) "Latest stockpile estimate" else "Latest forage estimate",
+                        observation.averageHeightInches,
+                        estimate.availableDmLowLbsPerAcre,
+                        estimate.availableDmHighLbsPerAcre
+                    ),
+                    color = Color(0xFF81C784),
+                    fontSize = 11.sp
+                )
             }
             Text(
                 if (metrics.assignedWaterCount == 0) {
@@ -3473,6 +4081,12 @@ private fun BoxScope.PastureInspectionCard(
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
                     Text("Details", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = onRecordForage,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                ) {
+                    Text("Forage", color = Color(0xFF81C784), fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = onDelete,
@@ -3730,6 +4344,7 @@ private fun pushAllOverlays(
     herds: List<HerdEntity>,
     selectedHerdId: Long?,
     focusedPastureId: Long?,
+    focusedPastureIds: Set<Long>,
     focusColorHex: String?,
     activeMovement: CattleMovementEntity?,
     draftVertices: List<PastureCoordinate>,
@@ -3758,7 +4373,8 @@ private fun pushAllOverlays(
                     pastures = pastures,
                     selectedId = selectedPastureId,
                     focusedPastureId = focusedPastureId,
-                    focusColorHex = focusColorHex
+                    focusColorHex = focusColorHex,
+                    focusedPastureIds = focusedPastureIds
                 )
             )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PASTURE_LINES)
@@ -3768,7 +4384,8 @@ private fun pushAllOverlays(
                     gates = boundaryGates,
                     selectedId = selectedPastureId,
                     focusedPastureId = focusedPastureId,
-                    focusColorHex = focusColorHex
+                    focusColorHex = focusColorHex,
+                    focusedPastureIds = focusedPastureIds
                 )
             )
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_GATES)
