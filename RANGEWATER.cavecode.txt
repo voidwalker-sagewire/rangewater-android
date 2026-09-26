@@ -332,8 +332,8 @@ RULE:
     - Rest Clock was initially left for evaluation rather than locked into scope.
       On 2026-09-26 Michael supplied his Ohio USDA-NRCS/GLCI grazing stick and requested
       that recorded rest, pasture height observations, and stockpile estimates be worked
-      into the 1.1.0 design. RW-TX-015-SGR Revision 1 now proposes that amendment; it is
-      not implementation authority until Michael ratifies the revised work order.
+      into the 1.1.0 design. Michael then ratified RW-TX-015-SGR Revision 1, making those
+      additions part of the authorized 1.1.0 implementation boundary.
     - Date-effective grazing plans, live GPS, background location, and temporary
       polywire slicing remain outside the ratified initial scope.
 27. Michael supplied overlapping photographs of his Ohio GLCI / USDA NRCS grazing stick
@@ -348,6 +348,14 @@ RULE:
       and multiplies available height by a stand-specific pounds DM/acre/inch range.
     - RW-TX-015-SGR Revision 1 treats these as an explicit Ohio planning preset and field
       estimate, not a universal biological rule, feed guarantee, or automatic schedule.
+28. Michael ratified RW-TX-015-SGR Revision 1 on 2026-09-26.
+    - His spoken authorization transposed the identifier as `RWA-TX-015-SRG` and said
+      `Range Water`; the ledger normalizes it to the sole matching prepared contract,
+      RW-TX-015-SGR Revision 1 for RangeWater 1.1.0 Seasonal Grazing.
+    - Implementation, the specified Room schema 6-to-7 migration, archive format 2, and
+      signed field/internal-test artifacts are authorized on codex/rw-tx-015-sgr.
+    - Production publication is not authorized by this ratification. Automated gates,
+      physical-glass acceptance, and a separate production-promotion instruction remain.
 
 EVIDENCE STATUS:
 - Jim Gerrish, Management-intensive Grazing (2004), University of Missouri FSRC
@@ -415,11 +423,11 @@ RANGEWATER 1.1.0 INITIAL PRODUCT SCOPE:
 5. Map cues that make the selected herd, its circuit, and its relevant pastures legible;
    exact color and display precedence must be settled in the work order.
 6. A tested, non-destructive Room migration and complete backup/archive compatibility.
-7. Proposed Revision 1 addition awaiting ratification: recorded-rest clock derived from
-   completed movements, without biological-readiness colors or claims.
-8. Proposed Revision 1 addition awaiting ratification: dated forage-height observations
-   and transparent dry-matter / mapped-stockpile range estimates using the photographed
-   Ohio USDA-NRCS/GLCI grazing-stick preset or operator-entered calibration.
+7. Recorded-rest clock derived from completed movements, without biological-readiness
+   colors or claims — RATIFIED in RW-TX-015-SGR Revision 1.
+8. Dated forage-height observations and transparent dry-matter / mapped-stockpile range
+   estimates using the photographed Ohio USDA-NRCS/GLCI grazing-stick preset or
+   operator-entered calibration — RATIFIED in RW-TX-015-SGR Revision 1.
 
 PRIORITIZED PRODUCT BACKLOG — AGREED 2026-09-25:
 1. Put the core water-planning answer directly on the map.
@@ -1056,7 +1064,7 @@ ROADMAP GUARD:
   Closure date: 2026-09-25.
 
 - RW-TX-015-SGR
-  Status: PROPOSED REVISION 1 — AWAITING MICHAEL'S RATIFICATION — NOT IMPLEMENTED
+  Status: RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED — NOT YET IMPLEMENTED
   Scope: RangeWater 1.1.0 Seasonal Grazing contract covering named Grazing Circuits,
   ordered many-to-many pasture membership, multiple seasonal roles per membership,
   one active circuit per herd, circuit-aware Herd Focus, recorded-rest derivation,
@@ -1068,9 +1076,11 @@ ROADMAP GUARD:
   Required baseline: accepted RangeWater 1.0.1 released source
   6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
   Contract: workorders/RW-TX-015-SGR.cavecode.
-  Revision 1 authority: the current head of branch codex/rw-tx-015-sgr.
-  Implementation authority: NOT GRANTED. No source, schema, archive, build, or release
-  mutation is authorized until Michael ratifies or amends Revision 1.
+  Ratified: 2026-09-26 by Michael. His transposed spoken identifier was normalized to the
+  only matching prepared contract, RW-TX-015-SGR Revision 1.
+  Implementation authority: GRANTED for this contract. Schema 7, archive format 2, and
+  signed field/internal-test artifacts are authorized. Production publication remains
+  prohibited until physical acceptance and a separate promotion instruction.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
 --------------------------------------------------------------------------------
@@ -1132,9 +1142,9 @@ ROADMAP GUARD:
 --------------------------------------------------------------------------------
 - Repository: ACTIVE — PUBLIC
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — CONTRACT DESIGN
-- Working transmission: RW-TX-015-SGR REVISION 1 — PROPOSED — NOT RATIFIED
-- Implementation status: RANGEWATER 1.0.1 PRODUCTION PUBLISHED AND PHYSICALLY ACCEPTED
+- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — IMPLEMENTATION AUTHORIZED
+- Working transmission: RW-TX-015-SGR REVISION 1 — RATIFIED
+- Implementation status: 1.1.0 NOT YET IMPLEMENTED; 1.0.1 REMAINS PRODUCTION BASELINE
 - Default branch: main — synchronized through this 1.0.1 closeout
 - Release lineage branch: codex/rw-1.0.1-map-control
 - Authoritative released source commit: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2
@@ -1167,19 +1177,18 @@ ROADMAP GUARD:
 - Production status: LIVE — RangeWater 1.0.1 (18) is published through Google Play and its
   post-publication physical acceptance test passed on 2026-09-25
 - Scope boundary: RangeWater 1.0.1 remains frozen as the accepted production baseline.
-  Grazing Circuits and seasonal pasture roles are the approved 1.1.0 direction. Recorded
-  rest and forage observations are proposed in RW-TX-015-SGR Revision 1, while seasonal
-  weather, live GPS, and polywire slicing stay deferred.
+  Grazing Circuits, seasonal roles, recorded rest, and forage observations are ratified
+  for 1.1.0 in RW-TX-015-SGR Revision 1. Seasonal weather, live GPS, and polywire slicing
+  stay deferred.
 - Third-party handoff rule: begin from default branch `main` after this closeout. Treat
   commit 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2 as the exact released application source.
   Do not rebuild from the historical v1.0.0 tag or the old 0.8.0 main-branch state.
-- Next action: Review and ratify or amend RW-TX-015-SGR Revision 1. The proposed work order
-  now covers circuits, memberships, herd association, seasonal roles, map behavior,
-  recorded rest, forage observations, the Ohio grazing-stick preset, non-destructive Room
-  migration, archive changes, and physical acceptance. Do not implement before ratification.
+- Next action: Implement RW-TX-015-SGR Revision 1 on codex/rw-tx-015-sgr, beginning with
+  the schema-7 entities, explicit MIGRATION_6_7, DAO transactions, archive-format-2 model,
+  and automated migration/archive tests before connecting the phone and tablet workflows.
 - Resume point: Build One is closed. Resume with Build Two — RangeWater 1.1.0 Seasonal
-  Grazing — from the accepted 1.0.1 source baseline. Do not begin implementation until its
-  exact data and interaction contract is ratified.
+  Grazing — from the accepted 1.0.1 source baseline under the now-ratified Revision 1
+  contract. Do not publish to production without physical acceptance and explicit approval.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
