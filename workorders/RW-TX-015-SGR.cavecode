@@ -3,9 +3,10 @@ RANGEWATER TRANSMISSION CONTRACT
 RW-TX-015-SGR — RANGEWATER 1.1.0 SEASONAL GRAZING
 ================================================================================
 Format: CaveCode v1.0 project contract
-Status: PROPOSED — AWAITING MICHAEL'S RATIFICATION — DO NOT IMPLEMENT
+Status: PROPOSED REVISION 1 — AWAITING MICHAEL'S RATIFICATION — DO NOT IMPLEMENT
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 Prepared: 2026-09-26
+Revised: 2026-09-26 — added recorded-rest and Ohio grazing-stick forage scope
 
 🪨 BLOCK 1 — IDENTITY AND RELEASE BOUNDARY
 --------------------------------------------------------------------------------
@@ -26,15 +27,19 @@ MISSION:
 - Let an operator group mapped pastures into named Grazing Circuits, assign a herd to
   one active circuit, label each member pasture for its seasonal purpose, and focus the
   map on the whole operational grazing group without losing the herd's true current
-  location or movement history.
+  location or movement history. Let the operator see the number of days since the last
+  recorded departure and save field forage-height observations that produce a transparent
+  range estimate of available dry matter and mapped-pasture stockpile.
 
 NON-GOAL:
-- This release does not calculate feed demand, prescribe grazing dates, decide when
-  forage is ready, or replace the operator's judgment.
+- This release does not calculate animal feed demand, prescribe grazing dates, declare
+  forage biologically ready, or replace the operator's judgment. Forage figures are
+  operator-entered field estimates with their assumptions shown, not measured inventory.
 
 🪨 BLOCK 2 — RATIFIED PRODUCT INTENT REPRESENTED BY THIS PROPOSAL
 --------------------------------------------------------------------------------
-The contract implements the previously ratified 1.1.0 direction:
+Items 1 through 6 implement the previously ratified 1.1.0 direction. Items 7 and 8 are
+the Revision 1 scope amendment awaiting Michael's ratification:
 1. Named Grazing Circuits.
 2. Many-to-many pasture membership in those circuits.
 3. Association of herds with a Grazing Circuit.
@@ -45,6 +50,9 @@ The contract implements the previously ratified 1.1.0 direction:
    - Stockpiled Winter Grazing
 5. Herd-colored map context for the selected herd and its circuit.
 6. Non-destructive migration and complete .rangewater archive compatibility.
+7. A recorded-rest clock derived from accepted movement history.
+8. Pasture forage observations using an operator-selected calibration, including an
+   Ohio USDA-NRCS/GLCI grazing-stick preset reconstructed from Michael's field stick.
 
 PRODUCT LANGUAGE:
 - A Grazing Circuit is an operator-defined planning group of mapped pastures.
@@ -53,6 +61,10 @@ PRODUCT LANGUAGE:
 - A seasonal role describes intended use, not current biological readiness.
 - Herd location remains controlled only by the accepted herd/movement system.
 - Assigning a herd to a circuit never moves the herd and never creates a movement.
+- "Days rested" means days since the most recent recorded completed departure. It is not
+  a claim that the pasture has recovered or is ready to graze.
+- A stockpile estimate is a dry-matter range derived from field inputs and mapped acreage.
+  It is not a laboratory measurement, yield guarantee, or feeding recommendation.
 
 🪨 BLOCK 3 — LOCKED DATA MODEL IF RATIFIED
 --------------------------------------------------------------------------------
@@ -165,6 +177,83 @@ Rules:
 - No seasonal fields are added directly to HerdEntity, PastureEntity, or movement rows.
 - Existing movement snapshots are never rewritten when a circuit changes.
 
+3F. PASTURE FORAGE OBSERVATIONS
+
+Table: pasture_forage_observations
+Entity: PastureForageObservationEntity
+
+Fields:
+- id: Long, auto-generated primary key
+- pastureId: Long, required, indexed
+- observedAt: Long, required
+- averageHeightInches: Double, required, greater than zero
+- sampleCount: Int, required, at least one
+- forageStandType: ForageStandType, required
+- standCondition: ForageStandCondition, required
+- residualHeightInches: Double, required, zero or greater; Ohio preset defaults to 3.0
+- dmPerAcreInchLow: Double, required, greater than zero
+- dmPerAcreInchHigh: Double, required, not less than dmPerAcreInchLow
+- calibrationSource: ForageCalibrationSource, required
+- acreageSnapshot: Double, required, greater than zero
+- notes: String, default empty
+- createdAt: Long, required
+- updatedAt: Long, required
+
+Foreign key:
+- pastureId -> pastures.id, ON DELETE RESTRICT / NO ACTION
+
+ForageStandType enum:
+- PERENNIAL_RYEGRASS_CLOVER
+- TALL_FESCUE_NITROGEN
+- TALL_FESCUE_CLOVER
+- OTHER_CUSTOM
+
+ForageStandCondition enum:
+- EXCELLENT
+- GOOD
+- FAIR
+
+ForageCalibrationSource enum:
+- OHIO_NRCS_GLCI_GRAZING_STICK
+- CUSTOM_OPERATOR_VALUE
+
+Derived values, calculated rather than persisted:
+- availableHeightInches = max(averageHeightInches - residualHeightInches, 0)
+- availableDmLowLbsPerAcre = availableHeightInches * dmPerAcreInchLow
+- availableDmHighLbsPerAcre = availableHeightInches * dmPerAcreInchHigh
+- mappedStockpileLowLbs = availableDmLowLbsPerAcre * acreageSnapshot
+- mappedStockpileHighLbs = availableDmHighLbsPerAcre * acreageSnapshot
+
+Rules:
+- The calibration range and acreage are snapshotted with the observation so a later
+  boundary edit or preset correction cannot silently rewrite a historical estimate.
+- OTHER_CUSTOM requires operator-entered low and high pounds DM/acre/inch values.
+- Selecting the Ohio preset fills the calibration values in Block 13; the user reviews
+  the chosen stand type, condition, residual, and acreage before saving.
+- The latest observation may be shown on a pasture card, but all observations remain
+  historical records ordered by observedAt descending.
+- The interface says "Estimated available dry matter" and "Mapped-area estimate";
+  it never labels the result as measured feed on hand.
+- Mapped stockpile includes every acre inside the current mapped pasture snapshot,
+  including any road, woods, pond, or other non-grazable area not yet excluded. This
+  limitation must be visible beside the total.
+
+3G. RECORDED-REST DERIVATION
+
+- No duplicate rest counter is persisted.
+- If one or more active herds currently occupy a pasture, its state is OCCUPIED and no
+  running rest total is displayed.
+- Otherwise, restStartedAt is the latest completedAt among COMPLETED cattle movements
+  whose originPastureId is that pasture.
+- daysSinceRecordedDeparture is whole elapsed local calendar days from restStartedAt to
+  the current date; negative results are rejected as invalid data.
+- If no completed departure exists, the state is NO_RECORDED_DEPARTURE.
+- With multiple herds, the latest recorded departure controls the clock.
+- The label is "Rest recorded: N days" and the detail view states "Based on recorded
+  herd movements." The clock does not infer plant recovery and has no readiness color.
+- Direct herd edits, archival, or unrecorded field moves can make the clock incomplete.
+  The app must disclose this limitation rather than presenting false certainty.
+
 🎮 BLOCK 4 — CORE OPERATOR WORKFLOWS
 --------------------------------------------------------------------------------
 4A. CREATE A GRAZING CIRCUIT
@@ -252,6 +341,36 @@ Layer safety:
 - Restoring a complete backup restores circuits, memberships, roles, assignments, and
   the existing ranch records as one validated data set.
 
+4F. VIEW RECORDED REST
+
+- Circuit and pasture lists show "Occupied," "Rest recorded: N days," or "No recorded
+  departure" from the derivation in Block 3G.
+- Opening the value shows the controlling departure date and herd movement when one exists.
+- A pasture's days-rested value is global ranch history; it is not reset separately for
+  each circuit and it does not change when seasonal roles are edited.
+- No green/amber/red readiness status is generated in 1.1.0.
+
+4G. RECORD A FORAGE / STOCKPILE OBSERVATION
+
+1. Open a mapped pasture and choose Record Forage.
+2. Measure several representative undisturbed points with the grazing stick.
+3. Enter the number of samples and their average height in inches.
+4. Select stand type and stand condition, or choose Other / Custom.
+5. Review the residual height, calibration range, pasture acreage snapshot, and formula.
+6. Save the observation.
+
+The result shows:
+- average measured height and sample count;
+- residual retained by the estimate;
+- available forage height;
+- calibration range in pounds DM/acre/inch;
+- estimated available pounds DM/acre;
+- estimated total pounds and tons across mapped acreage;
+- observation date, calibration source, and the non-grazable-acre limitation.
+
+For a pasture carrying the STOCKPILED_WINTER role, the newest observation is also shown
+as "Latest stockpile estimate." The role itself never invents an amount.
+
 🎮 BLOCK 5 — PHONE AND TABLET INTERACTION CONTRACT
 --------------------------------------------------------------------------------
 - Existing top-map controls remain unchanged unless a proven width defect requires a
@@ -267,6 +386,10 @@ Layer safety:
 - The tablet layout may use additional width but must preserve the same data and actions.
 - Unsaved edits are held in memory. Cancel performs no database write.
 - Back navigation with unsaved changes asks whether to discard them.
+- The forage flow uses inches, pounds, acres, and tons in the field UI; stored calculations
+  use Double precision and never ask a U.S. operator to convert to metric.
+- Numeric entry includes large increment controls and a conventional keyboard path.
+- The formula and all selected assumptions remain visible before Save.
 
 🌐 BLOCK 6 — REQUIRED USER-FACING LANGUAGE
 --------------------------------------------------------------------------------
@@ -282,6 +405,13 @@ Primary labels:
 - Calving
 - Rotation
 - Stockpiled Winter Grazing
+- Record Forage
+- Rest recorded: N days
+- No recorded departure
+- Based on recorded herd movements
+- Estimated available dry matter
+- Mapped-area estimate
+- Latest stockpile estimate
 
 Required explanations:
 - "A Grazing Circuit groups pastures for planning. It does not move the herd."
@@ -292,15 +422,19 @@ Required explanations:
   "This circuit is assigned to an active herd. Change or remove that assignment first."
 - Blocking pasture deletion message:
   "This pasture belongs to one or more Grazing Circuits. Remove it from those circuits first."
+- Forage limitation:
+  "Estimate uses mapped pasture acres. Unmapped roads, woods, ponds, and other ungrazable
+  areas are not automatically removed."
 
 🔧 BLOCK 7 — DATABASE MIGRATION CONTRACT
 --------------------------------------------------------------------------------
 - Add GrazingCircuitEntity, GrazingCircuitPastureEntity,
-  GrazingCircuitPastureRoleEntity, and HerdGrazingCircuitAssignmentEntity.
+  GrazingCircuitPastureRoleEntity, HerdGrazingCircuitAssignmentEntity, and
+  PastureForageObservationEntity.
 - Advance RangeWaterDatabase from version 6 to version 7.
 - Add an explicit MIGRATION_6_7.
 - Register MIGRATION_6_7 in the database builder after every existing migration.
-- Migration creates only the four new empty tables and their required indices.
+- Migration creates only the five new empty tables and their required indices.
 - Migration must not modify existing water, pasture, junction, vertex, assignment,
   gate, herd, or movement rows.
 - Destructive migration and fallbackToDestructiveMigration remain prohibited.
@@ -310,7 +444,7 @@ Required migration evidence:
   existing entity type.
 - Upgrade through MIGRATION_6_7.
 - Prove every preexisting row and relationship remains unchanged.
-- Prove all four new tables are empty and writable.
+- Prove all five new tables are empty and writable.
 - Prove foreign-key enforcement and unique indices operate after upgrade.
 
 🔧 BLOCK 8 — ARCHIVE AND RESTORE CONTRACT
@@ -322,10 +456,11 @@ Required migration evidence:
   - circuitPastures
   - circuitPastureRoles
   - herdCircuitAssignments
+  - pastureForageObservations
 - Database schema identity advances to 7.
 - The reader must accept archive format 1 and format 2.
-- A format-1 archive is upgraded in memory with empty circuit collections before
-  validation and restore.
+- A format-1 archive is upgraded in memory with empty circuit and forage-observation
+  collections before validation and restore.
 - Format-1 count validation uses its original eight record categories.
 - Format-2 count validation covers all existing and new collections.
 - Archives with a format version newer than 2 remain rejected before live writes.
@@ -337,6 +472,9 @@ Required migration evidence:
   - assignments to archived or empty circuits;
   - assignments to archived herds;
   - unsupported seasonal role values.
+  - forage observations with missing pasture references, unsupported enum values,
+    non-positive heights/sample counts/calibrations/acreage, low values above high
+    values, or negative residual height.
 - BackupDao snapshot and replaceAll include all new tables.
 - Delete and insert order must follow the complete foreign-key graph.
 - Restore remains replace-all, validated before writing, transactional, and protected by
@@ -355,6 +493,8 @@ Required DAO operations:
 - archive a circuit only after assignment checks;
 - report circuit names blocking pasture deletion;
 - clear a circuit assignment during herd archival.
+- observe and save pasture forage observations with snapshotted calibration and acreage;
+- query the latest completed departure for each pasture and the movement that controls it.
 
 Transaction invariants:
 - No partial circuit may survive a failed save.
@@ -362,6 +502,7 @@ Transaction invariants:
 - Reordering must normalize sequence values in the same transaction.
 - A failed archive, assignment, or membership update leaves prior state unchanged.
 - UI code may request an operation but may not bypass DAO-owned validation.
+- A failed forage-observation insert leaves no partial row.
 
 🔧 BLOCK 10 — MAP DERIVATION RULES
 --------------------------------------------------------------------------------
@@ -379,6 +520,8 @@ Transaction invariants:
   MapLibre attribution, or required provider attribution.
 - Existing Full / Lines Only / Off, Physical / Accessible, Pasture Fill, independent
   asset visibility, Aerial, and Labeled behavior remains intact.
+- Recorded-rest labels and latest forage estimates are derived annotations. They do not
+  recolor a pasture as biologically ready and do not obscure water-coverage symbology.
 
 🔧 BLOCK 11 — AUTOMATED ACCEPTANCE GATES
 --------------------------------------------------------------------------------
@@ -395,6 +538,12 @@ JVM / UNIT TESTS:
 10. Herd current pasture remains visible when outside its circuit.
 11. A herd without a circuit retains exact 1.0.1 focus behavior.
 12. Clear Focus restores ordinary display inputs.
+13. Rest derivation returns OCCUPIED when any active herd is present.
+14. Rest derivation uses the latest completed departure across multiple herds.
+15. Rest derivation returns NO_RECORDED_DEPARTURE without qualifying history.
+16. Ohio preset lookups return the exact Block 13 calibration ranges.
+17. Available-DM calculations clamp usable height at zero and return correct low/high
+    per-acre and mapped-total ranges.
 
 ANDROID ROOM TESTS:
 1. MIGRATION_6_7 preserves every schema-6 entity and relationship.
@@ -404,15 +553,17 @@ ANDROID ROOM TESTS:
 4. Pasture deletion is blocked while circuit membership exists.
 5. Herd archival clears active circuit assignment without changing movement history.
 6. Failed multi-table writes roll back completely.
+7. Forage observations retain their calibration and acreage snapshots after the live
+   pasture boundary changes.
 
 ARCHIVE TESTS:
 1. A real format-1 RangeWater 1.0/1.0.1 archive restores into schema 7 with empty circuit
-   collections and all former records intact.
+   and forage-observation collections and all former records intact.
 2. A format-2 archive round-trips all existing and new records with stable IDs.
 3. Record counts and SHA-256 integrity include the correct version-specific model.
 4. Every malformed new relationship is rejected before replacement.
 5. Restore and Undo Last Restore preserve circuits, order, roles, herd assignments,
-   display preferences, and all preexisting ranch records.
+   forage observations, display preferences, and all preexisting ranch records.
 
 BUILD GATES:
 - Imagery-gateway regression suite passes.
@@ -448,18 +599,66 @@ Required sequence:
     roles, order, herd assignment, current location, and historical records.
 13. Undo Last Restore and confirm the pre-restore state returns.
 14. Confirm layouts remain usable in phone portrait, phone landscape, and tablet views.
+15. Complete at least one movement out of a pasture and confirm its recorded-rest value,
+    controlling departure date, occupied override, and cold-reopen behavior.
+16. Record an Ohio-stick observation for each supported stand type/condition needed to
+    exercise the preset table; hand-calculate at least one result and match the app.
+17. Change the pasture boundary after recording an observation and confirm the historical
+    estimate retains its acreage snapshot while a new observation uses the new acreage.
+18. Confirm the latest stockpile estimate appears only from a saved observation and that
+    the mapped-area limitation is visible.
 
 Acceptance authority:
 - CI success proves compilation and automated contracts.
 - Michael's physical-glass report is required before the transmission is accepted.
 - Internal testing precedes any production promotion.
 
-🪨 BLOCK 13 — EXPLICITLY OUT OF SCOPE
+🪨 BLOCK 13 — OHIO USDA-NRCS/GLCI GRAZING-STICK PRESET
 --------------------------------------------------------------------------------
-- Rest Clock calculations or recovery-color thresholds
+FIELD REFERENCE:
+- Physical Ohio GLCI / USDA NRCS grazing stick photographed by Michael on 2026-09-26.
+- Duplicate and overlapping photographs were reconciled; raw photos are not committed.
+
+PRINTED OPERATING REFERENCES TRANSCRIBED FROM THE STICK:
+- Graze pastures when forage heights are between 6 and 8 inches.
+- Move livestock to a new pasture when residual forage heights are reduced to 2 to
+  2.5 inches.
+- Average pasture growth rates:
+  - Spring and early summer: 100 pounds DM/acre/day.
+  - Mid-summer and fall: 40 to 45 pounds DM/acre/day.
+- Rotation lengths:
+  - Spring and early summer: 10 to 20 days, average 15.
+  - Mid-summer and fall: 25 to 40 days, average 30.
+- Available-forage method: subtract 3 inches from average pasture height, then multiply
+  by the applicable pounds DM/acre/inch value.
+
+OHIO PRESET — POUNDS DRY MATTER PER ACRE PER INCH:
+
+Stand type                         Excellent   Good      Fair
+Perennial ryegrass & clover       350-400     250-300   150-200
+Tall fescue & nitrogen            350-400     200-250   100-150
+Tall fescue & clover              350-400     300-350   150-200
+
+PRODUCT USE OF THIS REFERENCE:
+- The table and 3-inch residual are selectable calculation inputs.
+- The printed growth rates, rotation lengths, 6-8 inch entry range, and 2-2.5 inch exit
+  range appear as reference guidance only in 1.1.0.
+- RangeWater does not automatically add daily growth to an old observation, schedule a
+  movement, or declare a pasture ready from these printed averages.
+- Weather, soil, species mixture, maturity, sampling quality, trampling, animal demand,
+  and ungrazable acreage can materially change field outcomes.
+- Exact photo-derived figures are preserved here because the physical stick is the
+  selected product reference. Similar extension tables may order condition columns from
+  Fair to Excellent; RangeWater labels each column explicitly and never relies on order.
+
+🪨 BLOCK 14 — EXPLICITLY OUT OF SCOPE
+--------------------------------------------------------------------------------
+- biological recovery scoring or recovery-color thresholds
 - date-effective or calendar-based grazing plans
 - automatic rotation scheduling
-- stocking-density or forage-demand calculations
+- stocking-density, animal-demand, or days-of-feed calculations
+- automatic forage growth projection from elapsed time or weather
+- laboratory-quality forage mass, nutrition, or carrying-capacity claims
 - temporary polywire and paddock slicing
 - non-grazable holes or land-cover classification
 - gate-open/closed water-access propagation
@@ -473,10 +672,10 @@ Acceptance authority:
 These remain separate proposals. They may not enter RW-TX-015-SGR without Michael's
 explicit scope amendment.
 
-🖍️ BLOCK 14 — RATIFICATION CARD
+🖍️ BLOCK 15 — RATIFICATION CARD
 --------------------------------------------------------------------------------
 Current decision state:
-- Contract status: PROPOSED
+- Contract status: PROPOSED REVISION 1
 - Implementation authority: NOT GRANTED
 - Database mutation authority: NOT GRANTED
 - Archive format mutation authority: NOT GRANTED
@@ -485,7 +684,7 @@ Current decision state:
 Michael may ratify this contract as written or amend any block before implementation.
 
 Ratification phrase:
-"I ratify RW-TX-015-SGR for RangeWater 1.1.0 Seasonal Grazing."
+"I ratify RW-TX-015-SGR Revision 1 for RangeWater 1.1.0 Seasonal Grazing."
 
 Upon ratification, the implementation agent must:
 1. Record the ratification in RANGEWATER.cavecode.txt.
@@ -495,5 +694,5 @@ Upon ratification, the implementation agent must:
 5. Deliver signed physical-test artifacts without publishing to production.
 
 ================================================================================
-END — RW-TX-015-SGR — PROPOSED CONTRACT
+END — RW-TX-015-SGR — PROPOSED REVISION 1 CONTRACT
 ================================================================================
