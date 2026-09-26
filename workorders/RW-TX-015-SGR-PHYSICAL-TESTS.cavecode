@@ -1,0 +1,90 @@
+================================================================================
+RANGEWATER 1.1.0 PHYSICAL-GLASS ACCEPTANCE CARD
+RW-TX-015-SGR — FIELD CANDIDATE VERSION CODE 19
+================================================================================
+Status: READY FOR MICHAEL'S PHYSICAL TEST
+Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
+Automated evidence: GitHub Actions run 36269468596 — PASSED
+Production authority: NOT GRANTED
+
+BEFORE INSTALLING
+--------------------------------------------------------------------------------
+[ ] In RangeWater 1.0.1, create a fresh .rangewater backup outside the app.
+[ ] Confirm the backup file is visible in Drive or another durable folder.
+[ ] Do not uninstall until the backup is confirmed.
+
+SIGNATURE NOTE
+--------------------------------------------------------------------------------
+The field APK uses RangeWater's stable field-test certificate. Google Play installations
+use Google's production app-signing certificate. Android will not install one signature
+over the other. If the device currently has the Google Play build, use this field path:
+backup -> uninstall Play build -> install field APK -> restore backup.
+
+The exact Play-to-Play in-place schema migration must be verified later through Google
+Play internal testing with versionCode 19. The automated Room suite has already migrated a
+populated real schema-6 database to schema 7 without destructive fallback.
+
+FIELD TEST — DATA AND MAP SURVIVAL
+--------------------------------------------------------------------------------
+[ ] Install RangeWater 1.1.0 field APK.
+[ ] Restore the fresh 1.0.1 backup when a cross-signature reinstall was required.
+[ ] Confirm pastures, waters, assignments, gates, herds, movements, camera, and layer
+    preferences survived or restored correctly.
+[ ] Confirm ordinary water-coverage acreage still matches the accepted map.
+
+FIELD TEST — GRAZING CIRCUITS
+--------------------------------------------------------------------------------
+[ ] Open Herds -> Manage Grazing Circuits -> Create Circuit.
+[ ] Name it and select at least four mapped pastures.
+[ ] Give one pasture two roles, including Stockpiled Winter Grazing.
+[ ] Use explicit Up and Down controls to reorder the pastures; save.
+[ ] Close RangeWater completely, reopen it, and confirm name, notes, order, and roles.
+[ ] Assign an existing herd to the circuit; confirm its physical location did not change.
+[ ] Open that herd and confirm circuit name, member count, and circuit position.
+[ ] Focus the herd. Confirm every circuit pasture uses the herd color, current pasture is
+    strongest, unrelated pastures dim, other herd badges hide, and relevant water/gates stay.
+[ ] Clear Focus. Confirm the complete ranch and saved layer preferences return exactly.
+[ ] Move the herd through the accepted movement workflow; confirm circuit membership stays.
+[ ] Move it outside the circuit and confirm the outside-circuit warning appears.
+[ ] Confirm an assigned circuit cannot be archived.
+[ ] Confirm a pasture in a circuit cannot be deleted and the blocker names the circuit.
+
+FIELD TEST — RECORDED REST
+--------------------------------------------------------------------------------
+[ ] Complete a movement out of a pasture.
+[ ] Open that pasture and confirm "Recorded rest" uses the latest completed departure.
+[ ] Confirm an occupied pasture says occupied instead of showing a running rest total.
+[ ] Confirm a pasture with no qualifying departure says "No recorded departure."
+[ ] Cold reopen and confirm the result is derived again from movement history.
+
+FIELD TEST — FORAGE / STOCKPILE
+--------------------------------------------------------------------------------
+[ ] Open a pasture -> Forage.
+[ ] Enter sample count and average height in inches.
+[ ] Exercise each Ohio stand type and condition needed to verify the printed stick table.
+[ ] Hand-check one calculation: max(height - residual, 0) x lb DM/acre/in x mapped acres.
+[ ] Confirm low/high pounds per acre, mapped pounds, and tons match the hand calculation.
+[ ] Confirm the mapped-acre limitation is visible before saving.
+[ ] Save an observation and confirm the latest estimate appears on the pasture card.
+[ ] For a Stockpiled Winter Grazing pasture, confirm the label says Latest stockpile estimate.
+[ ] Edit the pasture boundary; confirm the old observation retains its acreage snapshot and
+    a new observation uses the new mapped acreage.
+[ ] Record one Other / Custom calibration and confirm its entered low/high range is used.
+
+FIELD TEST — ARCHIVE SAFETY
+--------------------------------------------------------------------------------
+[ ] Create a format-2 .rangewater backup.
+[ ] Restore it on the other device and verify circuit, order, roles, herd assignment,
+    movement history, rest result, and forage observations.
+[ ] Use Undo Last Restore and confirm the entire pre-restore state returns.
+[ ] Confirm layouts work in phone portrait, phone landscape, and Samsung Tab S7.
+
+FINAL REPORT
+--------------------------------------------------------------------------------
+Report each failure with: device, exact action, expected result, actual result, and screenshot.
+If all checks pass, Michael may state:
+"RW-TX-015-SGR physical acceptance passed for RangeWater 1.1.0 versionCode 19."
+
+================================================================================
+END — RW-TX-015-SGR PHYSICAL-GLASS ACCEPTANCE CARD
+================================================================================
