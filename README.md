@@ -22,10 +22,12 @@ record. Michael is the Project Owner, Lead Architect, and Final Decision Authori
 
 - Production baseline: RangeWater 1.0.1, versionCode 18.
 - Accepted released source: `6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2`.
-- Active field candidate: RangeWater 1.1.0, versionCode 19.
+- Active release candidate: RangeWater 1.1.0, versionCode 19.
 - Active branch: `codex/rw-tx-015-sgr`.
+- Corrected accepted candidate: `df061bc07d8b09c6f678d56b1d439aa3e4e02923`.
 - Automated acceptance: passed.
-- Physical field acceptance: pending.
+- Physical field acceptance: passed on Michael's Samsung phone and Samsung Tab S7.
+- Google Play internal-release acceptance: captured; Play-to-Play migration result pending.
 - Production promotion for 1.1.0: not authorized.
 
 ## Forgekeeper boundary
