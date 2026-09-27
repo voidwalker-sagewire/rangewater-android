@@ -11,6 +11,11 @@ data class RangeWaterBackupData(
     val gates: List<GateEntity> = emptyList(),
     val herds: List<HerdEntity> = emptyList(),
     val movements: List<CattleMovementEntity> = emptyList(),
+    val grazingCircuits: List<GrazingCircuitEntity> = emptyList(),
+    val circuitPastures: List<GrazingCircuitPastureEntity> = emptyList(),
+    val circuitPastureRoles: List<GrazingCircuitPastureRoleEntity> = emptyList(),
+    val herdCircuitAssignments: List<HerdGrazingCircuitAssignmentEntity> = emptyList(),
+    val pastureForageObservations: List<PastureForageObservationEntity> = emptyList(),
     val displayPreferences: DisplayPreferences = DisplayPreferences()
 ) {
     fun recordCounts(): BackupRecordCounts = BackupRecordCounts(
@@ -21,7 +26,12 @@ data class RangeWaterBackupData(
         assignments.size,
         gates.size,
         herds.size,
-        movements.size
+        movements.size,
+        grazingCircuits.size,
+        circuitPastures.size,
+        circuitPastureRoles.size,
+        herdCircuitAssignments.size,
+        pastureForageObservations.size
     )
 }
 
@@ -33,7 +43,12 @@ data class BackupRecordCounts(
     val assignments: Int,
     val gates: Int,
     val herds: Int,
-    val movements: Int
+    val movements: Int,
+    val grazingCircuits: Int = 0,
+    val circuitPastures: Int = 0,
+    val circuitPastureRoles: Int = 0,
+    val herdCircuitAssignments: Int = 0,
+    val pastureForageObservations: Int = 0
 )
 
 data class RangeWaterBackupManifest(

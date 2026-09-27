@@ -15,7 +15,8 @@ object PastureFeatureConverter {
         pastures: List<PastureWithVertices>,
         selectedId: Long?,
         focusedPastureId: Long? = null,
-        focusColorHex: String? = null
+        focusColorHex: String? = null,
+        focusedPastureIds: Set<Long> = focusedPastureId?.let(::setOf).orEmpty()
     ): FeatureCollection = FeatureCollection.fromFeatures(
         pastures.mapNotNull { pasture ->
             val coordinates = pasture.orderedCoordinates()
@@ -24,7 +25,7 @@ object PastureFeatureConverter {
                 addProperty("id", pasture.pasture.id)
                 addProperty("name", pasture.pasture.name)
                 addProperty("selected", pasture.pasture.id == selectedId)
-                addFocusProperties(pasture.pasture.id, focusedPastureId, focusColorHex)
+                addFocusProperties(pasture.pasture.id, focusedPastureId, focusedPastureIds, focusColorHex)
                 addProperty("acres", AcreageCalculator.calculateAcres(coordinates))
             }
             Feature.fromGeometry(coordinates.toPolygon(), properties)
@@ -70,7 +71,8 @@ object PastureFeatureConverter {
         gates: List<GateWithConnectivity>,
         selectedId: Long?,
         focusedPastureId: Long? = null,
-        focusColorHex: String? = null
+        focusColorHex: String? = null,
+        focusedPastureIds: Set<Long> = focusedPastureId?.let(::setOf).orEmpty()
     ): FeatureCollection {
         val features = mutableListOf<Feature>()
         pastures.forEach pastureLoop@ { pasture ->
@@ -87,7 +89,7 @@ object PastureFeatureConverter {
                 val properties = JsonObject().apply {
                     addProperty("id", pasture.pasture.id)
                     addProperty("selected", pasture.pasture.id == selectedId)
-                    addFocusProperties(pasture.pasture.id, focusedPastureId, focusColorHex)
+                    addFocusProperties(pasture.pasture.id, focusedPastureId, focusedPastureIds, focusColorHex)
                 }
                 if (gatesOnSegment.isEmpty()) {
                     features += lineFeature(start.longitude, start.latitude, end.longitude, end.latitude, properties)
@@ -139,11 +141,13 @@ object PastureFeatureConverter {
     private fun JsonObject.addFocusProperties(
         pastureId: Long,
         focusedPastureId: Long?,
+        focusedPastureIds: Set<Long>,
         focusColorHex: String?
     ) {
-        val focusActive = focusedPastureId != null
-        addProperty("focused", pastureId == focusedPastureId)
-        addProperty("dimmed", focusActive && pastureId != focusedPastureId)
+        val focusActive = focusedPastureIds.isNotEmpty()
+        addProperty("focused", pastureId in focusedPastureIds)
+        addProperty("focusCurrent", pastureId == focusedPastureId)
+        addProperty("dimmed", focusActive && pastureId !in focusedPastureIds)
         addProperty("focusColor", focusColorHex ?: "#FF2D95")
     }
 

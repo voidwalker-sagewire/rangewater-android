@@ -163,6 +163,36 @@ class BackupDaoTest {
                     completedAt = now, gateId = 40, gateSnapshot = "Gate #40 - North Gate",
                     createdAt = now, updatedAt = now
                 )
+            ),
+            grazingCircuits = listOf(
+                GrazingCircuitEntity(70, "Cow Rotation", "Seasonal circuit", now, now)
+            ),
+            circuitPastures = listOf(
+                GrazingCircuitPastureEntity(70, 10, 0, now)
+            ),
+            circuitPastureRoles = listOf(
+                GrazingCircuitPastureRoleEntity(70, 10, SeasonalPastureRole.ROTATION),
+                GrazingCircuitPastureRoleEntity(70, 10, SeasonalPastureRole.STOCKPILED_WINTER)
+            ),
+            herdCircuitAssignments = listOf(
+                HerdGrazingCircuitAssignmentEntity(50, 70, now)
+            ),
+            pastureForageObservations = listOf(
+                PastureForageObservationEntity(
+                    id = 80,
+                    pastureId = 10,
+                    observedAt = now,
+                    averageHeightInches = 8.0,
+                    sampleCount = 5,
+                    forageStandType = ForageStandType.TALL_FESCUE_CLOVER,
+                    standCondition = ForageStandCondition.GOOD,
+                    dmPerAcreInchLow = 300.0,
+                    dmPerAcreInchHigh = 350.0,
+                    calibrationSource = ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK,
+                    acreageSnapshot = 21.8,
+                    createdAt = now,
+                    updatedAt = now
+                )
             )
         )
     }

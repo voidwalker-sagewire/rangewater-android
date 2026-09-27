@@ -33,6 +33,21 @@ interface BackupDao {
     @Query("SELECT * FROM cattle_movements ORDER BY id")
     suspend fun allMovements(): List<CattleMovementEntity>
 
+    @Query("SELECT * FROM grazing_circuits ORDER BY id")
+    suspend fun allGrazingCircuits(): List<GrazingCircuitEntity>
+
+    @Query("SELECT * FROM grazing_circuit_pastures ORDER BY circuitId, sequence")
+    suspend fun allCircuitPastures(): List<GrazingCircuitPastureEntity>
+
+    @Query("SELECT * FROM grazing_circuit_pasture_roles ORDER BY circuitId, pastureId, role")
+    suspend fun allCircuitPastureRoles(): List<GrazingCircuitPastureRoleEntity>
+
+    @Query("SELECT * FROM herd_grazing_circuit_assignments ORDER BY herdId")
+    suspend fun allHerdCircuitAssignments(): List<HerdGrazingCircuitAssignmentEntity>
+
+    @Query("SELECT * FROM pasture_forage_observations ORDER BY id")
+    suspend fun allPastureForageObservations(): List<PastureForageObservationEntity>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertWaterPoints(rows: List<WaterPointEntity>)
 
@@ -56,6 +71,36 @@ interface BackupDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertMovements(rows: List<CattleMovementEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertGrazingCircuits(rows: List<GrazingCircuitEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertCircuitPastures(rows: List<GrazingCircuitPastureEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertCircuitPastureRoles(rows: List<GrazingCircuitPastureRoleEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertHerdCircuitAssignments(rows: List<HerdGrazingCircuitAssignmentEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertPastureForageObservations(rows: List<PastureForageObservationEntity>)
+
+    @Query("DELETE FROM pasture_forage_observations")
+    suspend fun deletePastureForageObservations()
+
+    @Query("DELETE FROM grazing_circuit_pasture_roles")
+    suspend fun deleteCircuitPastureRoles()
+
+    @Query("DELETE FROM herd_grazing_circuit_assignments")
+    suspend fun deleteHerdCircuitAssignments()
+
+    @Query("DELETE FROM grazing_circuit_pastures")
+    suspend fun deleteCircuitPastures()
+
+    @Query("DELETE FROM grazing_circuits")
+    suspend fun deleteGrazingCircuits()
 
     @Query("DELETE FROM cattle_movements")
     suspend fun deleteMovements()
@@ -90,12 +135,22 @@ interface BackupDao {
         assignments = allAssignments(),
         gates = allGates(),
         herds = allHerds(),
-        movements = allMovements()
+        movements = allMovements(),
+        grazingCircuits = allGrazingCircuits(),
+        circuitPastures = allCircuitPastures(),
+        circuitPastureRoles = allCircuitPastureRoles(),
+        herdCircuitAssignments = allHerdCircuitAssignments(),
+        pastureForageObservations = allPastureForageObservations()
     )
 
     /** Delete order and insert order deliberately follow the foreign-key graph. */
     @Transaction
     suspend fun replaceAll(data: RangeWaterBackupData) {
+        deletePastureForageObservations()
+        deleteCircuitPastureRoles()
+        deleteHerdCircuitAssignments()
+        deleteCircuitPastures()
+        deleteGrazingCircuits()
         deleteMovements()
         deleteAssignments()
         deleteHerds()
@@ -113,5 +168,10 @@ interface BackupDao {
         insertGates(data.gates)
         insertHerds(data.herds)
         insertMovements(data.movements)
+        insertGrazingCircuits(data.grazingCircuits)
+        insertCircuitPastures(data.circuitPastures)
+        insertCircuitPastureRoles(data.circuitPastureRoles)
+        insertHerdCircuitAssignments(data.herdCircuitAssignments)
+        insertPastureForageObservations(data.pastureForageObservations)
     }
 }

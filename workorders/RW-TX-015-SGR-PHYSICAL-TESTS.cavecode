@@ -1,0 +1,156 @@
+================================================================================
+RANGEWATER 1.1.0 PHYSICAL-GLASS ACCEPTANCE CARD
+RW-TX-015-SGR — FIELD CANDIDATE VERSION CODE 19
+================================================================================
+Status: FIELD ACCEPTED — INTERNAL PLAY MIGRATION PASSED
+Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
+Automated evidence: GitHub Actions run 36269468596 — PASSED
+Production: GOOGLE PLAY APPROVED AND PUBLISHED — REPORTED 2026-09-27
+
+PHYSICAL FINDING 1 — CORRECTION FIELD-VERIFIED — CLOSED
+--------------------------------------------------------------------------------
+Observed by Michael on Samsung phone, 2026-09-26:
+- The herd inspection card had no explicit Close action.
+- Tapping the map selected a pasture, forcing a second Close action on the pasture card.
+
+Correction evidence:
+- Corrected source: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+- GitHub Actions run 36284608250 (run 115): PASSED
+- Behavior change: a visible Close action now dismisses the herd card directly.
+- Data, movement, circuit, map-focus, and production authority boundaries are unchanged.
+- Focused physical retest: PASSED on Michael's Samsung phone.
+- The corrected APK installed in place over the prior field candidate without uninstalling.
+- RangeWater opened normally, and tapping Close dismissed the herd card directly.
+- Finding closed: 2026-09-26.
+
+PHYSICAL EVIDENCE 1 — PLAY 1.0.1 BACKUP INTO FIELD 1.1.0
+--------------------------------------------------------------------------------
+Status: PASSED on Michael's Samsung phone using the original 1.1.0 field candidate.
+- Created and saved a portable backup from the Google Play RangeWater 1.0.1 installation.
+- Uninstalled the Play-signed application.
+- Installed the field-signed RangeWater 1.1.0 APK.
+- Restored the Google Play-created backup successfully.
+- Made edits after restore, fully closed RangeWater, reopened it, and confirmed the
+  restored and edited state remained intact.
+Evidence meaning:
+- PASSES format-1 read/restore across the Play-to-field signature boundary.
+- PASSES post-restore edit persistence across full close and reopen.
+- DOES NOT YET satisfy the separate format-2 cross-device restore or Undo Last Restore
+  requirements.
+- The herd-card Close defect is independent UI behavior and does not invalidate this
+  data-safety evidence.
+
+BEFORE INSTALLING
+--------------------------------------------------------------------------------
+[x] In RangeWater 1.0.1, create a fresh .rangewater backup outside the app.
+[x] Confirm the backup file is visible in Drive or another durable folder.
+[x] Do not uninstall until the backup is confirmed.
+
+SIGNATURE NOTE
+--------------------------------------------------------------------------------
+The field APK uses RangeWater's stable field-test certificate. Google Play installations
+use Google's production app-signing certificate. Android will not install one signature
+over the other. If the device currently has the Google Play build, use this field path:
+backup -> uninstall Play build -> install field APK -> restore backup.
+
+The exact Play-to-Play in-place schema migration was verified through Google Play internal
+testing with versionCode 19 on 2026-09-27. The automated Room suite had already migrated a
+populated real schema-6 database to schema 7 without destructive fallback.
+
+INTERNAL TEST — PLAY-TO-PLAY IN-PLACE MIGRATION — PASSED
+--------------------------------------------------------------------------------
+Device: Michael's Samsung Tab S7.
+Controlled sequence:
+- Installed production RangeWater 1.0.1 from Google Play.
+- Restored the September 23 format-1 backup; its records appeared normally.
+- Rejoined the RangeWater internal test using the same Google account.
+- Google Play exposed Update rather than requiring uninstall/reinstall.
+- Updated in place from 1.0.1 to the internal 1.1.0 release.
+- Opened RangeWater without restoring again.
+- Confirmed the September 23 pastures, gates, water sources, and other records remained.
+- Confirmed Android reported installed version 1.1.0.
+Result:
+- PASSES Google Play delivery of versionCode 19.
+- PASSES controlled Play-signed 1.0.1-to-1.1.0 in-place migration.
+- PASSES survival of the restored legacy ranch records across that update.
+- Production promotion was later AUTHORIZED by Michael on 2026-09-27 for this exact
+  internally tested versionCode 19 bundle. Submission and publication are not yet proven.
+
+FIELD TEST — DATA AND MAP SURVIVAL
+--------------------------------------------------------------------------------
+[x] Install RangeWater 1.1.0 field APK.
+[x] Restore the fresh 1.0.1 backup when a cross-signature reinstall was required.
+[x] Confirm pastures, waters, assignments, gates, herds, movements, camera, and layer
+    preferences survived or restored correctly.
+[x] Confirm ordinary water-coverage acreage still matches the accepted map.
+
+FIELD TEST — GRAZING CIRCUITS
+--------------------------------------------------------------------------------
+[x] Open Herds -> Manage Grazing Circuits -> Create Circuit.
+[x] Name it and select at least four mapped pastures.
+[x] Give one pasture two roles, including Stockpiled Winter Grazing.
+[x] Use explicit Up and Down controls to reorder the pastures; save.
+[x] Close RangeWater completely, reopen it, and confirm name, notes, order, and roles.
+[x] Assign an existing herd to the circuit; confirm its physical location did not change.
+[x] Open that herd and confirm circuit name, member count, and circuit position.
+[x] Focus the herd. Confirm every circuit pasture uses the herd color, current pasture is
+    strongest, unrelated pastures dim, other herd badges hide, and relevant water/gates stay.
+[x] Clear Focus. Confirm the complete ranch and saved layer preferences return exactly.
+[x] Move the herd through the accepted movement workflow; confirm circuit membership stays.
+[x] Move it outside the circuit and confirm the outside-circuit warning appears.
+[x] Confirm an assigned circuit cannot be archived.
+[x] Confirm a pasture in a circuit cannot be deleted and the blocker names the circuit.
+
+FIELD TEST — RECORDED REST
+--------------------------------------------------------------------------------
+[x] Complete a movement out of a pasture.
+[x] Open that pasture and confirm "Recorded rest" uses the latest completed departure.
+[x] Confirm an occupied pasture says occupied instead of showing a running rest total.
+[x] Confirm a pasture with no qualifying departure says "No recorded departure."
+[x] Cold reopen and confirm the result is derived again from movement history.
+
+FIELD TEST — FORAGE / STOCKPILE
+--------------------------------------------------------------------------------
+[x] Open a pasture -> Forage.
+[x] Enter sample count and average height in inches.
+[x] Exercise each Ohio stand type and condition needed to verify the printed stick table.
+[x] Hand-check one calculation: max(height - residual, 0) x lb DM/acre/in x mapped acres.
+[x] Confirm low/high pounds per acre, mapped pounds, and tons match the hand calculation.
+[x] Confirm the mapped-acre limitation is visible before saving.
+[x] Save an observation and confirm the latest estimate appears on the pasture card.
+[x] For a Stockpiled Winter Grazing pasture, confirm the label says Latest stockpile estimate.
+[x] Edit the pasture boundary; confirm the old observation retains its acreage snapshot and
+    a new observation uses the new mapped acreage.
+[x] Record one Other / Custom calibration and confirm its entered low/high range is used.
+
+FIELD TEST — ARCHIVE SAFETY
+--------------------------------------------------------------------------------
+[x] Create a format-2 .rangewater backup.
+[x] Restore it on the other device and verify circuit, order, roles, herd assignment,
+    movement history, rest result, and forage observations.
+[x] Use Undo Last Restore and confirm the entire pre-restore state returns.
+[x] Confirm layouts work in phone portrait, phone landscape, and Samsung Tab S7.
+
+FINAL REPORT
+--------------------------------------------------------------------------------
+Result: PASSED on Michael's Samsung phone and Samsung Tab S7.
+Acceptance date: 2026-09-27.
+Acceptance record: After explicit clarification that the question concerned the complete
+RangeWater 1.1.0 physical-glass checklist on both devices, Michael stated:
+"Passed both devices."
+
+Normalized acceptance statement:
+"RW-TX-015-SGR physical acceptance passed for RangeWater 1.1.0 versionCode 19
+on both target devices."
+
+Lifecycle state: FIELD ACCEPTED.
+Google Play internal migration: PASSED on Samsung Tab S7, 2026-09-27.
+Production promotion authority: GRANTED by Michael on 2026-09-27 for the exact tested
+RangeWater 1.1.0 versionCode 19 bundle.
+Google Play production review: APPROVED, reported by Michael on 2026-09-27.
+Production publication: COMPLETED by Michael, reported by 09:16 Eastern.
+Storefront propagation/post-publication device confirmation: PENDING SEPARATE EVIDENCE.
+
+================================================================================
+END — RW-TX-015-SGR PHYSICAL-GLASS ACCEPTANCE CARD
+================================================================================

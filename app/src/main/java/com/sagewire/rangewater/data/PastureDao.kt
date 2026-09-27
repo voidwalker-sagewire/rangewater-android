@@ -74,6 +74,19 @@ interface PastureDao {
     @Query("SELECT COUNT(*) FROM cattle_movements WHERE status = 'PLANNED' AND (originPastureId = :pastureId OR destinationPastureId = :pastureId)")
     suspend fun countPlannedMovementsForPasture(pastureId: Long): Int
 
+    @Query(
+        """
+        SELECT gc.name FROM grazing_circuits gc
+        JOIN grazing_circuit_pastures gcp ON gcp.circuitId = gc.id
+        WHERE gcp.pastureId = :pastureId
+        ORDER BY gc.name COLLATE NOCASE
+        """
+    )
+    suspend fun circuitNamesForPasture(pastureId: Long): List<String>
+
+    @Query("SELECT COUNT(*) FROM pasture_forage_observations WHERE pastureId = :pastureId")
+    suspend fun forageObservationCountForPasture(pastureId: Long): Int
+
     @Query("SELECT COUNT(*) FROM gates WHERE junctionAId = :junctionAId AND junctionBId = :junctionBId")
     suspend fun gateCountOnSegment(junctionAId: Long, junctionBId: Long): Int
 
@@ -105,6 +118,18 @@ interface PastureDao {
 
     @Transaction
     suspend fun deleteById(id: Long) {
+        val blockingCircuits = circuitNamesForPasture(id)
+        if (blockingCircuits.isNotEmpty()) {
+            throw IllegalStateException(
+                "This pasture belongs to one or more Grazing Circuits (${blockingCircuits.joinToString()}). " +
+                    "Remove it from those circuits first."
+            )
+        }
+        if (forageObservationCountForPasture(id) > 0) {
+            throw IllegalStateException(
+                "Cannot delete pasture: It has historical forage observations."
+            )
+        }
         if (countActiveHerdsInPasture(id) > 0) {
             throw IllegalStateException("Cannot delete pasture: Currently occupied by an active herd.")
         }

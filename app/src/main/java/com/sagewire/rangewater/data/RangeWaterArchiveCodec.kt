@@ -2,6 +2,7 @@ package com.sagewire.rangewater.data
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -16,8 +17,8 @@ import java.util.zip.ZipOutputStream
 /** Versioned, checksummed archive codec. It contains no Android storage assumptions. */
 object RangeWaterArchiveCodec {
     const val FORMAT_ID = "com.sagewire.rangewater.backup"
-    const val FORMAT_VERSION = 1
-    const val DATABASE_SCHEMA_VERSION = 6
+    const val FORMAT_VERSION = 2
+    const val DATABASE_SCHEMA_VERSION = 7
     const val MIME_TYPE = "application/vnd.sagewire.rangewater-backup"
     const val FILE_EXTENSION = ".rangewater"
 
@@ -91,7 +92,7 @@ object RangeWaterArchiveCodec {
         } ?: throw IllegalArgumentException("Backup manifest is empty")
 
         require(manifest.formatId == FORMAT_ID) { "This is not a RangeWater backup" }
-        require(manifest.formatVersion == FORMAT_VERSION) {
+        require(manifest.formatVersion in 1..FORMAT_VERSION) {
             if (manifest.formatVersion > FORMAT_VERSION) {
                 "This backup was created by a newer RangeWater backup format"
             } else {
@@ -106,7 +107,13 @@ object RangeWaterArchiveCodec {
         }
 
         val data = try {
-            gson.fromJson(String(dataBytes, StandardCharsets.UTF_8), RangeWaterBackupData::class.java)
+            val json = JsonParser.parseString(String(dataBytes, StandardCharsets.UTF_8)).asJsonObject
+            if (manifest.formatVersion == 1) {
+                LEGACY_EMPTY_COLLECTIONS.forEach { name ->
+                    if (!json.has(name) || json[name].isJsonNull) json.add(name, com.google.gson.JsonArray())
+                }
+            }
+            gson.fromJson(json, RangeWaterBackupData::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Backup records cannot be read", error)
         } ?: throw IllegalArgumentException("Backup records are empty")
@@ -133,4 +140,12 @@ object RangeWaterArchiveCodec {
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
         .digest(bytes)
         .joinToString("") { String.format(Locale.US, "%02x", it.toInt() and 0xff) }
+
+    private val LEGACY_EMPTY_COLLECTIONS = listOf(
+        "grazingCircuits",
+        "circuitPastures",
+        "circuitPastureRoles",
+        "herdCircuitAssignments",
+        "pastureForageObservations"
+    )
 }

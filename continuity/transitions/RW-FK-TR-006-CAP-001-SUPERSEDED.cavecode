@@ -1,0 +1,59 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-006 — PLAY INTERNAL ACCEPTANCE CAPTURE SUPERSEDED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-006
+Project: RangeWater
+Title: Resolve and Supersede RW-FK-CAP-001
+Revision: 1
+State: SUPERSEDED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+Branch-Head-Before-Record: 2cb33841ba9e4cca374a6f13c28c3ba47a15c4a0
+Predecessor: continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode
+Immediate-Successor: continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode
+Later-Successors:
+- continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode
+- continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode
+Conflict-Status: RESOLVED
+Human-Decision-Needed: NO
+
+🪨 BLOCK 1 — STATE TRANSITION
+--------------------------------------------------------------------------------
+RW-FK-CAP-001 preserved a candidate report that Google Play accepted the internal
+release while delivery and migration evidence remained pending.
+
+The required evidence was later supplied and recorded in RW-FK-TR-003. The candidate
+capture is therefore SUPERSEDED for current-state use.
+
+The capture remains preserved as historical evidence. This transition does not edit or
+erase it.
+
+🪨 BLOCK 2 — SUCCESSOR EVIDENCE
+--------------------------------------------------------------------------------
+RW-FK-TR-003 records that:
+- Google Play delivered RangeWater 1.1.0 versionCode 19;
+- Samsung Tab S7 updated in place from Play production 1.0.1;
+- restored September 23 ranch records survived;
+- the migration was FIELD ACCEPTED by Michael.
+
+RW-FK-TR-004 then records Michael's production-promotion authority.
+
+RW-FK-TR-005 then records Google approval and Michael's production publication of
+RangeWater 1.1.0 versionCode 19.
+
+🪨 BLOCK 3 — CURRENT INTERPRETATION
+--------------------------------------------------------------------------------
+- RW-FK-CAP-001: historical candidate capture — SUPERSEDED.
+- Internal delivery and migration: FIELD ACCEPTED.
+- Production promotion: RATIFIED and completed.
+- RangeWater 1.1.0 versionCode 19: GOOGLE PLAY PRODUCTION PUBLISHED.
+- Michael retains final authority over project truth.
+
+================================================================================
+END — RW-FK-TR-006 — SUPERSEDED
+================================================================================

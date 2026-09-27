@@ -8,6 +8,7 @@ import com.sagewire.rangewater.data.WaterPointEntity
 data class HerdFocusState(
     val herdId: Long,
     val pastureId: Long,
+    val pastureIds: Set<Long>,
     val colorHex: String,
     val relatedWaterPointIds: Set<Long>
 )
@@ -20,16 +21,19 @@ data class HerdFocusState(
 object HerdFocusController {
     fun derive(
         herd: HerdEntity?,
-        assignments: Map<Long, List<Long>>
+        assignments: Map<Long, List<Long>>,
+        circuitPastureIds: Set<Long> = emptySet()
     ): HerdFocusState? {
         if (herd == null || herd.locationKind != HerdLocationKind.PASTURE) return null
         val pastureId = herd.currentPastureId ?: return null
+        val focusedPastures = circuitPastureIds + pastureId
         return HerdFocusState(
             herdId = herd.id,
             pastureId = pastureId,
+            pastureIds = focusedPastures,
             colorHex = herd.markerColorHex,
             relatedWaterPointIds = assignments
-                .filterValues { pastureId in it }
+                .filterValues { assignedPastures -> assignedPastures.any { it in focusedPastures } }
                 .keys
         )
     }
@@ -49,7 +53,7 @@ object HerdFocusController {
     ): List<GateWithConnectivity> = if (focus == null) {
         gates
     } else {
-        gates.filter { it.pastureAId == focus.pastureId || it.pastureBId == focus.pastureId }
+        gates.filter { it.pastureAId in focus.pastureIds || it.pastureBId in focus.pastureIds }
     }
 
     fun filterHerds(

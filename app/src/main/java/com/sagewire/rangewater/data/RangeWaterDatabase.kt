@@ -21,9 +21,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WaterPastureAssignmentEntity::class,
         GateEntity::class,
         HerdEntity::class,
-        CattleMovementEntity::class
+        CattleMovementEntity::class,
+        GrazingCircuitEntity::class,
+        GrazingCircuitPastureEntity::class,
+        GrazingCircuitPastureRoleEntity::class,
+        HerdGrazingCircuitAssignmentEntity::class,
+        PastureForageObservationEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
@@ -34,6 +39,9 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun gateDao(): GateDao
     abstract fun herdDao(): HerdDao
     abstract fun movementDao(): MovementDao
+    abstract fun grazingCircuitDao(): GrazingCircuitDao
+    abstract fun forageObservationDao(): ForageObservationDao
+    abstract fun pastureRestDao(): PastureRestDao
     abstract fun backupDao(): BackupDao
 
     companion object {
@@ -269,13 +277,103 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `grazing_circuits` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT COLLATE NOCASE NOT NULL,
+                        `notes` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `archivedAt` INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_grazing_circuits_name` ON `grazing_circuits` (`name`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_grazing_circuits_archivedAt` ON `grazing_circuits` (`archivedAt`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `grazing_circuit_pastures` (
+                        `circuitId` INTEGER NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `sequence` INTEGER NOT NULL,
+                        `assignedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`circuitId`, `pastureId`),
+                        FOREIGN KEY(`circuitId`) REFERENCES `grazing_circuits`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_grazing_circuit_pastures_circuitId_sequence` ON `grazing_circuit_pastures` (`circuitId`, `sequence`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_grazing_circuit_pastures_pastureId` ON `grazing_circuit_pastures` (`pastureId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `grazing_circuit_pasture_roles` (
+                        `circuitId` INTEGER NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `role` TEXT NOT NULL,
+                        PRIMARY KEY(`circuitId`, `pastureId`, `role`),
+                        FOREIGN KEY(`circuitId`, `pastureId`) REFERENCES `grazing_circuit_pastures`(`circuitId`, `pastureId`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_grazing_circuit_pasture_roles_circuitId_pastureId` ON `grazing_circuit_pasture_roles` (`circuitId`, `pastureId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `herd_grazing_circuit_assignments` (
+                        `herdId` INTEGER NOT NULL,
+                        `circuitId` INTEGER NOT NULL,
+                        `assignedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`herdId`),
+                        FOREIGN KEY(`herdId`) REFERENCES `herds`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`circuitId`) REFERENCES `grazing_circuits`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_herd_grazing_circuit_assignments_circuitId` ON `herd_grazing_circuit_assignments` (`circuitId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `pasture_forage_observations` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `observedAt` INTEGER NOT NULL,
+                        `averageHeightInches` REAL NOT NULL,
+                        `sampleCount` INTEGER NOT NULL,
+                        `forageStandType` TEXT NOT NULL,
+                        `standCondition` TEXT NOT NULL,
+                        `residualHeightInches` REAL NOT NULL,
+                        `dmPerAcreInchLow` REAL NOT NULL,
+                        `dmPerAcreInchHigh` REAL NOT NULL,
+                        `calibrationSource` TEXT NOT NULL,
+                        `acreageSnapshot` REAL NOT NULL,
+                        `notes` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_pasture_forage_observations_pastureId` ON `pasture_forage_observations` (`pastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_pasture_forage_observations_pastureId_observedAt` ON `pasture_forage_observations` (`pastureId`, `observedAt`)")
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     RangeWaterDatabase::class.java,
                     "rangewater_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                ).addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6,
+                    MIGRATION_6_7
+                )
                     .build()
                     .also { instance = it }
             }

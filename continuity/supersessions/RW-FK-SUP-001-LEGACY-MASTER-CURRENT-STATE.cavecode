@@ -1,0 +1,57 @@
+================================================================================
+RANGEWATER CONTINUITY SUPERSESSION RECORD
+RW-FK-SUP-001 — LEGACY MASTER-LEDGER CURRENT-STATE SECTIONS
+================================================================================
+Format: CaveCode continuity supersession record
+Record-ID: RW-FK-SUP-001
+Project: RangeWater
+Title: Legacy Master-Ledger Current-State Supersession
+Revision: 1
+State: SUPERSEDED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+Branch-Head-Before-Record: a6166698a877b215b6b1cb764d1b9ae1ac5619b7
+Affected-Artifact: RANGEWATER.cavecode.txt
+Conflict-Status: RESOLVED
+Human-Decision-Needed: NO
+
+🪨 BLOCK 1 — SUPERSEDED MATERIAL
+--------------------------------------------------------------------------------
+The historical master ledger remains preserved. Its embedded current-state statements
+that identify RangeWater 1.1.0 as awaiting internal testing or production promotion are
+SUPERSEDED for present-state use.
+
+This record does not invalidate historical evidence, accepted decisions, signing
+lineage, recovery instructions, or completed work recorded in the master ledger.
+
+🪨 BLOCK 2 — CURRENT AUTHORITY CHAIN
+--------------------------------------------------------------------------------
+Use these repository records for the current RangeWater 1.1.0 release state:
+
+1. continuity/RANGEWATER-CURRENT-STATE.cavecode
+2. continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode
+3. continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode
+4. continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode
+5. workorders/RW-TX-015-SGR.cavecode
+
+Together they establish:
+- Google Play internal delivery and in-place migration passed;
+- Michael authorized production promotion of the exact tested versionCode 19 bundle;
+- Google approved the release;
+- Michael published RangeWater 1.1.0 versionCode 19 to Production;
+- RW-TX-015-SGR is closed and field accepted.
+
+🪨 BLOCK 3 — PRESERVATION RULE
+--------------------------------------------------------------------------------
+- Do not delete or silently rewrite the legacy master ledger.
+- Continue to use it for historical project context and evidence.
+- When its old current-state language conflicts with the active current-state index or
+  later transition records, the later repository records govern.
+- Michael retains final authority over project truth.
+
+================================================================================
+END — RW-FK-SUP-001 — SUPERSEDED
+================================================================================

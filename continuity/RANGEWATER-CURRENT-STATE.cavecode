@@ -1,0 +1,87 @@
+================================================================================
+RANGEWATER CURRENT-STATE INDEX — RATIFIED FORMAT
+RW-FK-CURRENT-001
+================================================================================
+Format: CaveCode current-state pointer index
+Format Status: RATIFIED — ACTIVE
+Content Snapshot: 2026-09-27
+Project: RangeWater
+Repository: voidwalker-sagewire/rangewater-android
+Final Authority: Michael
+
+🪨 BLOCK 1 — INDEX PURPOSE
+--------------------------------------------------------------------------------
+- Give a new human or AI one short, mobile-readable starting point.
+- Point to authoritative evidence without replacing the master ledger or workorders.
+- Separate current state from historical pilot snapshots.
+- Carry no independent authority beyond the records it references.
+
+🪨 BLOCK 2 — CURRENT PRODUCT STATE
+--------------------------------------------------------------------------------
+Production:
+- RangeWater 1.1.0, versionCode 19.
+- State: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
+- Rollout recorded: 100% of targeted users and all targeted countries/regions.
+- Released candidate source:
+  df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+- Active continuity branch: codex/rw-tx-015-sgr.
+- Room schema: 7.
+- Archive write format: 2; format 1 and 2 restore support.
+- Publication transition:
+  continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode.
+- Publication-record commit:
+  a6166698a877b215b6b1cb764d1b9ae1ac5619b7.
+
+Prior production:
+- RangeWater 1.0.1, versionCode 18.
+- Released source: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+- State: SUPERSEDED for current distribution by versionCode 19.
+
+🪨 BLOCK 3 — ACCEPTANCE AND AUTHORITY CHAIN
+--------------------------------------------------------------------------------
+- Automated acceptance for corrected candidate df061bc: PASSED.
+- Physical-glass acceptance on Michael's Samsung phone and Samsung Tab S7: PASSED.
+- Google Play versionCode 19 internal-release delivery: PASSED.
+- Controlled Play-to-Play 1.0.1-to-1.1.0 in-place migration on Samsung Tab S7: PASSED.
+- Restored September 23 ranch records survived the update.
+- Internal migration transition:
+  continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode.
+- Production promotion authority: GRANTED by Michael for the exact tested bundle.
+- Authority transition:
+  continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode.
+- Google review: APPROVED, reported by Michael on 2026-09-27.
+- Production publication: COMPLETED by Michael on 2026-09-27.
+- Workorder RW-TX-015-SGR: CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
+
+🪨 BLOCK 4 — SUPERSESSION STATUS
+--------------------------------------------------------------------------------
+- RW-FK-CONFLICT-001 isolated pilot branch drift: RESOLVED.
+- RW-FK-CAP-001 Play internal acceptance candidate: SUPERSEDED for current-state use.
+- Capture supersession transition:
+  continuity/transitions/RW-FK-TR-006-CAP-001-SUPERSEDED.cavecode.
+- RANGEWATER.cavecode.txt remains preserved as historical evidence.
+- Its stale 1.1.0 current-state sections are superseded by:
+  continuity/supersessions/RW-FK-SUP-001-LEGACY-MASTER-CURRENT-STATE.cavecode.
+- Existing accepted historical work retains its established status.
+
+🪨 BLOCK 5 — READ ORDER
+--------------------------------------------------------------------------------
+1. continuity/RANGEWATER-CONTINUITY-CONTRACT.cavecode
+2. this current-state index
+3. continuity transition and supersession records referenced above
+4. RANGEWATER.cavecode.txt for historical project context
+5. workorders/RW-TX-015-SGR.cavecode and its acceptance card
+6. exact Git commits, CI runs, artifacts, and physical evidence
+
+🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
+--------------------------------------------------------------------------------
+1. No repair, rebuild, or replacement of versionCode 19 is authorized or required.
+2. Storefront propagation or post-publication device visibility may be recorded later
+   as separate operational evidence if Michael chooses.
+3. New product development requires a new ratified scope and release identity.
+4. The separate Forgekeeper engine remains future work outside this repository.
+5. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
+
+================================================================================
+END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE
+================================================================================

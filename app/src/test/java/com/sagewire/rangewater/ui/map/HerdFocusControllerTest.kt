@@ -23,7 +23,22 @@ class HerdFocusControllerTest {
 
         assertEquals(7L, focus.herdId)
         assertEquals(20L, focus.pastureId)
+        assertEquals(setOf(20L), focus.pastureIds)
         assertEquals(setOf(1L, 2L), focus.relatedWaterPointIds)
+    }
+
+    @Test
+    fun assignedCircuitExpandsFocusToEveryMemberPastureAndItsWater() {
+        val focus = HerdFocusController.derive(
+            herd = herd(id = 7, pastureId = 20),
+            assignments = mapOf(1L to listOf(20L), 2L to listOf(21L), 3L to listOf(30L)),
+            circuitPastureIds = setOf(20L, 21L)
+        )!!
+
+        assertEquals(setOf(20L, 21L), focus.pastureIds)
+        assertEquals(setOf(1L, 2L), focus.relatedWaterPointIds)
+        val gates = listOf(gate(10, 20, null), gate(11, 21, 31), gate(12, 30, 31))
+        assertEquals(listOf(10L, 11L), HerdFocusController.filterGates(gates, focus).map { it.gate.id })
     }
 
     @Test
