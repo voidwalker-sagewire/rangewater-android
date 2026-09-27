@@ -5,7 +5,7 @@ RW-TX-015-SGR — FIELD CANDIDATE VERSION CODE 19
 Status: FIELD ACCEPTED — INTERNAL PLAY MIGRATION PASSED
 Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
 Automated evidence: GitHub Actions run 36269468596 — PASSED
-Production authority: GRANTED 2026-09-27 — EXACT TESTED VERSIONCODE 19 BUNDLE ONLY
+Production: GOOGLE PLAY APPROVED AND PUBLISHED — REPORTED 2026-09-27
 
 PHYSICAL FINDING 1 — CORRECTION FIELD-VERIFIED — CLOSED
 --------------------------------------------------------------------------------
@@ -147,7 +147,9 @@ Lifecycle state: FIELD ACCEPTED.
 Google Play internal migration: PASSED on Samsung Tab S7, 2026-09-27.
 Production promotion authority: GRANTED by Michael on 2026-09-27 for the exact tested
 RangeWater 1.1.0 versionCode 19 bundle.
-Google Play production submission/review/publication: NOT YET RECORDED.
+Google Play production review: APPROVED, reported by Michael on 2026-09-27.
+Production publication: COMPLETED by Michael, reported by 09:16 Eastern.
+Storefront propagation/post-publication device confirmation: PENDING SEPARATE EVIDENCE.
 
 ================================================================================
 END — RW-TX-015-SGR PHYSICAL-GLASS ACCEPTANCE CARD

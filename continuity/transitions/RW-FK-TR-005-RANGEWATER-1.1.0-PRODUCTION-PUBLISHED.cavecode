@@ -1,0 +1,111 @@
+================================================================================
+RANGEWATER PRODUCTION PUBLICATION TRANSITION RECORD
+RW-FK-TR-005 — RANGEWATER 1.1.0 PRODUCTION PUBLISHED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-005
+Project: RangeWater
+Title: RangeWater 1.1.0 VersionCode 19 Google Play Production Publication
+Revision: 1
+State: FIELD ACCEPTED — PRODUCTION PUBLISHED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T09:16:33-04:00
+Source-Type: Explicit human Google Play Console report
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+Branch-Head-Before-Record: 33e28139eb19f39194f3126acbb2b249207ff799
+Released-Candidate-Source: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+Published-VersionName: 1.1.0
+Published-VersionCode: 19
+Predecessor: continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode
+Successor: NOT APPLICABLE
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+Operational-Evidence-Needed: STOREFRONT PROPAGATION AND POST-PUBLICATION DEVICE CONFIRMATION
+
+🪨 BLOCK 1 — HUMAN REPORT
+--------------------------------------------------------------------------------
+Michael reported at 09:16 Eastern on 2026-09-27:
+
+"Okay, so it's already, I don't know what time it was. Let's see here, does it say?
+Yeah, 8:01, so an hour later. It's now 9:16. Google approved the changes and I
+published them."
+
+Normalized meaning:
+- The production release workflow was underway at approximately 08:01 Eastern.
+- By 09:16 Eastern, Google had approved the submitted changes.
+- Michael completed the authorized publication action.
+- The published artifact was the exact selected RangeWater 1.1.0 versionCode 19 bundle.
+
+The report does not establish an exact Google approval timestamp between those checkpoints.
+
+🪨 BLOCK 2 — RELEASE IDENTITY
+--------------------------------------------------------------------------------
+Published release:
+- Product: RangeWater.
+- Package: com.sagewire.rangewater.
+- Version name: 1.1.0.
+- Version code: 19.
+- Track: Production.
+- Authorized rollout: 100% of targeted users and all targeted countries/regions.
+- Release name: RangeWater 1.1.0 (19) – Production.
+- Bundle source: the exact versionCode 19 bundle previously delivered through internal
+  testing; no rebuild or replacement bundle was authorized.
+
+Release notes:
+"Adds Grazing Circuits, seasonal pasture roles, circuit-aware Herd Focus, recorded-rest
+history, forage and stockpile observations, Ohio grazing-stick calibration, archive
+format 2, and the field-verified herd-card Close correction."
+
+🪨 BLOCK 3 — EVIDENCE LINEAGE
+--------------------------------------------------------------------------------
+Pre-publication evidence:
+- Corrected candidate source df061bc passed GitHub Actions run 36284608250.
+- Full physical-glass checklist passed on Michael's Samsung phone and Samsung Tab S7.
+- Controlled Google Play internal 1.0.1-to-1.1.0 migration passed on Samsung Tab S7.
+- Restored September 23 pastures, gates, water sources, and other records survived.
+- Michael explicitly authorized production promotion in RW-FK-TR-004.
+
+Console preview evidence reported before saving:
+- Selected app bundle: 19 (1.1.0).
+- Production rollout: 100%.
+- Country availability: all targeted countries.
+- Previous versionCode 18 excluded as the superseded production artifact.
+- Deobfuscation-file and native-debug-symbol messages were warnings, not blocking errors.
+
+Publication evidence:
+- Michael's explicit report that Google approved the changes and he published them.
+
+🪨 BLOCK 4 — CURRENT STATE AND LIMITS
+--------------------------------------------------------------------------------
+Current durable state:
+- RangeWater 1.1.0 versionCode 19: GOOGLE PLAY PRODUCTION PUBLISHED.
+- Prior production RangeWater 1.0.1 versionCode 18: SUPERSEDED for current distribution.
+- Accepted released candidate source: df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+
+Still to observe separately:
+- completion of Google Play storefront propagation;
+- public listing/version visibility outside the internal tester context;
+- optional post-publication physical-device confirmation.
+
+These operational checks must not be claimed complete from publication alone. They do not
+authorize rebuilding or replacing versionCode 19.
+
+🪨 BLOCK 5 — SCOPE BOUNDARY
+--------------------------------------------------------------------------------
+- This transition records production publication; it introduces no product change.
+- No application code, schema, bundle, release notes, signing identity, or rollout scope
+  changed after acceptance.
+- codex/cavecode-forgekeeper-pilot remains untouched.
+- Future product development requires a new ratified scope and release identity.
+
+🌐 BLOCK 6 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+Google approved the authorized RangeWater 1.1.0 versionCode 19 production release, and
+Michael completed publication on 2026-09-27. Storefront propagation and post-publication
+device visibility remain separate operational checks.
+
+================================================================================
+END — RW-FK-TR-005 — PRODUCTION PUBLISHED
+================================================================================

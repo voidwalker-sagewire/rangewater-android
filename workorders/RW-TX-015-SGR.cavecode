@@ -3,7 +3,7 @@ RANGEWATER TRANSMISSION CONTRACT
 RW-TX-015-SGR — RANGEWATER 1.1.0 SEASONAL GRAZING
 ================================================================================
 Format: CaveCode v1.0 project contract
-Status: FIELD ACCEPTED — PRODUCTION PROMOTION AUTHORIZED — NOT YET PUBLISHED
+Status: CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 Prepared: 2026-09-26
 Revised: 2026-09-26 — added recorded-rest and Ohio grazing-stick forage scope
@@ -623,10 +623,12 @@ Field acceptance record:
   restored September 23 pastures, gates, water sources, and other records survived.
 - Subsequent production authority: GRANTED by Michael on 2026-09-27 for promotion of the
   exact internally tested RangeWater 1.1.0 versionCode 19 bundle. No rebuild is authorized.
-- Google Play production submission, review, approval, and publication remain unproven
-  until separately completed and recorded.
-- Authority record:
-  continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode.
+- Google Play approved the production changes, and Michael reported publishing the exact
+  RangeWater 1.1.0 versionCode 19 bundle by 09:16 Eastern on 2026-09-27.
+- Publication record:
+  continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode.
+- Storefront propagation and a post-publication device confirmation remain separate
+  operational evidence and do not alter the already accepted binary.
 
 🪨 BLOCK 13 — OHIO USDA-NRCS/GLCI GRAZING-STICK PRESET
 --------------------------------------------------------------------------------

@@ -4,7 +4,7 @@ RW-FK-CURRENT-001
 ================================================================================
 Format: CaveCode current-state pointer index
 Format Status: RATIFIED — ACTIVE
-Content Snapshot: 2026-09-27T07:15:44-04:00
+Content Snapshot: 2026-09-27T09:16:33-04:00
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
 Final Authority: Michael
@@ -19,9 +19,11 @@ Final Authority: Michael
 🪨 BLOCK 2 — CURRENT PRODUCT STATE
 --------------------------------------------------------------------------------
 Production:
-- RangeWater 1.0.1, versionCode 18.
-- State: FIELD ACCEPTED — PRODUCTION PUBLISHED.
-- Released source: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+- RangeWater 1.1.0, versionCode 19.
+- State: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
+- Released candidate source: df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+- Prior production: RangeWater 1.0.1, versionCode 18, released source
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
 
 Next release:
 - RangeWater 1.1.0, versionCode 19.
@@ -39,7 +41,9 @@ Next release:
   continuity/transitions/RW-FK-TR-001-RW-TX-015-FIELD-ACCEPTED.cavecode.
 - Production promotion authority: GRANTED by Michael on 2026-09-27 for the exact tested
   RangeWater 1.1.0 versionCode 19 bundle.
-- Submission/review/publication status: NOT YET RECORDED.
+- Google review: APPROVED, reported by Michael on 2026-09-27.
+- Production publication: COMPLETED by Michael, reported at 09:16 Eastern.
+- Storefront propagation and post-publication device confirmation: PENDING.
 
 🪨 BLOCK 3 — CURRENT GATE
 --------------------------------------------------------------------------------
@@ -51,8 +55,10 @@ Next release:
 - Prior capture retained as historical predecessor:
   continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode.
 - Production promotion is AUTHORIZED for the exact tested versionCode 19 bundle.
-- Google Play production submission, review, approval, and publication are not yet recorded.
-- Authorization transition:
+- Google Play production submission, review approval, and publication: REPORTED COMPLETE.
+- Publication transition:
+  continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode.
+- Authorization predecessor:
   continuity/transitions/RW-FK-TR-004-PRODUCTION-PROMOTION-AUTHORIZED.cavecode.
 
 🪨 BLOCK 4 — CONTINUITY CONFLICT STATUS
@@ -73,10 +79,10 @@ Next release:
 
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
-1. Production promotion is AUTHORIZED for the exact tested 1.1.0 versionCode 19 bundle.
-2. Promote that existing bundle to Production without rebuilding it.
-3. Submit the production release to Google Play for review.
-4. Record Google's review result and actual publication state separately.
+1. Wait for Google Play storefront propagation if the public listing has not refreshed.
+2. Confirm a non-internal-tester storefront/device sees RangeWater 1.1.0 when practical.
+3. Record post-publication device evidence separately; do not recreate or rebuild version 19.
+4. Prepare normal repository integration/closeout only after the production state is stable.
 5. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; the index remains ACTIVE.
 
 ================================================================================
