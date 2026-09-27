@@ -7,6 +7,19 @@ Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
 Automated evidence: GitHub Actions run 36269468596 — PASSED
 Production authority: NOT GRANTED
 
+PHYSICAL FINDING 1 — CORRECTED BUILD READY FOR RETEST
+--------------------------------------------------------------------------------
+Observed by Michael on Samsung phone, 2026-09-26:
+- The herd inspection card had no explicit Close action.
+- Tapping the map selected a pasture, forcing a second Close action on the pasture card.
+
+Correction evidence:
+- Corrected source: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+- GitHub Actions run 36284608250 (run 115): PASSED
+- Behavior change: a visible Close action now dismisses the herd card directly.
+- Data, movement, circuit, map-focus, and production authority boundaries are unchanged.
+- Focused physical retest remains required before this finding may be closed.
+
 BEFORE INSTALLING
 --------------------------------------------------------------------------------
 [ ] In RangeWater 1.0.1, create a fresh .rangewater backup outside the app.
