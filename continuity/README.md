@@ -6,8 +6,8 @@ It holds governance and continuity artifacts, not application runtime code.
 ## Current artifact
 
 - `RANGEWATER-CONTINUITY-CONTRACT.cavecode`
-  - Status: PROPOSED
-  - Next authority action: Michael reviews, revises, or ratifies it.
+  - Status: RATIFIED — 2026-09-26 by Michael
+  - Transition record: `ratifications/RW-CC-001-REV1-RATIFICATION.cavecode`
 
 ## Boundaries
 
@@ -21,7 +21,7 @@ It holds governance and continuity artifacts, not application runtime code.
 
 ## Future structure
 
-Once the Continuity Contract is ratified, later work may add append-only state
+Under the ratified Continuity Contract, later work may add append-only state
 records or machine-readable indexes here. Their exact names and schemas remain
 unassigned until ratification. No engine implementation is authorized by this
 directory.
