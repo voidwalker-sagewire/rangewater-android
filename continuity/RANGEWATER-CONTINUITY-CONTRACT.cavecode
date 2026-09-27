@@ -4,8 +4,9 @@ RW-CC-001 — CAVECODE FORGEKEEPER PILOT
 ================================================================================
 Format: CaveCode project continuity contract
 Contract Revision: 1
-Status: PROPOSED — AWAITING MICHAEL'S RATIFICATION
+Status: RATIFIED — 2026-09-26 BY MICHAEL
 Prepared: 2026-09-26
+Ratified: 2026-09-26 by Michael
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
 Final Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
@@ -252,7 +253,18 @@ are not assigned or authorized by this revision.
 🖍️ BLOCK 10 — MICHAEL'S RATIFICATION GATE
 --------------------------------------------------------------------------------
 CURRENT CONTRACT STATE:
-- PROPOSED.
+- RATIFIED — 2026-09-26 BY MICHAEL.
+
+RATIFICATION OUTCOME:
+- Transition: Proposed -> Ratified.
+- Authority: Michael (Project Owner, Lead Architect, Final Decision Authority).
+- Recorded at: 2026-09-26T20:55:07-04:00.
+- Exact statement:
+  "I ratify RW-CC-001 Revision 1, the Range Water Continuity Contract."
+- Durable transition record:
+  continuity/ratifications/RW-CC-001-REV1-RATIFICATION.cavecode
+- The approved contract language remains Revision 1. These lifecycle metadata and
+  ratification-record references document the completed authority action.
 
 RATIFICATION QUESTION:
 - Does this contract correctly govern RangeWater continuity and the first CaveCode
@@ -267,8 +279,9 @@ IF CHANGES ARE NEEDED:
 - Produce Revision 2 as Proposed.
 - Preserve Revision 1 and its outcome.
 
-NO EFFECT BEFORE RATIFICATION:
-- This file must not be treated as Ratified merely because it exists in the repository.
+ORIGINAL PRE-RATIFICATION GUARD:
+- This file was not to be treated as Ratified merely because it existed in the repository.
+- That guard was satisfied by Michael's explicit ratification recorded above.
 
 🌐 BLOCK 11 — PUBLIC-SAFE SUMMARY
 --------------------------------------------------------------------------------
@@ -278,5 +291,5 @@ project truth. Repository evidence distinguishes proposals, decisions, implement
 verification, physical field acceptance, and later supersession.
 
 ================================================================================
-END — RW-CC-001 REVISION 1 — PROPOSED
+END — RW-CC-001 REVISION 1 — RATIFIED
 ================================================================================
