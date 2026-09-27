@@ -1,0 +1,108 @@
+================================================================================
+FORGEKEEPER PILOT GOVERNANCE PROPOSAL
+RW-FK-002 — CURRENT-STATE INDEX AND AUTHORITATIVE-BRANCH SYNCHRONIZATION
+================================================================================
+Format: CaveCode governance proposal
+Proposal-ID: RW-FK-002
+Project: RangeWater
+Revision: 1
+State: PROPOSED
+Prepared: 2026-09-27
+Prepared-By: Ash / OpenAI Codex
+Final Authority: Michael
+Human-Decision-Needed: YES
+
+🪨 BLOCK 1 — PROBLEM
+--------------------------------------------------------------------------------
+The first pilot proved the state ladder and authority boundary, then exposed a structural
+weakness: a long-lived Forgekeeper branch can become stale while product work continues
+on another branch.
+
+The governance contract's pilot-start snapshot remained historically correct, but it no
+longer answered the current-state question after RangeWater advanced to FIELD ACCEPTED.
+
+🪨 BLOCK 2 — PROPOSED CURRENT-STATE INDEX
+--------------------------------------------------------------------------------
+Adopt:
+continuity/RANGEWATER-CURRENT-STATE.cavecode
+
+RULES:
+1. The index is a short pointer map, not a second master ledger.
+2. It carries no authority beyond the immutable records and evidence it references.
+3. It records current production, active release, lifecycle state, exact candidate,
+   authoritative branch/head, open gates, open conflicts, and next human decision.
+4. Historical detail remains in append-only records, workorders, and the master ledger.
+5. Every state-changing update names exact commits and evidence.
+6. Unknown or unproven claims remain CAPTURED or UNKNOWN.
+7. The index may be regenerated, but its referenced records may not be silently rewritten.
+8. A stale index must say STALE when detected; it must never guess forward.
+
+🪨 BLOCK 3 — PROPOSED BRANCH SYNCHRONIZATION RULE
+--------------------------------------------------------------------------------
+1. RangeWater continuity records live in the RangeWater repository.
+2. The current-state index must travel on the same branch as the product truth it describes.
+3. A product branch is not resumable after a lifecycle-changing event until its continuity
+   index and required transition records are updated on that same branch.
+4. When the product branch is integrated into main, its continuity records travel with it.
+5. Main becomes the durable default continuity entry point after integration.
+6. A separate long-lived continuity-only branch is prohibited after this pilot migration.
+7. Short review branches may draft Proposed governance changes, but they may not present
+   themselves as the current product state.
+8. The separate future Forgekeeper engine remains outside the RangeWater repository.
+9. The engine may propose repository changes; it may not own canonical truth or bypass
+   Michael's authority gates.
+
+🪨 BLOCK 4 — PROPOSED PILOT MIGRATION
+--------------------------------------------------------------------------------
+After ratification:
+1. Bring the ratified continuity contract, ratification record, transition record, captured
+   Play event, conflict record, current-state index, and this decision record into the
+   active RangeWater branch without altering application code.
+2. Update the current-state index against the then-current active branch head.
+3. Mark RW-FK-CONFLICT-001 RESOLVED after same-branch continuity is verified.
+4. Carry continuity files into main through the normal accepted integration path.
+5. Mark the isolated pilot branch SUPERSEDED for current-state use; preserve it as history.
+6. Do not delete any pilot evidence.
+
+🪨 BLOCK 5 — REJECTED ALTERNATIVES
+--------------------------------------------------------------------------------
+ALTERNATIVE A — Keep a permanent continuity-only branch:
+- Rejected in this proposal because it already drifted from active product truth.
+
+ALTERNATIVE B — Let the later Forgekeeper engine database be canonical:
+- Rejected because engine failure, cache loss, or vendor changes must not erase project truth.
+
+ALTERNATIVE C — Rewrite the ratified contract snapshot every time the product changes:
+- Rejected because the contract is governance and historical evidence, not a mutable status page.
+
+🪨 BLOCK 6 — AUTHORITY AND EFFECT
+--------------------------------------------------------------------------------
+Before ratification:
+- This proposal changes no branch policy.
+- The current-state index format remains PROPOSED.
+- No branch synchronization or migration is authorized.
+- Production remains NOT AUTHORIZED.
+
+If ratified:
+- The index rules in Block 2 become active.
+- The branch rules in Block 3 become active.
+- The migration steps in Block 4 become ASSIGNED to Ash / OpenAI Codex for repository work.
+- Application behavior, release authority, and production state remain unchanged.
+
+🖍️ BLOCK 7 — MICHAEL'S DECISION GATE
+--------------------------------------------------------------------------------
+RATIFICATION QUESTION:
+Does this proposal correctly establish the RangeWater current-state index and require
+continuity records to travel with the authoritative product branch?
+
+If accepted, Michael may state:
+"I ratify RW-FK-002 Revision 1, the Forgekeeper current-state and branch-sync contract."
+
+If changes are needed:
+- record the requested changes;
+- create Revision 2 as PROPOSED;
+- preserve Revision 1 and its outcome.
+
+================================================================================
+END — RW-FK-002 REVISION 1 — PROPOSED
+================================================================================
