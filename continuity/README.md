@@ -20,17 +20,17 @@ It holds governance and continuity artifacts, not application runtime code.
   - Preserves the reported Google Play internal-release acceptance.
   - Migration-test result remains a human evidence gate.
 - `conflicts/RW-FK-CONFLICT-001-PILOT-BRANCH-DRIFT.cavecode`
-  - Status: OPEN
-  - Records divergence between the isolated pilot branch and active product work.
+  - Status: RESOLVED — historical pilot evidence
+  - The isolated pilot branch is superseded for current-state use.
 
 ## Proposed governance
 
 - `RANGEWATER-CURRENT-STATE.cavecode`
-  - Format status: RATIFIED — activation assigned
+  - Format status: RATIFIED — ACTIVE
   - Short current-state pointer index for mobile and AI handoff.
 - `proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode`
-  - Status: RATIFIED — 2026-09-27 by Michael
-  - Migration to the active authoritative branch is assigned to Ash / OpenAI Codex.
+  - Status: RATIFIED — IMPLEMENTED
+  - Integrated into the active RangeWater branch through pull request #3.
 
 ## Boundaries
 
