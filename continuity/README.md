@@ -26,12 +26,11 @@ It holds governance and continuity artifacts, not application runtime code.
 ## Proposed governance
 
 - `RANGEWATER-CURRENT-STATE.cavecode`
-  - Format status: PROPOSED
+  - Format status: RATIFIED — activation assigned
   - Short current-state pointer index for mobile and AI handoff.
 - `proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode`
-  - Status: PROPOSED
-  - Requires Michael's ratification before the index format, branch rule, or migration
-    becomes authoritative.
+  - Status: RATIFIED — 2026-09-27 by Michael
+  - Migration to the active authoritative branch is assigned to Ash / OpenAI Codex.
 
 ## Boundaries
 
