@@ -8,8 +8,8 @@ pasture mapping, herd movement, and seasonal grazing records.
 Read these files in order before proposing or implementing work:
 
 1. `continuity/RANGEWATER-CONTINUITY-CONTRACT.cavecode`
-   - Proposed Forgekeeper pilot contract.
-   - It does not govern the project until Michael ratifies it.
+   - Ratified Forgekeeper pilot governance contract.
+   - Ratified by Michael on 2026-09-26.
 2. `RANGEWATER.cavecode.txt`
    - Current master state, accepted decisions, evidence, and resume point.
 3. `workorders/`
