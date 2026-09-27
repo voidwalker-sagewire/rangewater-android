@@ -7,13 +7,13 @@ Record-ID: RW-FK-CONFLICT-001
 Project: RangeWater
 Title: Forgekeeper Pilot Branch Fell Behind Active Product Truth
 Revision: 1
-State: CAPTURED
+State: SUPERSEDED
 Severity: HIGH FOR CONTINUITY — NO PRODUCT CODE DEFECT
 Recorded-By: Ash / OpenAI Codex
 Recorded-At: 2026-09-27T06:06:26-04:00
 Repository: voidwalker-sagewire/rangewater-android
-Conflict-Status: OPEN — GOVERNANCE DECISION REQUIRED
-Human-Decision-Needed: YES — RATIFY RW-FK-002 OR REVISE IT
+Conflict-Status: RESOLVED — RW-FK-002 IMPLEMENTED
+Human-Decision-Needed: NO
 
 🪨 BLOCK 1 — CONFLICT
 --------------------------------------------------------------------------------
@@ -53,17 +53,23 @@ snapshot for present truth.
 - The isolated continuity branch did not automatically receive authoritative work.
 - The pilot therefore exposed a synchronization weakness before engine construction.
 
-🪨 BLOCK 4 — PROPOSED RESOLUTION
+🪨 BLOCK 4 — RESOLUTION
 --------------------------------------------------------------------------------
-See:
-continuity/proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode
+Michael ratified RW-FK-002 Revision 1 on 2026-09-27.
 
-Until Michael ratifies a resolution:
-- keep this conflict OPEN;
-- treat the active product branch evidence as current for RangeWater product status;
-- treat the continuity branch as the governance pilot and historical record;
-- do not claim that branch synchronization is automatic.
+Implemented resolution:
+- Pull request #3 merged the continuity structure into codex/rw-tx-015-sgr.
+- Integration commit:
+  3d3d88f4931b3b021775ca23b40cd65916d6427e.
+- The current-state index now travels with the active product branch.
+- The isolated pilot branch is preserved as history and SUPERSEDED for current-state use.
+- The continuity records will later travel into main through the normal accepted
+  RangeWater integration path.
+
+Resolution result:
+- The original drift remains preserved as pilot evidence.
+- No application code, release state, or production authority changed.
 
 ================================================================================
-END — RW-FK-CONFLICT-001 — OPEN
+END — RW-FK-CONFLICT-001 — RESOLVED — SUPERSEDED
 ================================================================================
