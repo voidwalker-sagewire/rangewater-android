@@ -7,7 +7,7 @@ Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
 Automated evidence: GitHub Actions run 36269468596 — PASSED
 Production authority: NOT GRANTED
 
-PHYSICAL FINDING 1 — CORRECTED BUILD READY FOR RETEST
+PHYSICAL FINDING 1 — CORRECTION FIELD-VERIFIED — CLOSED
 --------------------------------------------------------------------------------
 Observed by Michael on Samsung phone, 2026-09-26:
 - The herd inspection card had no explicit Close action.
@@ -18,7 +18,10 @@ Correction evidence:
 - GitHub Actions run 36284608250 (run 115): PASSED
 - Behavior change: a visible Close action now dismisses the herd card directly.
 - Data, movement, circuit, map-focus, and production authority boundaries are unchanged.
-- Focused physical retest remains required before this finding may be closed.
+- Focused physical retest: PASSED on Michael's Samsung phone.
+- The corrected APK installed in place over the prior field candidate without uninstalling.
+- RangeWater opened normally, and tapping Close dismissed the herd card directly.
+- Finding closed: 2026-09-26.
 
 PHYSICAL EVIDENCE 1 — PLAY 1.0.1 BACKUP INTO FIELD 1.1.0
 --------------------------------------------------------------------------------
