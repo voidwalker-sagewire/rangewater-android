@@ -1583,14 +1583,29 @@ fun MapScreen(
                 color = Color(0xFF1E1E1E)
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(herd.name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            herd.name,
+                            modifier = Modifier.weight(1f),
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(
                             "${herd.quantity} ${if (herd.countUnit == CountUnit.PAIRS) "Pairs" else "Head"}",
                             color = Color(android.graphics.Color.parseColor(herd.markerColorHex)),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
+                        TextButton(
+                            onClick = { selectedHerdId = null },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text("Close", color = Color.LightGray, fontSize = 12.sp)
+                        }
                     }
                     Text(herd.stockClass.displayName, color = Color.LightGray, fontSize = 12.sp)
                     val detailParts = buildList {
