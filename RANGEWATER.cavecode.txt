@@ -1103,8 +1103,10 @@ ROADMAP GUARD:
   Correction: commit df061bc07d8b09c6f678d56b1d439aa3e4e02923 adds an explicit Close
   action to the herd-card header without changing map focus, herd data, or ranch records.
   Correction CI evidence: workflow run 36284608250 (run 115) passed every imagery, JVM,
-  Room instrumentation, field-signing/certificate, and Play-bundle gate. Focused physical
-  retest of direct herd-card dismissal remains pending.
+  Room instrumentation, field-signing/certificate, and Play-bundle gate.
+  Focused physical retest: PASSED on Michael's Samsung phone. The corrected field APK
+  installed in place over the prior field candidate without uninstalling, opened normally,
+  and the new Close action dismissed the herd card directly. Finding closed 2026-09-26.
   Draft review: https://github.com/voidwalker-sagewire/rangewater-android/pull/2.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
@@ -1216,12 +1218,12 @@ ROADMAP GUARD:
 - Third-party handoff rule: for production maintenance use main and released commit
   6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. For active 1.1.0 work use branch
   codex/rw-tx-015-sgr at corrected candidate commit df061bc07d8b09c6f678d56b1d439aa3e4e02923.
-- Next action: install the stable-signed corrected RangeWater-1.1.0-field.apk from workflow
-  run 36284608250, confirm the herd card closes directly through its new Close action, then
-  continue Block 12 of workorders/RW-TX-015-SGR.cavecode on Samsung phone and Tab S7.
-  Record pass/fail evidence before internal testing or production action.
-- Resume point: automated acceptance is complete for corrected candidate df061bc. Resume
-  with the focused herd-card Close retest, then continue the remaining RW-TX-015-SGR
+- Next action: continue the remaining Block 12 checks in
+  workorders/RW-TX-015-SGR.cavecode on Samsung phone and Tab S7. The corrected field APK
+  is installed and its herd-card Close action is field-verified. Record remaining pass/fail
+  evidence before internal testing or production action.
+- Resume point: automated acceptance and the focused herd-card Close correction retest are
+  complete for corrected candidate df061bc. Resume with the remaining RW-TX-015-SGR
   physical-glass checks. Production publication is not authorized without full physical
   acceptance and an explicit promotion instruction from Michael.
 
