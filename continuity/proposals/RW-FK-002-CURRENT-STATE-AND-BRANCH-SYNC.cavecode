@@ -6,8 +6,9 @@ Format: CaveCode governance proposal
 Proposal-ID: RW-FK-002
 Project: RangeWater
 Revision: 1
-State: PROPOSED
+State: RATIFIED — 2026-09-27 BY MICHAEL
 Prepared: 2026-09-27
+Ratified: 2026-09-27 by Michael
 Prepared-By: Ash / OpenAI Codex
 Final Authority: Michael
 Human-Decision-Needed: YES
@@ -91,7 +92,18 @@ If ratified:
 
 🖍️ BLOCK 7 — MICHAEL'S DECISION GATE
 --------------------------------------------------------------------------------
-RATIFICATION QUESTION:
+RATIFICATION OUTCOME:
+- Transition: Proposed -> Ratified.
+- Authority: Michael.
+- Recorded at: 2026-09-27T06:19:35-04:00.
+- Michael's exact statement:
+  "I've ratified RWDAshFK-002 Revision 1, the Forgekeeper current state and branch sync contract."
+- Normalized identifier: RW-FK-002 Revision 1.
+- Normalization basis: Revision 1 and the exact title identify the only prepared contract;
+  RWDAshFK-002 is preserved as spoken transcription, not treated as a second artifact.
+- Migration in Block 4 is ASSIGNED to Ash / OpenAI Codex.
+
+ORIGINAL RATIFICATION QUESTION:
 Does this proposal correctly establish the RangeWater current-state index and require
 continuity records to travel with the authoritative product branch?
 
@@ -104,5 +116,5 @@ If changes are needed:
 - preserve Revision 1 and its outcome.
 
 ================================================================================
-END — RW-FK-002 REVISION 1 — PROPOSED
+END — RW-FK-002 REVISION 1 — RATIFIED
 ================================================================================
