@@ -3,8 +3,8 @@ RANGEWATER CURRENT-STATE INDEX — PROPOSED FORMAT
 RW-FK-CURRENT-001
 ================================================================================
 Format: CaveCode current-state pointer index
-Format Status: RATIFIED — ACTIVATION ASSIGNED
-Content Snapshot: 2026-09-27T06:06:26-04:00
+Format Status: RATIFIED — ACTIVE
+Content Snapshot: 2026-09-27T06:19:35-04:00
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
 Final Authority: Michael
@@ -31,8 +31,10 @@ Next release:
 - Corrected accepted candidate:
   df061bc07d8b09c6f678d56b1d439aa3e4e02923.
 - Active branch: codex/rw-tx-015-sgr.
-- Evidence branch head at snapshot:
+- Product evidence head:
   f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- Continuity integration commit:
+  3d3d88f4931b3b021775ca23b40cd65916d6427e.
 - Transition record:
   continuity/transitions/RW-FK-TR-001-RW-TX-015-FIELD-ACCEPTED.cavecode.
 - Production authority: NOT GRANTED.
@@ -45,11 +47,13 @@ Next release:
   continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode.
 - Production promotion remains NOT AUTHORIZED.
 
-🪨 BLOCK 4 — OPEN CONTINUITY CONFLICTS
+🪨 BLOCK 4 — CONTINUITY CONFLICT STATUS
 --------------------------------------------------------------------------------
-- RW-FK-CONFLICT-001: isolated pilot branch drift — OPEN.
-- Resolution proposal:
-  continuity/proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode.
+- RW-FK-CONFLICT-001: isolated pilot branch drift — RESOLVED.
+- Resolution authority: ratified RW-FK-002 Revision 1.
+- Resolution integration commit:
+  3d3d88f4931b3b021775ca23b40cd65916d6427e.
+- The isolated pilot branch is preserved as history and SUPERSEDED for current-state use.
 
 🪨 BLOCK 5 — READ ORDER
 --------------------------------------------------------------------------------
@@ -62,10 +66,10 @@ Next release:
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
 1. Michael reports the final Play-to-Play migration test PASS or FAIL.
-2. Michael reviews and ratifies or revises RW-FK-002.
-3. This index format was ratified through RW-FK-002 Revision 1 on 2026-09-27.
-4. Activation requires migration onto the active authoritative product branch.
+2. RW-FK-002 Revision 1 is RATIFIED and IMPLEMENTED on the active product branch.
+3. The index is ACTIVE.
+4. Production promotion remains NOT AUTHORIZED.
 
 ================================================================================
-END — RW-FK-CURRENT-001 — RATIFIED FORMAT — ACTIVATION ASSIGNED
+END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE
 ================================================================================
