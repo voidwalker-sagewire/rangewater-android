@@ -3,7 +3,7 @@ RANGEWATER CURRENT-STATE INDEX — PROPOSED FORMAT
 RW-FK-CURRENT-001
 ================================================================================
 Format: CaveCode current-state pointer index
-Format Status: PROPOSED — AWAITING MICHAEL'S RATIFICATION
+Format Status: RATIFIED — ACTIVATION ASSIGNED
 Content Snapshot: 2026-09-27T06:06:26-04:00
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
@@ -63,8 +63,9 @@ Next release:
 --------------------------------------------------------------------------------
 1. Michael reports the final Play-to-Play migration test PASS or FAIL.
 2. Michael reviews and ratifies or revises RW-FK-002.
-3. This index format remains PROPOSED until that governance decision.
+3. This index format was ratified through RW-FK-002 Revision 1 on 2026-09-27.
+4. Activation requires migration onto the active authoritative product branch.
 
 ================================================================================
-END — RW-FK-CURRENT-001 — PROPOSED FORMAT
+END — RW-FK-CURRENT-001 — RATIFIED FORMAT — ACTIVATION ASSIGNED
 ================================================================================
