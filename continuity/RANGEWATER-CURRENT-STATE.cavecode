@@ -4,7 +4,7 @@ RW-FK-CURRENT-001
 ================================================================================
 Format: CaveCode current-state pointer index
 Format Status: RATIFIED — ACTIVE
-Content Snapshot: 2026-09-27T06:19:35-04:00
+Content Snapshot: 2026-09-27T07:01:14-04:00
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
 Final Authority: Michael
@@ -27,12 +27,12 @@ Next release:
 - RangeWater 1.1.0, versionCode 19.
 - Room schema: 7.
 - Archive write format: 2; format 1 and 2 restore support.
-- State: FIELD ACCEPTED.
+- State: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION PASSED.
 - Corrected accepted candidate:
   df061bc07d8b09c6f678d56b1d439aa3e4e02923.
 - Active branch: codex/rw-tx-015-sgr.
-- Product evidence head:
-  f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- Product evidence head before this acceptance record:
+  f3f7adfde032fd7b672b264032fa85553cbc630b.
 - Continuity integration commit:
   3d3d88f4931b3b021775ca23b40cd65916d6427e.
 - Transition record:
@@ -41,9 +41,12 @@ Next release:
 
 🪨 BLOCK 3 — CURRENT GATE
 --------------------------------------------------------------------------------
-- Google Play versionCode 19 internal-release Console acceptance: CAPTURED.
-- Migration test result: PENDING HUMAN PASS OR FAIL.
-- Capture record:
+- Google Play versionCode 19 internal-release delivery: PASSED.
+- Controlled Play-to-Play 1.0.1-to-1.1.0 in-place migration: PASSED on Samsung Tab S7.
+- Restored September 23 ranch records survived the update.
+- Acceptance transition:
+  continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode.
+- Prior capture retained as historical predecessor:
   continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode.
 - Production promotion remains NOT AUTHORIZED.
 
@@ -65,10 +68,11 @@ Next release:
 
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
-1. Michael reports the final Play-to-Play migration test PASS or FAIL.
-2. RW-FK-002 Revision 1 is RATIFIED and IMPLEMENTED on the active product branch.
-3. The index is ACTIVE.
-4. Production promotion remains NOT AUTHORIZED.
+1. Play-to-Play migration result: PASSED and durably recorded.
+2. Michael decides whether to authorize production promotion of versionCode 19.
+3. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED on the active product branch.
+4. The index is ACTIVE.
+5. Production promotion remains NOT AUTHORIZED.
 
 ================================================================================
 END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE

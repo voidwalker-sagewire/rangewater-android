@@ -1,0 +1,105 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-003 — GOOGLE PLAY INTERNAL MIGRATION FIELD ACCEPTED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-003
+Project: RangeWater
+Title: Google Play 1.0.1-to-1.1.0 In-Place Migration Acceptance
+Revision: 1
+State: FIELD ACCEPTED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T07:01:14-04:00
+Source-Type: Controlled physical-device test and explicit human reports
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+Branch-Head-Before-Record: f3f7adfde032fd7b672b264032fa85553cbc630b
+Accepted-Candidate-Source: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+Predecessor: continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode
+Successor: NOT APPLICABLE
+Conflict-Status: NONE
+Human-Decision-Needed: YES — SEPARATE PRODUCTION-PROMOTION DECISION
+
+🪨 BLOCK 1 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Artifact:
+- RangeWater 1.1.0, versionCode 19, Google Play internal release.
+
+Prior State:
+- Console acceptance and delivery remained CAPTURED.
+- Controlled Play-to-Play migration result remained PENDING.
+
+New State:
+- FIELD ACCEPTED for Google Play internal delivery and the controlled in-place migration.
+
+Transition date:
+- 2026-09-27.
+
+Transition authority:
+- Michael.
+
+🪨 BLOCK 2 — CONTROLLED TEST SEQUENCE
+--------------------------------------------------------------------------------
+Device:
+- Michael's Samsung Tab S7.
+
+Sequence:
+1. Michael left the internal program and uninstalled the prior RangeWater installation.
+2. Google Play installed production RangeWater 1.0.1.
+3. Michael restored the September 23 format-1 backup.
+4. The restored records appeared in their expected locations.
+5. Michael rejoined the RangeWater internal test with the same Google account.
+6. After Google Play enrollment propagation, the listing exposed Update.
+7. Michael updated the installed 1.0.1 application in place; he did not uninstall it.
+8. RangeWater opened after the update without another restore.
+9. The September 23 pastures, gates, water sources, and other records remained present.
+10. Android reported installed version 1.1.0.
+
+🪨 BLOCK 3 — HUMAN EVIDENCE
+--------------------------------------------------------------------------------
+Michael's reported checkpoints included:
+- Prior Play installation version: "1.0.1"
+- Internal-track delivery action: "It says update"
+- Post-update records:
+  "I see what looks like the September 23rd pastures gate water sources and other records."
+- Post-update installed version: "1.1.0"
+
+Normalized acceptance meaning:
+"Google Play delivered RangeWater 1.1.0 over an installed Play production 1.0.1 build on
+Samsung Tab S7, and the restored legacy ranch records survived the in-place update."
+
+🪨 BLOCK 4 — WHAT PASSED
+--------------------------------------------------------------------------------
+- Internal tester enrollment and versionCode 19 delivery.
+- Google Play Update path without uninstalling between 1.0.1 and 1.1.0.
+- Play-signed Room schema 6-to-7 application upgrade path.
+- Survival of restored legacy pastures, gates, water sources, and other ranch records.
+- Normal post-update application open.
+- Installed versionName 1.1.0 confirmation.
+
+This evidence supplements:
+- automated MIGRATION_6_7 verification;
+- full physical-glass acceptance on Michael's Samsung phone and Samsung Tab S7;
+- format-1 cross-signature restore evidence;
+- format-2 cross-device and Undo Last Restore acceptance.
+
+🪨 BLOCK 5 — AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- This record accepts the internal delivery and migration test only.
+- It does not publish RangeWater 1.1.0 to production.
+- It does not authorize production promotion.
+- Production remains RangeWater 1.0.1, versionCode 18.
+- Michael must give a separate explicit production-promotion instruction before any
+  production release action.
+- No application code, schema, artifact, or signing material changed in this record.
+
+🌐 BLOCK 6 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+RangeWater 1.1.0 versionCode 19 passed controlled Google Play internal delivery and an
+in-place update from production 1.0.1 on Samsung Tab S7. Legacy ranch records survived.
+Production promotion remains unauthorized.
+
+================================================================================
+END — RW-FK-TR-003 — FIELD ACCEPTED
+================================================================================

@@ -2,10 +2,10 @@
 RANGEWATER 1.1.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-015-SGR — FIELD CANDIDATE VERSION CODE 19
 ================================================================================
-Status: FIELD ACCEPTED — COMPLETE CHECKLIST PASSED ON BOTH TARGET DEVICES
+Status: FIELD ACCEPTED — INTERNAL PLAY MIGRATION PASSED
 Candidate source: b15a61ae8fe80489ad147434c9a0f35c5deb4019
 Automated evidence: GitHub Actions run 36269468596 — PASSED
-Production authority: NOT GRANTED — GOOGLE PLAY INTERNAL TESTING IS NEXT
+Production authority: NOT GRANTED — SEPARATE PRODUCTION-PROMOTION INSTRUCTION REQUIRED
 
 PHYSICAL FINDING 1 — CORRECTION FIELD-VERIFIED — CLOSED
 --------------------------------------------------------------------------------
@@ -53,9 +53,27 @@ use Google's production app-signing certificate. Android will not install one si
 over the other. If the device currently has the Google Play build, use this field path:
 backup -> uninstall Play build -> install field APK -> restore backup.
 
-The exact Play-to-Play in-place schema migration must be verified later through Google
-Play internal testing with versionCode 19. The automated Room suite has already migrated a
+The exact Play-to-Play in-place schema migration was verified through Google Play internal
+testing with versionCode 19 on 2026-09-27. The automated Room suite had already migrated a
 populated real schema-6 database to schema 7 without destructive fallback.
+
+INTERNAL TEST — PLAY-TO-PLAY IN-PLACE MIGRATION — PASSED
+--------------------------------------------------------------------------------
+Device: Michael's Samsung Tab S7.
+Controlled sequence:
+- Installed production RangeWater 1.0.1 from Google Play.
+- Restored the September 23 format-1 backup; its records appeared normally.
+- Rejoined the RangeWater internal test using the same Google account.
+- Google Play exposed Update rather than requiring uninstall/reinstall.
+- Updated in place from 1.0.1 to the internal 1.1.0 release.
+- Opened RangeWater without restoring again.
+- Confirmed the September 23 pastures, gates, water sources, and other records remained.
+- Confirmed Android reported installed version 1.1.0.
+Result:
+- PASSES Google Play delivery of versionCode 19.
+- PASSES controlled Play-signed 1.0.1-to-1.1.0 in-place migration.
+- PASSES survival of the restored legacy ranch records across that update.
+- Production promotion remains NOT AUTHORIZED.
 
 FIELD TEST — DATA AND MAP SURVIVAL
 --------------------------------------------------------------------------------
@@ -125,7 +143,8 @@ Normalized acceptance statement:
 on both target devices."
 
 Lifecycle state: FIELD ACCEPTED.
-Next gate: Google Play internal testing.
+Google Play internal migration: PASSED on Samsung Tab S7, 2026-09-27.
+Next authority gate: Michael's separate production-promotion decision.
 Production promotion: NOT AUTHORIZED.
 
 ================================================================================
