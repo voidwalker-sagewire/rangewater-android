@@ -1,0 +1,77 @@
+================================================================================
+FORGEKEEPER IMPLEMENTATION TRANSITION RECORD
+RW-FK-TR-002 — RW-FK-002 RATIFIED -> ASSIGNED -> IMPLEMENTED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-002
+Project: RangeWater
+Title: Current-State Index and Branch-Sync Migration
+Revision: 1
+State: IMPLEMENTED
+Authority: Michael
+Implemented-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T06:19:35-04:00
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+
+🪨 BLOCK 1 — AUTHORITY LINEAGE
+--------------------------------------------------------------------------------
+Proposal:
+- RW-FK-002 Revision 1.
+
+Ratification:
+- continuity/ratifications/RW-FK-002-REV1-RATIFICATION.cavecode.
+
+State path:
+- PROPOSED -> RATIFIED -> ASSIGNED -> IMPLEMENTED.
+
+Michael's exact ratification statement:
+"I've ratified RWDAshFK-002 Revision 1, the Forgekeeper current state and branch sync contract."
+
+Canonical normalized identifier:
+- RW-FK-002 Revision 1.
+
+🪨 BLOCK 2 — IMPLEMENTATION
+--------------------------------------------------------------------------------
+Pull request:
+- https://github.com/voidwalker-sagewire/rangewater-android/pull/3
+
+Integration commit:
+- 3d3d88f4931b3b021775ca23b40cd65916d6427e.
+
+Implemented effects:
+- Ratified continuity governance now exists on the active RangeWater product branch.
+- The current-state pointer index is ACTIVE on that branch.
+- RW-FK-CONFLICT-001 is RESOLVED.
+- The isolated pilot branch is SUPERSEDED for current-state use and preserved as history.
+- Future product-state continuity records must travel with their authoritative branch.
+- Future main integration will carry the continuity directory through the normal
+  accepted RangeWater path.
+
+🪨 BLOCK 3 — VERIFICATION
+--------------------------------------------------------------------------------
+Repository verification required:
+- continuity contract present on codex/rw-tx-015-sgr;
+- both ratification records present;
+- RW-FK-TR-001 present;
+- RW-FK-CAP-001 remains CAPTURED;
+- current-state index present and ACTIVE;
+- RW-FK-CONFLICT-001 marked RESOLVED;
+- no application source changed by pull request #3.
+
+Lifecycle note:
+- This governance migration is IMPLEMENTED.
+- Repository inspection may verify file presence and scope.
+- No separate physical Field Accepted state is required for documentation-only governance.
+
+🪨 BLOCK 4 — UNCHANGED PRODUCT BOUNDARIES
+--------------------------------------------------------------------------------
+- RangeWater 1.1.0 remains FIELD ACCEPTED.
+- Google Play internal-release acceptance remains CAPTURED.
+- Play-to-Play migration result remains PENDING.
+- Production promotion remains NOT AUTHORIZED.
+- No application behavior changed.
+
+================================================================================
+END — RW-FK-TR-002 — IMPLEMENTED
+================================================================================
