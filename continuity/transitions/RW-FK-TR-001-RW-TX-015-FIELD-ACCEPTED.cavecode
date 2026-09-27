@@ -1,0 +1,106 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-001 — RW-TX-015-SGR VERIFIED -> FIELD ACCEPTED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-001
+Project: RangeWater
+Title: RangeWater 1.1.0 Physical Field Acceptance
+Revision: 1
+State: FIELD ACCEPTED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T06:06:26-04:00
+Source-Type: Explicit human acceptance plus repository evidence
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-015-sgr
+Product-Branch-Head-At-Reconciliation: f60d571ea0a7eb56f98f59f057fdb06096e34929
+Continuity-Branch: codex/cavecode-forgekeeper-pilot
+Continuity-Branch-Head-Before-Record: 0362283b1b573fcd2335a40f1767102ee558c401
+
+🪨 BLOCK 1 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Artifact: RW-TX-015-SGR Revision 1 — RangeWater 1.1.0, versionCode 19
+Prior State: VERIFIED
+New State: FIELD ACCEPTED
+Transition Date: 2026-09-27
+Transition Authority: Michael
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+
+Michael's confirming statement after explicit both-device clarification:
+"Passed both devices."
+
+Normalized meaning:
+"RW-TX-015-SGR physical acceptance passed for RangeWater 1.1.0 versionCode 19
+on both target devices."
+
+🪨 BLOCK 2 — ACCEPTED IMPLEMENTATION IDENTITY
+--------------------------------------------------------------------------------
+Required baseline:
+- RangeWater 1.0.1 released source:
+  6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+
+Original implemented candidate:
+- b15a61ae8fe80489ad147434c9a0f35c5deb4019.
+
+Physical finding:
+- The phone herd card lacked an explicit Close action.
+
+Corrected accepted candidate:
+- df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+
+Correction verification:
+- GitHub Actions workflow run 36284608250 (run 115): PASSED.
+- The corrected APK installed in place over the prior field candidate.
+- The explicit Close action passed focused physical retest on Michael's Samsung phone.
+- The complete checklist then passed on Michael's Samsung phone and Samsung Tab S7.
+
+🪨 BLOCK 3 — ACCEPTED SCOPE
+--------------------------------------------------------------------------------
+The accepted 1.1.0 scope remains the ratified RW-TX-015-SGR Revision 1 boundary:
+- named Grazing Circuits;
+- ordered many-to-many pasture membership;
+- multiple seasonal roles per circuit pasture;
+- one active circuit assignment per herd;
+- circuit-aware Herd Focus;
+- recorded-rest derivation;
+- forage observations and stockpile estimates;
+- Ohio USDA-NRCS/GLCI grazing-stick preset;
+- non-destructive Room schema 6-to-7 migration;
+- archive format 2 with format-1 restore support;
+- phone and tablet physical-glass behavior.
+
+🪨 BLOCK 4 — EVIDENCE
+--------------------------------------------------------------------------------
+Repository evidence:
+- RANGEWATER.cavecode.txt at branch head
+  f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- workorders/RW-TX-015-SGR.cavecode.
+- workorders/RW-TX-015-SGR-PHYSICAL-TESTS.cavecode.
+- Field-acceptance ledger commit:
+  f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- Checklist close commit:
+  4f6cc9121393370432f10ad60042fa4a026f88ce.
+- Workorder acceptance commit:
+  ad69a3bf21276b96303105ea3c6edbbb060961ad.
+- Original full CI run 36269468596 (run 113): PASSED.
+- Correction CI run 36284608250 (run 115): PASSED.
+
+🪨 BLOCK 5 — AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- FIELD ACCEPTED does not mean Google Play internal migration accepted.
+- FIELD ACCEPTED does not authorize production publication.
+- Google Play internal testing remains a separate gate.
+- Production promotion remains NOT AUTHORIZED.
+- No product code or release action is performed by this continuity record.
+
+🌐 BLOCK 6 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+RangeWater 1.1.0 versionCode 19 passed its complete physical acceptance checklist
+on Michael's Samsung phone and Samsung Tab S7. The corrected accepted source is
+df061bc. Production publication remains unauthorized.
+
+================================================================================
+END — RW-FK-TR-001
+================================================================================

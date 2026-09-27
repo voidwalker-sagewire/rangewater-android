@@ -1,0 +1,295 @@
+================================================================================
+RANGEWATER CONTINUITY CONTRACT
+RW-CC-001 — CAVECODE FORGEKEEPER PILOT
+================================================================================
+Format: CaveCode project continuity contract
+Contract Revision: 1
+Status: RATIFIED — 2026-09-26 BY MICHAEL
+Prepared: 2026-09-26
+Ratified: 2026-09-26 by Michael
+Project: RangeWater
+Repository: voidwalker-sagewire/rangewater-android
+Final Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+
+🪨 BLOCK 1 — PURPOSE AND PILOT BOUNDARY
+--------------------------------------------------------------------------------
+PURPOSE:
+- Preserve RangeWater's durable project truth inside the RangeWater repository.
+- Let a human or AI resume work without reconstructing accepted state from chat.
+- Separate remembered candidates, proposals, authority, implementation, evidence,
+  and field acceptance so no stage can silently impersonate another.
+- Make supersession visible without erasing the history that led to the current truth.
+
+PILOT BOUNDARY:
+- RangeWater is the first CaveCode Forgekeeper pilot project.
+- This repository contains RangeWater-facing continuity artifacts.
+- The later Forgekeeper engine must be created in a separate repository.
+- No Forgekeeper engine, background service, autonomous writer, or runtime dependency
+  is authorized by this contract.
+- This proposed contract does not change application behavior, data, schema, signing,
+  release state, or any earlier acceptance.
+
+🪨 BLOCK 2 — AUTHORITY AND SOURCE OF TRUTH
+--------------------------------------------------------------------------------
+1. Michael alone may ratify RangeWater project truth.
+2. Michael may revise, reject, accept, field-accept, or supersede any proposal.
+3. AI systems may inspect evidence, capture candidate memories, draft proposals,
+   identify conflicts, and recommend transitions.
+4. AI systems and automatic processes may not claim Michael's authority.
+5. Silence, inactivity, code existence, a successful build, a merge, or repeated mention
+   does not equal ratification.
+6. Chat is working context, not the durable authority record.
+7. Repository evidence controls claims about what was committed, built, tested, or released.
+8. Explicit Michael decisions recorded in CaveCode control product and architectural truth.
+9. When records conflict, stop promotion, preserve both records, identify the conflict,
+   and request Michael's ruling.
+10. The Forgekeeper preserves authority; it does not become the authority.
+
+SOURCE ORDER FOR A NEW WORK SESSION:
+1. This contract, after ratification, for continuity rules.
+2. RANGEWATER.cavecode.txt for the current master project map and resume point.
+3. The active workorder and its acceptance card for exact scope and gates.
+4. Git branch, commit, diff, CI, artifact, release, and device evidence for factual claims.
+5. Chat or automatic memory only as candidate context until reconciled with the above.
+
+🪨 BLOCK 3 — RATIFIED STATE LADDER
+--------------------------------------------------------------------------------
+The Forgekeeper pilot uses exactly this ordered ladder:
+
+Captured → Proposed → Ratified → Assigned → Implemented → Verified
+→ Field Accepted → Superseded
+
+STATE DEFINITIONS:
+
+CAPTURED
+- A candidate memory, idea, observation, requirement, test result, or conflict was saved.
+- Capture preserves the item for review.
+- Captured content is not project truth merely because it was remembered or recorded.
+- Automatic systems may create Captured candidates with provenance.
+
+PROPOSED
+- A candidate was shaped into a reviewable change, contract, decision, or state claim.
+- The proposal must identify its author, scope, evidence, and unresolved questions.
+- A proposal remains non-authoritative until Michael explicitly ratifies it.
+
+RATIFIED
+- Michael explicitly accepted the stated decision or contract as project truth.
+- Ratification fixes the approved meaning and scope.
+- Ratification does not claim that anyone was assigned or that code exists.
+
+ASSIGNED
+- A ratified item was given to a named person, AI, team, or work stream for execution.
+- Assignment records responsibility, baseline, branch, and acceptance gates.
+- Assignment does not claim implementation.
+
+IMPLEMENTED
+- The assigned change exists in an identified repository commit or artifact.
+- Implementation must point to the exact branch and immutable commit.
+- Implemented does not mean correct, built, verified, safe on glass, or released.
+
+VERIFIED
+- Defined automated or controlled checks passed against the identified implementation.
+- Verification records the exact evidence: checks, run identifiers, artifacts, and results.
+- Verification does not equal physical field acceptance or production authority.
+
+FIELD ACCEPTED
+- Michael explicitly accepted the behavior on the required physical device or field setting.
+- The record identifies the tested build, device class, procedure, result, and date.
+- Field Accepted is the highest live acceptance state before later supersession.
+
+SUPERSEDED
+- A later ratified or accepted record replaces this item for current use.
+- Superseded material remains preserved and traceable.
+- A replacement must identify what it supersedes and why.
+- Superseded never means deleted, denied, or rewritten.
+
+🪨 BLOCK 4 — TRANSITION RULES
+--------------------------------------------------------------------------------
+1. Every state claim must name one specific artifact, decision, work item, or release.
+2. Every transition must record:
+   - stable record identifier;
+   - prior state and new state;
+   - actor or authority;
+   - timestamp;
+   - repository branch and commit when applicable;
+   - evidence references;
+   - scope and exclusions;
+   - predecessor or successor when supersession applies.
+3. States are not interchangeable. Later-stage language must not be used early.
+4. A build or CI system may supply evidence for Verified but may not ratify or field-accept.
+5. A commit may prove Implemented but not Verified.
+6. A test card may define field gates but does not prove they passed.
+7. Michael's explicit words supply Ratified or Field Accepted authority; the repository
+   record preserves that authority durably.
+8. When a ratified item changes materially, create a new revision. Do not silently edit
+   the old meaning.
+9. A rejected or withdrawn candidate stays below Ratified and is marked with its outcome;
+   it is not mislabeled Superseded.
+10. Supersession requires a named successor. An item cannot supersede itself.
+11. Promotion may pause at any stage. No automatic timeout advances an item.
+12. If evidence is incomplete or contradictory, retain the last proven state.
+
+🪨 BLOCK 5 — RECORD IDENTITY AND PROVENANCE
+--------------------------------------------------------------------------------
+REQUIRED FIELDS FOR FUTURE CONTINUITY RECORDS:
+- Record-ID
+- Project
+- Title
+- Revision
+- State
+- Authority
+- Recorded-By
+- Recorded-At
+- Source-Type
+- Source-Reference
+- Repository
+- Branch
+- Commit
+- Scope
+- Exclusions
+- Evidence
+- Predecessor
+- Successor
+- Conflict-Status
+- Human-Decision-Needed
+
+PROVENANCE RULES:
+- Unknown values are written as UNKNOWN, not guessed.
+- Non-applicable values are written as NOT APPLICABLE.
+- Mutable branch names never replace immutable commit identifiers.
+- Human statements are distinguished from AI inference.
+- Inferences are labeled INFERENCE and may not be promoted as direct evidence.
+- Secrets, credentials, private signing material, and personal data are never copied
+  into continuity records.
+
+🎮 BLOCK 6 — FORGEKEEPER OPERATING LOOP
+--------------------------------------------------------------------------------
+For each RangeWater work session:
+
+1. Inspect the repository before proposing changes.
+2. Read the current continuity contract, master CaveCode map, active workorder,
+   branch head, recent history, and relevant evidence.
+3. Compare new candidate memory with the durable repository record.
+4. Capture new facts, ideas, contradictions, and missing evidence with provenance.
+5. Present decisions separately from facts already proven.
+6. Ask Michael to ratify only the smallest complete decision boundary.
+7. After ratification, record the exact approved language and revision.
+8. Before implementation, record assignment, baseline, branch, scope, and gates.
+9. After implementation, record exact commits without claiming verification.
+10. After checks pass, record exact verification evidence.
+11. Do not claim Field Accepted until Michael completes and accepts the physical test.
+12. When later truth replaces earlier truth, link both records and mark the earlier one
+    Superseded without deleting it.
+13. End the session with an accurate resume point and next authority action.
+
+🪨 BLOCK 7 — PRESERVED RANGEWATER STATE AT PILOT START
+--------------------------------------------------------------------------------
+This block maps existing evidence into the ladder. It does not downgrade or re-ratify
+earlier work.
+
+PRODUCTION BASELINE:
+- Artifact: RangeWater 1.0.1, versionCode 18.
+- State: FIELD ACCEPTED.
+- Accepted released source: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+- Production closeout record: 7a7f0bc4312e56d1fe9f3917913a81a89aec000b.
+- Evidence and acceptance details remain in RANGEWATER.cavecode.txt.
+
+ACTIVE WORK:
+- Artifact: RW-TX-015-SGR Revision 1, RangeWater 1.1.0, versionCode 19.
+- Contract state: RATIFIED.
+- Work state: VERIFIED.
+- Active branch: codex/rw-tx-015-sgr.
+- Pilot baseline branch tip:
+  81053304c7a342f64d6734f489813829b4707a9e.
+- Implemented candidate source:
+  b15a61ae8fe80489ad147434c9a0f35c5deb4019.
+- Verification evidence: GitHub Actions run 36269468596 passed the recorded gates.
+- Physical test card:
+  workorders/RW-TX-015-SGR-PHYSICAL-TESTS.cavecode.
+- Field acceptance: PENDING.
+- Production authority: NOT GRANTED.
+- The test-card commit after the implemented source adds acceptance instructions and
+  does not by itself advance the product to Field Accepted.
+
+MASTER RECORD:
+- main at pilot inspection:
+  7d1cd4c83482386ccc4e5e5f11660797598627fe.
+- main is the current durable project ledger and production-maintenance entry point.
+- The active 1.1.0 feature branch is thirty-eight commits ahead of that inspected main.
+- This branch distinction must remain explicit until later repository action reconciles it.
+
+🪨 BLOCK 8 — REPOSITORY STRUCTURE AND ENGINE SEPARATION
+--------------------------------------------------------------------------------
+RANGEWATER REPOSITORY:
+- continuity/ contains RangeWater continuity governance and future state records.
+- RANGEWATER.cavecode.txt remains the master project map.
+- workorders/ contains scoped transmission contracts and acceptance cards.
+- Application and test code remain in their existing Android project locations.
+
+SEPARATE FORGEKEEPER ENGINE:
+- The engine will live in a different repository after its own scope is ratified.
+- It may read RangeWater continuity records and inspect repository evidence.
+- It may produce Captured candidates or Proposed changes with provenance.
+- It may not silently alter Ratified, Field Accepted, or Superseded records.
+- It may not promote any item through Michael-only authority gates.
+- It may not treat its own database, cache, embeddings, or memory as canonical truth.
+- A failure or absence of the engine must not make RangeWater's history unreadable.
+- Plain-text repository artifacts remain the durable, portable fallback.
+
+🔧 BLOCK 9 — PROPOSED POST-RATIFICATION STRUCTURE
+--------------------------------------------------------------------------------
+If Michael ratifies this contract, the next repository-side design step may define:
+
+1. An append-only continuity record format using the fields in Block 5.
+2. A small current-state index that points to records without replacing them.
+3. Conflict and human-decision queues.
+4. Validation rules for legal ladder transitions.
+5. Import rules for automatically captured candidate memories.
+6. A handoff format for the later separate Forgekeeper engine.
+
+These items are PROPOSED DIRECTION only. Their filenames, schemas, and implementation
+are not assigned or authorized by this revision.
+
+🖍️ BLOCK 10 — MICHAEL'S RATIFICATION GATE
+--------------------------------------------------------------------------------
+CURRENT CONTRACT STATE:
+- RATIFIED — 2026-09-26 BY MICHAEL.
+
+RATIFICATION OUTCOME:
+- Transition: Proposed -> Ratified.
+- Authority: Michael (Project Owner, Lead Architect, Final Decision Authority).
+- Recorded at: 2026-09-26T20:55:07-04:00.
+- Exact statement:
+  "I ratify RW-CC-001 Revision 1, the Range Water Continuity Contract."
+- Durable transition record:
+  continuity/ratifications/RW-CC-001-REV1-RATIFICATION.cavecode
+- The approved contract language remains Revision 1. These lifecycle metadata and
+  ratification-record references document the completed authority action.
+
+RATIFICATION QUESTION:
+- Does this contract correctly govern RangeWater continuity and the first CaveCode
+  Forgekeeper pilot?
+
+IF ACCEPTED:
+- Michael may state:
+  "I ratify RW-CC-001 Revision 1, the RangeWater Continuity Contract."
+
+IF CHANGES ARE NEEDED:
+- Record the requested changes.
+- Produce Revision 2 as Proposed.
+- Preserve Revision 1 and its outcome.
+
+ORIGINAL PRE-RATIFICATION GUARD:
+- This file was not to be treated as Ratified merely because it existed in the repository.
+- That guard was satisfied by Michael's explicit ratification recorded above.
+
+🌐 BLOCK 11 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+RangeWater uses a human-governed CaveCode continuity record. Automatic systems may
+capture and organize candidate memories, but Michael retains final authority over
+project truth. Repository evidence distinguishes proposals, decisions, implementation,
+verification, physical field acceptance, and later supersession.
+
+================================================================================
+END — RW-CC-001 REVISION 1 — RATIFIED
+================================================================================

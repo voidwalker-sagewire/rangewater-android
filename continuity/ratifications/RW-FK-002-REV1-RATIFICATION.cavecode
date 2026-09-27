@@ -1,0 +1,79 @@
+================================================================================
+FORGEKEEPER GOVERNANCE RATIFICATION RECORD
+RW-FK-002 REVISION 1 — PROPOSED -> RATIFIED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-002-REV1-RATIFICATION
+Project: RangeWater
+Title: Forgekeeper Current-State and Branch-Sync Contract Ratification
+Revision: 1
+State: RATIFIED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T06:19:35-04:00
+Source-Type: Explicit human authority statement
+Repository: voidwalker-sagewire/rangewater-android
+Branch: codex/cavecode-forgekeeper-pilot
+Prior-Branch-Head: dfb559687e72bc2333351572af46054ddbf8b0c8
+
+🪨 BLOCK 1 — AUTHORITY STATEMENT
+--------------------------------------------------------------------------------
+Michael stated:
+
+"I've ratified RWDAshFK-002 Revision 1, the Forgekeeper current state and branch sync contract."
+
+🪨 BLOCK 2 — IDENTIFIER NORMALIZATION
+--------------------------------------------------------------------------------
+Canonical artifact:
+- RW-FK-002 Revision 1.
+- continuity/proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode.
+
+Normalization finding:
+- "RWDAshFK-002" is preserved verbatim as the spoken/transcribed identifier.
+- Revision 1 and the exact contract title match the only prepared proposal.
+- No separate RWDAshFK-002 artifact exists.
+- The statement therefore unambiguously ratifies RW-FK-002 Revision 1.
+- This normalization changes no contract meaning or scope.
+
+🪨 BLOCK 3 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Prior State: PROPOSED
+New State: RATIFIED
+Transition Authority: Michael
+Transition Time: 2026-09-27T06:19:35-04:00
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+
+🪨 BLOCK 4 — AUTHORIZED EFFECT
+--------------------------------------------------------------------------------
+The ratification authorizes:
+1. The RangeWater current-state pointer-index format.
+2. Continuity records traveling with the authoritative product branch.
+3. Migration of the pilot continuity artifacts onto codex/rw-tx-015-sgr.
+4. Activation of the current-state index against the active branch.
+5. Resolution of RW-FK-CONFLICT-001 after same-branch continuity is verified.
+6. Preservation of the isolated pilot branch as superseded historical evidence.
+7. Later carriage of continuity into main through the normal accepted integration path.
+
+Assignment:
+- Repository migration is ASSIGNED to Ash / OpenAI Codex.
+
+🪨 BLOCK 5 — UNCHANGED BOUNDARIES
+--------------------------------------------------------------------------------
+This ratification does not authorize:
+- RangeWater application-code changes;
+- a Google Play migration PASS claim;
+- production promotion or publication;
+- deletion of pilot history;
+- a Forgekeeper engine inside the RangeWater repository;
+- autonomous promotion through Michael's authority gates.
+
+Current release boundary:
+- RangeWater 1.1.0 is FIELD ACCEPTED.
+- Google Play internal-release acceptance remains CAPTURED.
+- Play-to-Play migration result remains PENDING.
+- Production remains NOT AUTHORIZED.
+
+================================================================================
+END — RW-FK-002 REVISION 1 RATIFICATION RECORD
+================================================================================

@@ -1,0 +1,69 @@
+================================================================================
+RANGEWATER CONTINUITY CONFLICT RECORD
+RW-FK-CONFLICT-001 — ISOLATED PILOT BRANCH DRIFT
+================================================================================
+Format: CaveCode continuity conflict record
+Record-ID: RW-FK-CONFLICT-001
+Project: RangeWater
+Title: Forgekeeper Pilot Branch Fell Behind Active Product Truth
+Revision: 1
+State: CAPTURED
+Severity: HIGH FOR CONTINUITY — NO PRODUCT CODE DEFECT
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T06:06:26-04:00
+Repository: voidwalker-sagewire/rangewater-android
+Conflict-Status: OPEN — GOVERNANCE DECISION REQUIRED
+Human-Decision-Needed: YES — RATIFY RW-FK-002 OR REVISE IT
+
+🪨 BLOCK 1 — CONFLICT
+--------------------------------------------------------------------------------
+The pilot continuity branch and active RangeWater branch diverged after their shared
+base commit 81053304c7a342f64d6734f489813829b4707a9e.
+
+At inspection:
+- Continuity branch head:
+  0362283b1b573fcd2335a40f1767102ee558c401.
+- Active product branch head:
+  f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- The active product branch was 10 commits beyond the shared base.
+- The continuity branch was 7 continuity commits beyond the shared base.
+- Git classified the branches as diverged.
+
+🪨 BLOCK 2 — STALE CLAIM
+--------------------------------------------------------------------------------
+The ratified continuity contract's preserved pilot-start snapshot correctly recorded the
+state that existed when the pilot began:
+- implemented candidate b15a61a;
+- state VERIFIED;
+- physical acceptance PENDING.
+
+RangeWater then advanced:
+- corrected candidate df061bc;
+- physical acceptance PASSED on both target devices;
+- lifecycle state FIELD ACCEPTED.
+
+The pilot-start snapshot is historically correct, but it is no longer a current-state
+answer. Without a separate current-state index, a reader could mistake the historical
+snapshot for present truth.
+
+🪨 BLOCK 3 — IMPACT
+--------------------------------------------------------------------------------
+- No accepted RangeWater application work was lost.
+- No product state was incorrectly promoted.
+- The isolated continuity branch did not automatically receive authoritative work.
+- The pilot therefore exposed a synchronization weakness before engine construction.
+
+🪨 BLOCK 4 — PROPOSED RESOLUTION
+--------------------------------------------------------------------------------
+See:
+continuity/proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode
+
+Until Michael ratifies a resolution:
+- keep this conflict OPEN;
+- treat the active product branch evidence as current for RangeWater product status;
+- treat the continuity branch as the governance pilot and historical record;
+- do not claim that branch synchronization is automatic.
+
+================================================================================
+END — RW-FK-CONFLICT-001 — OPEN
+================================================================================

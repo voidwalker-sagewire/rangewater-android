@@ -1,0 +1,71 @@
+================================================================================
+RANGEWATER CURRENT-STATE INDEX — PROPOSED FORMAT
+RW-FK-CURRENT-001
+================================================================================
+Format: CaveCode current-state pointer index
+Format Status: RATIFIED — ACTIVATION ASSIGNED
+Content Snapshot: 2026-09-27T06:06:26-04:00
+Project: RangeWater
+Repository: voidwalker-sagewire/rangewater-android
+Final Authority: Michael
+
+🪨 BLOCK 1 — INDEX PURPOSE
+--------------------------------------------------------------------------------
+- Give a new human or AI one short, mobile-readable starting point.
+- Point to authoritative evidence without replacing the master ledger or workorders.
+- Separate current state from historical pilot snapshots.
+- Carry no independent authority beyond the records it references.
+
+🪨 BLOCK 2 — CURRENT PRODUCT STATE
+--------------------------------------------------------------------------------
+Production:
+- RangeWater 1.0.1, versionCode 18.
+- State: FIELD ACCEPTED — PRODUCTION PUBLISHED.
+- Released source: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
+
+Next release:
+- RangeWater 1.1.0, versionCode 19.
+- Room schema: 7.
+- Archive write format: 2; format 1 and 2 restore support.
+- State: FIELD ACCEPTED.
+- Corrected accepted candidate:
+  df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+- Active branch: codex/rw-tx-015-sgr.
+- Evidence branch head at snapshot:
+  f60d571ea0a7eb56f98f59f057fdb06096e34929.
+- Transition record:
+  continuity/transitions/RW-FK-TR-001-RW-TX-015-FIELD-ACCEPTED.cavecode.
+- Production authority: NOT GRANTED.
+
+🪨 BLOCK 3 — CURRENT GATE
+--------------------------------------------------------------------------------
+- Google Play versionCode 19 internal-release Console acceptance: CAPTURED.
+- Migration test result: PENDING HUMAN PASS OR FAIL.
+- Capture record:
+  continuity/captures/RW-FK-CAP-001-PLAY-INTERNAL-ACCEPTANCE.cavecode.
+- Production promotion remains NOT AUTHORIZED.
+
+🪨 BLOCK 4 — OPEN CONTINUITY CONFLICTS
+--------------------------------------------------------------------------------
+- RW-FK-CONFLICT-001: isolated pilot branch drift — OPEN.
+- Resolution proposal:
+  continuity/proposals/RW-FK-002-CURRENT-STATE-AND-BRANCH-SYNC.cavecode.
+
+🪨 BLOCK 5 — READ ORDER
+--------------------------------------------------------------------------------
+1. continuity/RANGEWATER-CONTINUITY-CONTRACT.cavecode
+2. this current-state index
+3. RANGEWATER.cavecode.txt on the active authoritative branch
+4. active workorder and acceptance card
+5. exact Git commits, CI runs, artifacts, and physical evidence
+
+🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
+--------------------------------------------------------------------------------
+1. Michael reports the final Play-to-Play migration test PASS or FAIL.
+2. Michael reviews and ratifies or revises RW-FK-002.
+3. This index format was ratified through RW-FK-002 Revision 1 on 2026-09-27.
+4. Activation requires migration onto the active authoritative product branch.
+
+================================================================================
+END — RW-FK-CURRENT-001 — RATIFIED FORMAT — ACTIVATION ASSIGNED
+================================================================================

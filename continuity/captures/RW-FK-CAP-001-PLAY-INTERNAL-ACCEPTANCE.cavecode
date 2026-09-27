@@ -1,0 +1,78 @@
+================================================================================
+RANGEWATER CANDIDATE MEMORY CAPTURE
+RW-FK-CAP-001 — GOOGLE PLAY 1.1.0 INTERNAL-RELEASE ACCEPTANCE
+================================================================================
+Format: CaveCode captured-candidate record
+Record-ID: RW-FK-CAP-001
+Project: RangeWater
+Title: Google Play Internal Release Accepted by Console
+Revision: 1
+State: CAPTURED
+Authority: Michael remains Final Decision Authority
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T06:06:26-04:00
+Source-Type: Michael's RangeWater work-session report
+Source-Time: 2026-09-27T04:40:44-04:00
+Repository: voidwalker-sagewire/rangewater-android
+Related-Branch: codex/rw-tx-015-sgr
+Related-Candidate: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+Conflict-Status: REPOSITORY NOT YET RECONCILED
+Human-Decision-Needed: YES — FINAL MIGRATION TEST PASS OR FAIL
+
+🪨 BLOCK 1 — CAPTURED REPORT
+--------------------------------------------------------------------------------
+Michael reported that Google Play Console accepted the RangeWater 1.1.0 internal-release
+bundle for versionCode 19 with no blocking errors.
+
+Warnings observed at that time:
+- no internal testers configured;
+- missing deobfuscation file;
+- missing native debug symbols.
+
+The warnings were non-blocking in the reported Console state.
+
+🪨 BLOCK 2 — WHAT THIS CAPTURE PROVES
+--------------------------------------------------------------------------------
+This capture preserves the report that:
+- Google Play accepted the versionCode 19 internal-release bundle into the internal
+  release workflow without a blocking Console error.
+
+🪨 BLOCK 3 — WHAT THIS CAPTURE DOES NOT PROVE
+--------------------------------------------------------------------------------
+This capture does not yet prove:
+- delivery to an internal tester;
+- installation from Google Play on either target device;
+- an in-place Play-signed schema 6-to-7 migration;
+- survival of existing RangeWater records after that migration;
+- post-update seasonal-grazing behavior;
+- internal-test field acceptance;
+- production readiness;
+- production publication.
+
+No screenshot or Console export is committed with this record. The source remains the
+human report until repository evidence is added.
+
+🪨 BLOCK 4 — REQUIRED NEXT AUTHORITY EVIDENCE
+--------------------------------------------------------------------------------
+Michael must report the final Play-to-Play migration test result as PASS or FAIL.
+
+A PASS record should identify:
+- device;
+- prior installed version;
+- Google Play-delivered versionName and versionCode;
+- whether the install was in place without uninstalling;
+- whether existing ranch records survived;
+- whether the app reopened normally;
+- whether the accepted 1.1.0 behavior remained usable.
+
+Until that report is recorded, this item remains CAPTURED.
+
+🪨 BLOCK 5 — RELEASE BOUNDARY
+--------------------------------------------------------------------------------
+- Google Play internal testing is not production publication.
+- Production promotion remains NOT AUTHORIZED.
+- This captured memory cannot promote itself.
+
+================================================================================
+END — RW-FK-CAP-001 — CAPTURED
+================================================================================
