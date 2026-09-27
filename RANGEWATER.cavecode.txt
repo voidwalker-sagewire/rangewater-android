@@ -23,7 +23,7 @@ Ledger State: CURRENT — RANGEWATER 1.1.0 FIELD CANDIDATE — 2026-09-26
 - Next Planned Release: RangeWater 1.1.0 — Seasonal Grazing
 - Current Field Candidate: RangeWater 1.1.0 (19) — CI ACCEPTED — PHYSICAL TEST PENDING
 - Field Candidate Branch: codex/rw-tx-015-sgr
-- Field Candidate Commit: b15a61ae8fe80489ad147434c9a0f35c5deb4019
+- Field Candidate Commit: df061bc07d8b09c6f678d56b1d439aa3e4e02923
 - Public Listing: https://play.google.com/store/apps/details?id=com.sagewire.rangewater
 - Package Notice: This is the intended permanent package identity. Once registered
   or associated with the Play application, it must not be changed.
@@ -1090,6 +1090,14 @@ ROADMAP GUARD:
   Android Room instrumentation tests, stable-field APK compilation/certificate check,
   and signed Play AAB compilation/certificate check on 2026-09-26.
   Signed artifacts: RangeWater-1.1.0-field.apk and RangeWater-1.1.0-play-upload.aab.
+  Physical finding 1: Michael's phone testing found that the herd inspection card lacked
+  an explicit Close action. Dismissing it required selecting a pasture and then closing
+  the pasture card, so phone ergonomics acceptance remained blocked.
+  Correction: commit df061bc07d8b09c6f678d56b1d439aa3e4e02923 adds an explicit Close
+  action to the herd-card header without changing map focus, herd data, or ranch records.
+  Correction CI evidence: workflow run 36284608250 (run 115) passed every imagery, JVM,
+  Room instrumentation, field-signing/certificate, and Play-bundle gate. Focused physical
+  retest of direct herd-card dismissal remains pending.
   Draft review: https://github.com/voidwalker-sagewire/rangewater-android/pull/2.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
@@ -1156,7 +1164,7 @@ ROADMAP GUARD:
 - Working transmission: RW-TX-015-SGR REVISION 1 — RATIFIED
 - Implementation status: 1.1.0 FIELD CANDIDATE BUILT AND CI ACCEPTED; PHYSICAL TEST PENDING
 - Candidate branch: codex/rw-tx-015-sgr
-- Candidate commit: b15a61ae8fe80489ad147434c9a0f35c5deb4019
+- Candidate commit: df061bc07d8b09c6f678d56b1d439aa3e4e02923
 - Candidate release identity: versionName 1.1.0; versionCode 19
 - Candidate database/archive identity: Room schema 7; archive write format 2; format 1 and
   format 2 restore support
@@ -1172,8 +1180,9 @@ ROADMAP GUARD:
   portability remain accepted
 - CI status: GREEN — RangeWater 1.0.1 runs 36131911052 (run 102) and 36132494440
   (run 103)
-- RangeWater 1.1.0 CI status: GREEN — workflow run 36269468596 (run 113); imagery,
-  JVM, Android Room, signed field APK, and signed Play AAB gates all passed
+- RangeWater 1.1.0 CI status: GREEN — initial candidate run 36269468596 (run 113) and
+  herd-card Close correction run 36284608250 (run 115); imagery, JVM, Android Room,
+  signed field APK, and signed Play AAB gates all passed
 - Production artifact: the exact signed RangeWater-Play-AAB 1.0.1 (versionCode 18) tested
   on the internal track was promoted without rebuilding and published to production
 - Functional device verification: PASSED — existing pastures, waters, gates, herds,
@@ -1199,13 +1208,15 @@ ROADMAP GUARD:
   stay deferred.
 - Third-party handoff rule: for production maintenance use main and released commit
   6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. For active 1.1.0 work use branch
-  codex/rw-tx-015-sgr at candidate commit b15a61ae8fe80489ad147434c9a0f35c5deb4019.
-- Next action: install the stable-signed RangeWater-1.1.0-field.apk over the accepted 1.0.1
-  field installation and execute Block 12 of workorders/RW-TX-015-SGR.cavecode on Samsung
-  phone and Tab S7. Record pass/fail evidence before internal testing or production action.
-- Resume point: automated acceptance is complete. Resume at RW-TX-015-SGR physical-glass
-  step 1. Production publication is not authorized without physical acceptance and an
-  explicit promotion instruction from Michael.
+  codex/rw-tx-015-sgr at corrected candidate commit df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+- Next action: install the stable-signed corrected RangeWater-1.1.0-field.apk from workflow
+  run 36284608250, confirm the herd card closes directly through its new Close action, then
+  continue Block 12 of workorders/RW-TX-015-SGR.cavecode on Samsung phone and Tab S7.
+  Record pass/fail evidence before internal testing or production action.
+- Resume point: automated acceptance is complete for corrected candidate df061bc. Resume
+  with the focused herd-card Close retest, then continue the remaining RW-TX-015-SGR
+  physical-glass checks. Production publication is not authorized without full physical
+  acceptance and an explicit promotion instruction from Michael.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
