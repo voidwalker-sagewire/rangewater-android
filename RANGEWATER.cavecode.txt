@@ -4,7 +4,7 @@ RANGEWATER MASTER STATE & PROJECT MEMORY
 File: RANGEWATER.cavecode.txt
 Format: CaveCode v1.0 project master map
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
-Ledger State: CURRENT — RANGEWATER 1.1.0 FIELD CANDIDATE — 2026-09-26
+Ledger State: CURRENT — RANGEWATER 1.1.0 FIELD ACCEPTED — 2026-09-27
 
 🪨 BLOCK 1 — PROJECT IDENTITY
 --------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ Ledger State: CURRENT — RANGEWATER 1.1.0 FIELD CANDIDATE — 2026-09-26
 - Historical 1.0.0 Tag: v1.0.0 at 9e6945b1bfbd05f1e8f6908c291c3a8be98e6833
 - Public Production: PUBLISHED — Google Play — 2026-09-25
 - Next Planned Release: RangeWater 1.1.0 — Seasonal Grazing
-- Current Field Candidate: RangeWater 1.1.0 (19) — CI ACCEPTED — PHYSICAL TEST PENDING
+- Current Field Candidate: RangeWater 1.1.0 (19) — FIELD ACCEPTED — INTERNAL TESTING PENDING
 - Field Candidate Branch: codex/rw-tx-015-sgr
 - Field Candidate Commit: df061bc07d8b09c6f678d56b1d439aa3e4e02923
 - Public Listing: https://play.google.com/store/apps/details?id=com.sagewire.rangewater
@@ -1067,7 +1067,7 @@ ROADMAP GUARD:
   Closure date: 2026-09-25.
 
 - RW-TX-015-SGR
-  Status: IMPLEMENTED — AUTOMATED ACCEPTANCE PASSED — PHYSICAL ACCEPTANCE PENDING
+  Status: FIELD ACCEPTED — AUTOMATED AND PHYSICAL ACCEPTANCE PASSED — PRODUCTION NOT AUTHORIZED
   Scope: RangeWater 1.1.0 Seasonal Grazing contract covering named Grazing Circuits,
   ordered many-to-many pasture membership, multiple seasonal roles per membership,
   one active circuit per herd, circuit-aware Herd Focus, recorded-rest derivation,
@@ -1082,8 +1082,9 @@ ROADMAP GUARD:
   Ratified: 2026-09-26 by Michael. His transposed spoken identifier was normalized to the
   only matching prepared contract, RW-TX-015-SGR Revision 1.
   Implementation authority: GRANTED for this contract. Schema 7, archive format 2, and
-  signed field/internal-test artifacts are authorized. Production publication remains
-  prohibited until physical acceptance and a separate promotion instruction.
+  signed field/internal-test artifacts are authorized. Physical acceptance passed on both
+  target devices. Production publication remains prohibited until Google Play internal
+  testing and a separate promotion instruction.
   Implementation evidence: field-candidate commit
   b15a61ae8fe80489ad147434c9a0f35c5deb4019 on codex/rw-tx-015-sgr.
   CI evidence: workflow run 36269468596 (run 113) passed imagery gateway, JVM tests,
@@ -1107,6 +1108,10 @@ ROADMAP GUARD:
   Focused physical retest: PASSED on Michael's Samsung phone. The corrected field APK
   installed in place over the prior field candidate without uninstalling, opened normally,
   and the new Close action dismissed the herd card directly. Finding closed 2026-09-26.
+  Full physical-glass acceptance: PASSED on both Michael's Samsung phone and Samsung Tab S7.
+  On 2026-09-27, after being asked whether the complete checklist passed on both devices,
+  Michael answered: "Passed both devices." RW-TX-015-SGR is FIELD ACCEPTED. The next gate
+  is Google Play internal testing; production promotion remains unauthorized.
   Draft review: https://github.com/voidwalker-sagewire/rangewater-android/pull/2.
 
 🔧 BLOCK 7 — KNOWN RISKS AND CONSTRAINTS
@@ -1169,9 +1174,9 @@ ROADMAP GUARD:
 --------------------------------------------------------------------------------
 - Repository: ACTIVE — PUBLIC
 - Repository access: VERIFIED — Ash has administrator and push permission
-- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — PHYSICAL ACCEPTANCE
+- Current phase: RANGEWATER 1.1.0 SEASONAL GRAZING — FIELD ACCEPTED — INTERNAL TESTING NEXT
 - Working transmission: RW-TX-015-SGR REVISION 1 — RATIFIED
-- Implementation status: 1.1.0 FIELD CANDIDATE BUILT AND CI ACCEPTED; PHYSICAL TEST PENDING
+- Implementation status: 1.1.0 FIELD CANDIDATE BUILT, CI ACCEPTED, AND FIELD ACCEPTED ON BOTH DEVICES
 - Candidate branch: codex/rw-tx-015-sgr
 - Candidate commit: df061bc07d8b09c6f678d56b1d439aa3e4e02923
 - Candidate release identity: versionName 1.1.0; versionCode 19
@@ -1203,6 +1208,7 @@ ROADMAP GUARD:
 - RW-TX-012-MCH status: CLOSED — CROSS-DEVICE FIELD VERIFIED
 - RW-TX-013-PLY status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
 - RW-TX-014-MCT status: CLOSED — ACCEPTED — PRODUCTION PUBLISHED
+- RW-TX-015-SGR status: FIELD ACCEPTED — PHONE AND TAB S7 — INTERNAL TESTING PENDING
 - Imagery gateway: DEPLOYED — rangewater-imagery-gateway.voidwalker.workers.dev; Samsung
   Tab S7 high-zoom aerial-imagery acceptance passed
 - Field-signing status: VERIFIED — CI reconstructs, validates, signs, and certificate-checks
@@ -1218,14 +1224,13 @@ ROADMAP GUARD:
 - Third-party handoff rule: for production maintenance use main and released commit
   6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2. For active 1.1.0 work use branch
   codex/rw-tx-015-sgr at corrected candidate commit df061bc07d8b09c6f678d56b1d439aa3e4e02923.
-- Next action: continue the remaining Block 12 checks in
-  workorders/RW-TX-015-SGR.cavecode on Samsung phone and Tab S7. The corrected field APK
-  is installed and its herd-card Close action is field-verified. Record remaining pass/fail
-  evidence before internal testing or production action.
-- Resume point: automated acceptance and the focused herd-card Close correction retest are
-  complete for corrected candidate df061bc. Resume with the remaining RW-TX-015-SGR
-  physical-glass checks. Production publication is not authorized without full physical
-  acceptance and an explicit promotion instruction from Michael.
+- Next action: submit the already-verified corrected versionCode 19 Play AAB from workflow
+  run 36284608250 to Google Play internal testing. Verify the Play-to-Play in-place schema
+  6-to-7 update and accepted behavior before any production-promotion decision.
+- Resume point: RW-TX-015-SGR automated acceptance and full physical-glass acceptance are
+  complete on both target devices for corrected candidate df061bc. Resume at Google Play
+  internal testing. Production publication is not authorized without successful internal
+  testing and an explicit promotion instruction from Michael.
 
 🌐 BLOCK 9 — PUBLIC-SAFE DESCRIPTION
 --------------------------------------------------------------------------------
