@@ -1090,6 +1090,13 @@ ROADMAP GUARD:
   Android Room instrumentation tests, stable-field APK compilation/certificate check,
   and signed Play AAB compilation/certificate check on 2026-09-26.
   Signed artifacts: RangeWater-1.1.0-field.apk and RangeWater-1.1.0-play-upload.aab.
+  Physical evidence 1 — PASSED: Michael created a portable backup from the Google Play
+  RangeWater 1.0.1 installation, uninstalled the Play-signed app, installed the original
+  1.1.0 field candidate, and restored that Play-created backup successfully. He then made
+  edits, fully closed the application, reopened it, and confirmed the restored and edited
+  state remained intact. This passes the format-1 cross-signature restore and cold-reopen
+  persistence check. It does not yet claim the separate format-2 cross-device or Undo Last
+  Restore acceptance steps.
   Physical finding 1: Michael's phone testing found that the herd inspection card lacked
   an explicit Close action. Dismissing it required selecting a pasture and then closing
   the pasture card, so phone ergonomics acceptance remained blocked.
