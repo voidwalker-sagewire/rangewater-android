@@ -1,0 +1,90 @@
+================================================================================
+RANGEWATER PRODUCTION-AUTHORITY TRANSITION RECORD
+RW-FK-TR-004 — RANGEWATER 1.1.0 PRODUCTION PROMOTION AUTHORIZED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-004
+Project: RangeWater
+Title: RangeWater 1.1.0 VersionCode 19 Production Promotion Authorization
+Revision: 1
+State: RATIFIED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T07:15:44-04:00
+Source-Type: Explicit human authority statement
+Repository: voidwalker-sagewire/rangewater-android
+Authoritative-Branch: codex/rw-tx-015-sgr
+Branch-Head-Before-Record: 2881fc7606742ad275e0e6e9a1e45bbfee9509f3
+Authorized-Candidate-Source: df061bc07d8b09c6f678d56b1d439aa3e4e02923
+Authorized-VersionName: 1.1.0
+Authorized-VersionCode: 19
+Predecessor: continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode
+Successor: NOT APPLICABLE
+Conflict-Status: NONE
+Human-Decision-Needed: NO — PRODUCTION PROMOTION AUTHORITY GRANTED
+Operational-Action-Needed: YES — GOOGLE PLAY PRODUCTION SUBMISSION
+
+🪨 BLOCK 1 — AUTHORITY STATEMENT
+--------------------------------------------------------------------------------
+Michael stated on 2026-09-27:
+
+"I authorized version code 19, 1.1.0, version code 19 bundle. I authorized that for
+production."
+
+Normalized meaning:
+
+"I authorize production promotion of the exact internally tested RangeWater 1.1.0
+versionCode 19 bundle."
+
+The repeated versionCode phrase is preserved in the exact statement and normalized
+without changing its meaning.
+
+🪨 BLOCK 2 — AUTHORIZED SCOPE
+--------------------------------------------------------------------------------
+This authority grants:
+- promotion of the existing Google Play internal-test RangeWater 1.1.0 versionCode 19
+  bundle to the Production track;
+- creation and submission of the corresponding Google Play production release;
+- use of the already accepted release notes for that exact bundle.
+
+This authority does not require or authorize:
+- rebuilding the Android App Bundle;
+- changing application code, schema, package identity, signing, or release contents;
+- substituting a different versionCode or artifact;
+- claiming Google approval before Google provides it;
+- claiming publication before the production release becomes live.
+
+🪨 BLOCK 3 — EVIDENCE BASIS
+--------------------------------------------------------------------------------
+Authorization follows:
+- automated acceptance for corrected candidate source df061bc;
+- complete physical-glass acceptance on Michael's Samsung phone and Samsung Tab S7;
+- Google Play internal delivery of versionCode 19;
+- controlled Play-signed 1.0.1-to-1.1.0 in-place migration on Samsung Tab S7;
+- survival of restored September 23 pastures, gates, water sources, and other records;
+- installed versionName 1.1.0 confirmation.
+
+Internal migration acceptance record:
+- continuity/transitions/RW-FK-TR-003-PLAY-INTERNAL-MIGRATION-ACCEPTED.cavecode.
+
+🪨 BLOCK 4 — CURRENT RELEASE STATE
+--------------------------------------------------------------------------------
+At the moment of this authority record:
+- Public production remains RangeWater 1.0.1, versionCode 18.
+- Production promotion of 1.1.0 versionCode 19 is AUTHORIZED.
+- Google Play production submission is not yet recorded.
+- Google review or approval is not yet recorded.
+- Production publication is not yet recorded.
+
+Each later event must be recorded from its actual evidence and must not be inferred from
+this authorization alone.
+
+🌐 BLOCK 5 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+Michael authorized production promotion of the exact internally tested RangeWater 1.1.0
+versionCode 19 bundle. The authorization does not itself prove submission, Google review,
+approval, or publication.
+
+================================================================================
+END — RW-FK-TR-004 — RATIFIED PRODUCTION AUTHORITY
+================================================================================

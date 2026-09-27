@@ -28,7 +28,7 @@ record. Michael is the Project Owner, Lead Architect, and Final Decision Authori
 - Automated acceptance: passed.
 - Physical field acceptance: passed on Michael's Samsung phone and Samsung Tab S7.
 - Google Play internal release: delivered; controlled 1.0.1-to-1.1.0 in-place migration passed on Samsung Tab S7.
-- Production promotion for 1.1.0: not authorized.
+- Production promotion for the exact tested 1.1.0 versionCode 19 bundle: authorized by Michael; submission and publication not yet recorded.
 
 ## Forgekeeper boundary
 
