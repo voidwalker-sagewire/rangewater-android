@@ -1,0 +1,92 @@
+================================================================================
+RANGEWATER PRODUCT RATIFICATION RECORD
+RW-TX-016-PMP REVISION 1 — PROPOSED -> RATIFIED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-TX-016-PMP-REV1-RATIFICATION
+Project: RangeWater
+Title: RangeWater 1.2.0 Precision Mapping and Paddock Planning Ratification
+Revision: 1
+State: RATIFIED — IMPLEMENTATION AUTHORIZED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-09-27T19:29:15-04:00
+Source-Type: Explicit human authority statement
+Repository: voidwalker-sagewire/rangewater-android
+Branch: codex/rw-tx-016-pmp
+Baseline-Head: 1ead13b9cee8be966696b071d6da6510103e3c3a
+
+🪨 BLOCK 1 — AUTHORITY STATEMENT
+--------------------------------------------------------------------------------
+Michael stated:
+
+"Ratify order via TX-016PMP Revision 1 for range water 1.2.0 precision mapping and
+paddock planning."
+
+🪨 BLOCK 2 — IDENTIFIER NORMALIZATION
+--------------------------------------------------------------------------------
+Canonical artifact:
+- RW-TX-016-PMP Revision 1.
+- workorders/RW-TX-016-PMP.cavecode.
+
+Normalization finding:
+- "TX-016PMP" is preserved verbatim as the spoken/transcribed identifier.
+- The number 016, Revision 1, release 1.2.0, and exact feature title match the only
+  prepared RangeWater contract.
+- The spaced product name "range water" identifies RangeWater.
+- No competing TX-016PMP or RW-TX-016 contract exists.
+- The statement therefore unambiguously ratifies RW-TX-016-PMP Revision 1.
+- This normalization changes no contract meaning or scope.
+
+🪨 BLOCK 3 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Prior State: DRAFT — NOT RATIFIED
+New State: RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED
+Transition Authority: Michael
+Transition Time: 2026-09-27T19:29:15-04:00
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+
+🪨 BLOCK 4 — AUTHORIZED EFFECT
+--------------------------------------------------------------------------------
+The ratification authorizes:
+1. Creation and use of branch codex/rw-tx-016-pmp from the closed 1.1.0 baseline.
+2. RangeWater 1.2.0 application implementation within the ratified contract.
+3. Version identity 1.2.0, versionCode 20.
+4. The specified Room schema 7-to-8 non-destructive migration.
+5. Archive write format 3 with format-1, format-2, and format-3 read support.
+6. Automated geometry, JVM, Room, archive, build, and signing verification.
+7. Signed field APK and Google Play internal-test App Bundle creation.
+8. Physical-glass testing on Michael's Samsung phone and Samsung Tab S7.
+
+Assignment:
+- Implementation is assigned to Ash / OpenAI Codex.
+
+🪨 BLOCK 5 — PROTECTED PRODUCT MEANING
+--------------------------------------------------------------------------------
+- Paddock splitting in 1.2.0 remains a non-destructive temporary planning record.
+- The saved split preserves a future no-redraw promotion seam for a separately ratified
+  permanent-pasture conversion.
+- Existing 1.1.0 pasture, water, gate, herd, movement, circuit, rest, forage, camera,
+  display, backup, and audit behavior remains protected.
+- Precision placement, startup guidance, contextual hints, and the Field Guide operate
+  only within the ratified contract.
+
+🪨 BLOCK 6 — UNCHANGED AUTHORITY GATES
+--------------------------------------------------------------------------------
+This ratification does not authorize:
+- declaring automated or physical acceptance before evidence exists;
+- uploading an unverified bundle to any Google Play track;
+- production promotion or publication;
+- replacing the exact tested artifact with an untested rebuild;
+- permanent conversion of a paddock plan into child PastureEntity records;
+- any feature listed as out of scope in RW-TX-016-PMP Revision 1;
+- changes on codex/cavecode-forgekeeper-pilot.
+
+Current production remains:
+- RangeWater 1.1.0, versionCode 19.
+- Google Play Production published at the recorded 100% rollout.
+
+================================================================================
+END — RW-TX-016-PMP REVISION 1 RATIFICATION RECORD
+================================================================================

@@ -53,6 +53,20 @@ Prior production:
 - Production publication: COMPLETED by Michael on 2026-09-27.
 - Workorder RW-TX-015-SGR: CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
 
+Active development authority:
+- RW-TX-016-PMP Revision 1: RATIFIED by Michael on 2026-09-27.
+- Target release: RangeWater 1.2.0, versionCode 20.
+- Feature branch: codex/rw-tx-016-pmp.
+- Authorized scope: Precision Placement Loupe, improved snapping, one saved temporary
+  paddock split per pasture with a future no-redraw promotion seam, optional startup
+  Field Tips, contextual hints, and an offline RangeWater Field Guide.
+- Authorized data delta: Room schema 7-to-8 and archive write format 3 with legacy
+  format-1 and format-2 restore support.
+- Implementation authority: GRANTED for the ratified contract.
+- Production authority: NOT GRANTED.
+- Ratification record:
+  continuity/ratifications/RW-TX-016-PMP-REV1-RATIFICATION.cavecode.
+
 🪨 BLOCK 4 — SUPERSESSION STATUS
 --------------------------------------------------------------------------------
 - RW-FK-CONFLICT-001 isolated pilot branch drift: RESOLVED.
@@ -71,16 +85,20 @@ Prior production:
 3. continuity transition and supersession records referenced above
 4. RANGEWATER.cavecode.txt for historical project context
 5. workorders/RW-TX-015-SGR.cavecode and its acceptance card
-6. exact Git commits, CI runs, artifacts, and physical evidence
+6. workorders/RW-TX-016-PMP.cavecode and its ratification record
+7. exact Git commits, CI runs, artifacts, and physical evidence
 
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
 1. No repair, rebuild, or replacement of versionCode 19 is authorized or required.
 2. Storefront propagation or post-publication device visibility may be recorded later
    as separate operational evidence if Michael chooses.
-3. New product development requires a new ratified scope and release identity.
-4. The separate Forgekeeper engine remains future work outside this repository.
-5. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
+3. Implement only RW-TX-016-PMP Revision 1 on codex/rw-tx-016-pmp.
+4. Run every specified automated gate and produce signed field/internal-test artifacts.
+5. Physical acceptance and controlled Google Play internal migration must pass before
+   any separate production-promotion decision.
+6. The separate Forgekeeper engine remains future work outside this repository.
+7. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
 
 ================================================================================
 END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE

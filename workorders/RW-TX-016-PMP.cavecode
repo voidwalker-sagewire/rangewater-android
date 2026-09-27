@@ -1,0 +1,657 @@
+================================================================================
+RANGEWATER TRANSMISSION CONTRACT — RATIFIED REVISION 1
+RW-TX-016-PMP — RANGEWATER 1.2.0 PRECISION MAPPING & PADDOCK PLANNING
+================================================================================
+Format: CaveCode v1.0 project contract
+Status: RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Prepared: 2026-09-27
+Revised: 2026-09-27 — preserve a future no-redraw path from a temporary split plan
+to permanent pasture boundaries without authorizing that conversion in 1.2.0
+
+🪨 BLOCK 1 — IDENTITY, BASELINE, AND RELEASE BOUNDARY
+--------------------------------------------------------------------------------
+- Product: RangeWater
+- Proposed release: 1.2.0
+- Proposed versionCode: 20
+- Package identity: com.sagewire.rangewater — unchanged
+- Proposed feature branch: codex/rw-tx-016-pmp
+- Required baseline: closed RangeWater 1.1.0 production continuity state
+  1ead13b9cee8be966696b071d6da6510103e3c3a
+- Current Room schema: 7
+- Proposed Room schema: 8
+- Current archive write format: 2
+- Proposed archive write format: 3, with explicit read support for formats 1, 2, and 3
+- Primary device classes: compatible Android phones and tablets
+
+MISSION:
+- Make exact map placement practical under a finger, let an operator plan one saved
+  temporary paddock split without destructively replacing the parent pasture, preserve
+  that exact split as a possible future permanent-boundary blueprint, and teach RangeWater
+  gradually through brief, optional, offline guidance.
+
+RELEASE CHARACTER:
+- This is a precision, planning, and learnability release.
+- It must preserve every accepted RangeWater 1.1.0 ranch record and behavior.
+- It does not change the scientific meaning of the 800-foot preferred zone, the
+  800-to-1,000-foot transition zone, recorded rest, or forage estimates.
+
+AUTHORITY BOUNDARY:
+- Michael ratified this complete Revision 1 contract on 2026-09-27.
+- Application implementation, the specified schema 7-to-8 migration, archive format 3,
+  automated verification, and signed field/internal-test artifacts are authorized.
+- Google Play production publication is not authorized by this ratification.
+
+🪨 BLOCK 2 — PROPOSED PRODUCT SCOPE
+--------------------------------------------------------------------------------
+The proposed RangeWater 1.2.0 scope contains six related capabilities:
+
+1. Precision Placement Loupe.
+2. Improved snapping and exact-coordinate placement feedback.
+3. A non-destructive saved single-line paddock split plan.
+4. A brief first-use welcome and optional rotating Field Tips during startup.
+5. Optional, one-time contextual hints for major workflows.
+6. A complete offline RangeWater Field Guide reachable from the existing overflow menu.
+
+PROTECTED 1.1.0 BEHAVIOR:
+- Existing pasture boundaries and canonical fence junctions remain authoritative.
+- Existing gates, water assignments, herds, movements, circuits, roles, recorded-rest
+  derivation, forage observations, backups, camera state, and layer preferences survive.
+- Existing field and Play signing identities remain unchanged.
+- No accepted record is silently reinterpreted as a paddock record.
+
+🎮 BLOCK 3 — PRECISION PLACEMENT LOUPE
+--------------------------------------------------------------------------------
+3A. PURPOSE
+
+- A fingertip hides the exact map point being chosen. During supported placement and
+  dragging operations, RangeWater provides a magnified inset with a fixed crosshair so
+  the operator can see the precise coordinate beneath the active pointer.
+
+3B. SUPPORTED WORKFLOWS
+
+The loupe is available while:
+- drawing a new pasture;
+- adding a corner to an existing pasture;
+- moving an unshared pasture corner;
+- moving an approved shared fence junction;
+- placing or moving a water source;
+- placing or moving a gate candidate on a fence segment; and
+- placing either endpoint of a paddock split.
+
+The loupe does not appear during ordinary map panning, zooming, asset inspection,
+Herd Focus, circuit management, forage entry, backup, or restore.
+
+3C. INTERACTION CONTRACT
+
+- The operator presses and holds in a supported placement mode.
+- The loupe appears above and horizontally offset from the finger so it remains visible.
+- The loupe displays a live magnified view of the source map and relevant RangeWater
+  overlays around the candidate coordinate.
+- A fixed, high-contrast crosshair marks the coordinate that will be accepted.
+- Moving the finger moves the candidate coordinate beneath the crosshair.
+- Releasing the finger accepts the candidate into the current in-memory draft.
+- ACTION_CANCEL, a system interruption, or leaving the placement mode accepts nothing.
+- Existing Save, Cancel, and Undo controls remain authoritative. Loupe release is not a
+  database save unless the accepted workflow already saves at that step.
+- A quick ordinary tap remains supported where the accepted workflow already allows it.
+  Press-and-hold supplies precision; it does not make every placement require a hold.
+
+3D. VISUAL AND ACCESSIBILITY RULES
+
+- The loupe must not cover the active finger, primary editing controls, MapLibre logo,
+  provider attribution, or the selected coordinate when a safe alternate position exists.
+- It chooses an above-left or above-right position from available screen space.
+- The crosshair remains visible over bright aerial imagery and dark labeled imagery.
+- The inset includes a visible border and must remain legible outdoors.
+- TalkBack announces the active placement mode and whether the candidate is snapped.
+- Haptic feedback may confirm a valid snap using ordinary Android feedback; there is no
+  continuous vibration and no custom sound requirement.
+- Mouse and trackpad users retain direct point-and-click placement without requiring a
+  touch hold. The loupe may be shown during pointer drag when useful.
+
+3E. COORDINATE TRUTH
+
+- The accepted latitude/longitude is the coordinate represented by the crosshair.
+- The loupe may not use a visually shifted coordinate while persisting the hidden finger
+  coordinate or vice versa.
+- Magnification is visual only and does not change the main map camera or saved viewport.
+- Exiting precision placement restores the operator's settled camera exactly.
+
+🎮 BLOCK 4 — IMPROVED SNAPPING AND PLACEMENT FEEDBACK
+--------------------------------------------------------------------------------
+- Existing 32-dp shared-junction snapping and accepted gate snapping remain the baseline.
+- The loupe shows the active snap target and the exact unsnapped candidate before release.
+- Shared-junction snap feedback uses the existing snapped-junction visual identity and
+  the message "Snapped to shared corner."
+- Fence placement shows the projected fence point, not the raw off-fence pointer point.
+- Paddock endpoints must snap to the selected pasture's boundary.
+- Water placement remains free-coordinate placement unless a future contract separately
+  authorizes snapping water to another asset.
+- Snap tolerance remains screen-space based where already accepted so phone and tablet
+  interaction remains usable across zoom levels.
+- The engine selects the nearest valid candidate within tolerance and never silently
+  joins a second-best invalid target.
+- Existing confirmations for joining or moving shared junctions remain mandatory.
+- Existing gate clearance, overlap, planned-movement protection, and topology checks
+  remain DAO-owned and cannot be bypassed by the loupe.
+
+🎮 BLOCK 5 — SAVED TEMPORARY PADDOCK SPLIT PLAN
+--------------------------------------------------------------------------------
+5A. PRODUCT MEANING
+
+- User-facing feature name: Plan Paddock Split.
+- A paddock split is a planning line representing proposed temporary polywire inside one
+  mapped pasture.
+- It is not a surveyed boundary, permanent fence, gate, movement route, circuit, herd
+  location, or claim that wire exists in the field.
+- The parent pasture remains one canonical PastureEntity.
+- The split derives two planning regions and their map-estimated acreages without
+  replacing, renaming, or duplicating the parent pasture.
+- The saved plan is promotion-ready by design: a future separately ratified operation may
+  reuse the same validated line and side labels to create permanent pasture boundaries
+  without asking the operator to redraw the division.
+- RangeWater 1.2.0 does not perform that promotion and does not imply that the temporary
+  line has become a permanent fence merely because the plan was saved.
+
+5B. INITIAL 1.2.0 GEOMETRY BOUNDARY
+
+- One active saved split is allowed per pasture in 1.2.0.
+- The split is one straight segment with two distinct endpoints.
+- Both endpoints must snap to the selected pasture boundary.
+- An endpoint may lie on a boundary segment or existing canonical corner.
+- The segment must pass through the pasture interior and divide the parent polygon into
+  exactly two valid, non-overlapping, positive-area regions.
+- A tangent, boundary-following, zero-area, self-touching, or multi-result split is rejected.
+- Each derived region must meet a small implementation safety threshold documented and
+  tested before implementation; the UI must not invent a universal agricultural minimum.
+- Curved lines, multi-bend polywire, multiple simultaneous cuts, and executing permanent
+  conversion into child pastures remain outside 1.2.0.
+
+5C. OPERATOR WORKFLOW
+
+1. Select a pasture.
+2. Choose Plan Paddock Split.
+3. Read the brief explanation that the plan does not alter the pasture boundary.
+4. Press, drag, or tap to place the first endpoint on the pasture boundary.
+5. Place the second endpoint on another valid part of the boundary.
+6. Review the line, both derived regions, acreage on each side, and reconciliation total.
+7. Optionally swap or edit the suggested side labels.
+8. Save or Cancel.
+
+During editing:
+- either endpoint may be moved with the precision loupe;
+- Undo reverses the latest endpoint placement or movement;
+- Cancel restores the last saved plan without a database write;
+- Save remains disabled until the split is valid;
+- validation messages explain whether an endpoint missed the boundary, the line failed
+  to cross the interior, or the result did not produce exactly two safe regions.
+
+5D. DISPLAY AND MANAGEMENT
+
+- A saved split renders as a high-contrast temporary-polywire line visually distinct
+  from permanent magenta pasture boundaries and orange gates.
+- The two derived regions use subtle, distinguishable planning fills that do not obscure
+  water coverage, herd badges, gates, or required attribution.
+- Labels default to "Paddock A" and "Paddock B" and may be renamed.
+- The pasture card shows the active plan and both map-estimated acreages.
+- The operator may Edit, Archive, or Delete the plan with confirmation.
+- Archived plans are retained for future reference but are not rendered as active plans.
+- The delete confirmation warns that deletion also discards the reusable split blueprint;
+  Archive is the recommended choice when the operator may want the line again later.
+- No herd, circuit, movement, forage, rest, gate, or water record is automatically
+  assigned to a derived paddock region in 1.2.0.
+
+5E. BOUNDARY-EDIT SAFETY
+
+- Paddock endpoints are stored against the parent pasture and its canonical boundary
+  segment anchors rather than as detached screen pixels.
+- Moving an endpoint never moves the permanent pasture boundary.
+- Editing the parent boundary previews and revalidates its active paddock split.
+- A boundary change that leaves the split valid may update the derived regions from the
+  anchored endpoints in the same accepted save.
+- A boundary change that would detach an endpoint or invalidate the two-region result is
+  blocked until the operator moves, archives, or deletes the affected split.
+- Deleting the parent pasture remains blocked by every existing accepted dependency and
+  additionally requires explicit treatment of its paddock split.
+
+5F. FUTURE PERMANENT-BOUNDARY PROMOTION SEAM
+
+- The 1.2.0 plan must preserve enough durable identity, canonical boundary anchoring,
+  side labeling, and validated geometry to let a later contract offer an action such as
+  "Make Permanent Pastures" without redrawing the split.
+- A future promotion would revalidate the parent boundary and saved split at the moment
+  of conversion, then derive both proposed child boundaries from that accepted geometry.
+- Promotion cannot be a blind one-tap mutation. Before committing, a future review must
+  resolve at least:
+  - permanent names for both resulting pastures;
+  - which gates border or connect each resulting pasture;
+  - which water assignments apply to each resulting pasture;
+  - which Grazing Circuits include either or both resulting pastures;
+  - the truthful location of any herd currently recorded in the parent pasture;
+  - handling of planned movements involving the parent pasture; and
+  - preservation of historical movements, forage acreage snapshots, rest derivation,
+    and audit references that were created while the parent pasture existed.
+- The likely safe future pattern is to retain or archive the original parent identity for
+  historical references while creating new permanent child identities, but that policy
+  is not ratified here and must be settled by the future conversion contract.
+- A plan that is no longer geometrically valid after later boundary changes must be
+  repaired before promotion. Promotion-ready does not mean validation may be skipped.
+- Nothing in 1.2.0 prevents the rancher from continuing to use the plan as temporary
+  polywire indefinitely; permanent promotion remains optional.
+
+🪨 BLOCK 6 — PROPOSED PERSISTED DATA MODEL
+--------------------------------------------------------------------------------
+6A. PADDOCK SPLIT PLAN
+
+Table: paddock_split_plans
+Entity: PaddockSplitPlanEntity
+
+Fields:
+- id: Long, auto-generated primary key
+- pastureId: Long, required, indexed
+- name: String, required, trimmed
+- sideALabel: String, required, default "Paddock A"
+- sideBLabel: String, required, default "Paddock B"
+- startJunctionAId: Long, required
+- startJunctionBId: Long, required
+- startSegmentRatio: Double, required, range 0.0 through 1.0
+- endJunctionAId: Long, required
+- endJunctionBId: Long, required
+- endSegmentRatio: Double, required, range 0.0 through 1.0
+- createdAt: Long, required
+- updatedAt: Long, required
+- archivedAt: Long?, nullable
+
+Foreign keys:
+- pastureId -> pastures.id, ON DELETE RESTRICT / NO ACTION
+- each junction ID -> fence_junctions.id, ON DELETE RESTRICT / NO ACTION
+
+Indices and constraints:
+- indexed pastureId and all junction-reference fields;
+- at most one row with archivedAt null per pasture, enforced by DAO-owned transaction
+  validation because Room/SQLite portability cannot rely on one partial unique index;
+- both ordered junction pairs must identify real consecutive boundary segments belonging
+  to the referenced pasture;
+- endpoint ratios must be finite and within the closed unit interval;
+- endpoints and the derived split must pass Block 5 validation before insertion or update.
+
+6B. DERIVED, NOT PERSISTED
+
+- Endpoint coordinates are resolved from canonical junction coordinates plus the stored
+  normalized segment ratios.
+- Paddock A and B polygon coordinates are derived at runtime.
+- Side acreages and percentages are derived at runtime.
+- No duplicate child-pasture polygons or stored acreage totals are introduced.
+- Historical forage observations retain their accepted parent-pasture acreage snapshots.
+- The stored parent reference, endpoint segment anchors, side labels, timestamps, and
+  stable plan ID form the durable seam for a future no-redraw promotion workflow.
+- Future conversion code may derive proposed child geometry from this seam, but may not
+  silently rewrite or reassign existing records without its own ratified migration and
+  transaction contract.
+
+6C. DEVICE-LOCAL HELP PREFERENCES
+
+The following use a dedicated SharedPreferences repository and do not advance Room:
+- fieldTipsEnabled: Boolean, default true
+- contextualHintsEnabled: Boolean, default true
+- welcomeSeen: Boolean, default false
+- dismissedHintIds: Set<String>, default empty
+- nextTipIndex: Int, default zero
+
+These preferences are device-local usability state. They are not ranch records and are
+not added to .rangewater archives in 1.2.0.
+
+🎮 BLOCK 7 — WELCOME, STARTUP TIPS, AND REAL LOADING STATUS
+--------------------------------------------------------------------------------
+7A. FIRST USE
+
+- On the first completed application launch, RangeWater briefly shows:
+  "Welcome to RangeWater. Thanks for using it."
+- Supporting line:
+  "Map water access, pastures, gates, herds, grazing circuits, rest, and forage—all
+  while keeping your ranch records on your device."
+- The welcome transitions into the usable map without requiring an account, network
+  request, or mandatory tutorial.
+- It does not impose an artificial delay after the map is ready.
+- The welcome can be replayed from Help & Field Guide.
+
+7B. LATER STARTS
+
+- When Field Tips are enabled, later launches show one compact rotating tip near the
+  bottom of the map while startup work completes.
+- The tip is non-modal: the map becomes usable as soon as it is ready.
+- The tip may be dismissed immediately and fades after a baseline three seconds.
+- Android's recommended accessibility timeout extends the display when the operator's
+  accessibility settings require more reading time.
+- The tip must not cover MapLibre attribution, provider attribution, bottom sheets, or
+  primary editing controls.
+- Tip rotation is deterministic and offline; no advertisement or remote content exists.
+
+7C. LOADING TRUTH
+
+- RangeWater may show short, accurate state messages only while that work is pending:
+  - Loading ranch records
+  - Preparing ranch map
+  - Loading aerial imagery
+  - Restoring saved map view
+- A delayed imagery service must not be described as database work, and a completed
+  stage must not continue displaying as active.
+- No fake percentage, fake progress bar, or deliberate delay is allowed.
+- Existing map failure and fallback behavior remains authoritative.
+
+🖍️ BLOCK 8 — PROPOSED ROTATING FIELD TIPS
+--------------------------------------------------------------------------------
+Initial bundled tips:
+
+1. "Assign water sources to pastures to see accessible coverage."
+2. "Create a portable backup before making major boundary changes."
+3. "Grazing Circuits organize pastures but do not move a herd."
+4. "Recorded rest is calculated from completed herd movements."
+5. "Forage estimates are only as accurate as the samples entered."
+6. "Press and hold during placement to use the precision loupe."
+7. "Green shows preferred water access through 800 feet."
+8. "Yellow shows the 800-to-1,000-foot planning transition."
+9. "Map acreage is an estimate, not a surveyed boundary."
+10. "A paddock split is a plan until the polywire is installed in the field."
+
+Tip-content rules:
+- Tips remain short enough for narrow portrait phones.
+- Tips do not claim biological readiness, guaranteed forage, surveyed accuracy, or
+  guaranteed livestock access.
+- Tips use accepted RangeWater terms and units.
+- Tips may be revised as public text without altering ranch data or calculation rules,
+  but materially new advice requires product-owner review.
+
+🎮 BLOCK 9 — CONTEXTUAL HINTS
+--------------------------------------------------------------------------------
+- Contextual hints are enabled by default and may be turned off independently of startup
+  Field Tips.
+- Each hint is normally shown once per installation, then recorded by a stable hint ID.
+- Every hint provides an immediate dismissal path.
+- Help & Field Guide provides "Reset contextual hints."
+- Resetting hints changes no ranch record or map setting.
+
+Initial contextual hints:
+- Draw Pasture: "Tap corners in order. Use Undo for mistakes and Finish to close it."
+- Edit Boundary: "Select a corner to move it, or use Add Corner on a fence segment."
+- Precision Loupe: "Press and hold, then move the map point beneath the crosshair."
+- Add Gate: "Place the gate directly on a fence segment connected to this pasture."
+- Water Assignment: "Accessible coverage includes only explicitly assigned pastures."
+- Herd Movement: "Planning does not move the herd. Complete the movement when it occurs."
+- Grazing Circuit: "A circuit is a planning group. Assigning it does not move the herd."
+- Record Forage: "Measure several representative undisturbed points before entering an average."
+- Paddock Split: "This plans temporary polywire and does not replace the pasture boundary."
+- Data Safety: "Backups stored outside RangeWater can restore records after replacement or loss."
+
+🌐 BLOCK 10 — OFFLINE RANGEWATER FIELD GUIDE
+--------------------------------------------------------------------------------
+- Entry point: existing overflow menu -> Help & Field Guide.
+- The guide is bundled with the application and works without internet service.
+- It uses searchable or clearly indexed phone-safe sections rather than one enormous
+  scrolling wall of text.
+- It includes a Close or Back path on every screen and preserves the underlying map state.
+
+Required sections:
+1. Getting Started
+2. Reading the Map and Imagery
+3. Drawing and Correcting Pastures
+4. Precision Placement and Snapping
+5. Planning a Paddock Split
+6. Adding Gates
+7. Adding Water and Understanding Coverage
+8. Creating Herds and Recording Movements
+9. Building Grazing Circuits
+10. Understanding Recorded Rest
+11. Recording Forage and Stockpile Observations
+12. Creating, Restoring, and Sharing Backups
+13. Common Problems and Recovery
+14. Planning Limits and Important Disclosures
+
+Required disclosures:
+- Mapped boundaries and acreage are estimates, not surveys.
+- Water coverage is a planning visualization and does not guarantee animal access.
+- Gate-aware propagation is not part of 1.2.0.
+- Rest is derived from recorded movements and does not prove biological recovery.
+- Forage and stockpile values are operator-input estimates, not measured feed inventory.
+- Paddock splits are planning records and do not prove that temporary fence exists.
+- RangeWater remains local-first; uninstalling without an external backup can remove data.
+
+Help controls:
+- Field Tips: On / Off
+- Contextual Hints: On / Off
+- Show Welcome Again
+- Reset Contextual Hints
+- Open Field Guide
+
+🔧 BLOCK 11 — DATABASE MIGRATION CONTRACT
+--------------------------------------------------------------------------------
+- Add PaddockSplitPlanEntity.
+- Advance RangeWaterDatabase from version 7 to version 8.
+- Add explicit MIGRATION_7_8 after every accepted prior migration.
+- Migration creates only the new empty paddock_split_plans table and its indices.
+- Migration must not modify existing water, pasture, junction, vertex, assignment, gate,
+  herd, movement, circuit, role, herd-circuit assignment, or forage-observation rows.
+- Destructive migration and fallbackToDestructiveMigration remain prohibited.
+
+Required migration evidence:
+- Begin with a real schema-7 database populated with at least one valid record from every
+  existing entity category.
+- Upgrade through MIGRATION_7_8.
+- Prove every existing row and relationship remains unchanged.
+- Prove the new table is empty and writable.
+- Prove foreign keys, active-plan validation, and invalid-anchor rejection after upgrade.
+
+🔧 BLOCK 12 — ARCHIVE AND RESTORE CONTRACT
+--------------------------------------------------------------------------------
+- RangeWater 1.2.0 writes archive format version 3.
+- The archive retains the .rangewater extension and accepted checksum design.
+- Format 3 adds paddockSplitPlans and its record count.
+- The reader accepts formats 1, 2, and 3.
+- Format 1 upgrades in memory with empty 1.1 circuit/forage and 1.2 paddock collections.
+- Format 2 upgrades in memory with an empty paddockSplitPlans collection.
+- Version-specific record-count validation remains exact.
+- Archives newer than format 3 are rejected before live writes.
+- Validation rejects missing pasture or junction references, non-boundary segment pairs,
+  non-finite or out-of-range ratios, duplicate active plans per pasture, invalid derived
+  geometry, and unsupported archived-state values.
+- Snapshot, replace-all, emergency rollback, and Undo Last Restore include paddock plans.
+- Restore remains replace-all, validated before writing, foreign-key ordered, and atomic.
+
+🔧 BLOCK 13 — DAO AND TRANSACTION RULES
+--------------------------------------------------------------------------------
+Required operations:
+- observe active and archived paddock plans;
+- get a plan by ID or parent pasture;
+- create one valid active plan per pasture;
+- update name, labels, and anchored endpoints atomically;
+- archive, reactivate when no active conflict exists, or delete with confirmation;
+- report paddock plans that block a pasture or topology mutation;
+- validate endpoint segment membership and derived two-region geometry inside the
+  persistence transaction rather than trusting UI-only calculations.
+
+Invariants:
+- No invalid or partial paddock plan survives a failed save.
+- UI preview geometry never writes before explicit Save.
+- Cancel produces no database write.
+- Failed archive, reactivation, endpoint update, restore, or boundary update leaves the
+  previous state unchanged.
+- Existing accepted pasture and gate transaction protections remain in force.
+
+🔧 BLOCK 14 — GEOMETRY AND MAP-DERIVATION RULES
+--------------------------------------------------------------------------------
+- JTS performs robust line/polygon noding and polygonization for the split result.
+- Turf remains authoritative for displayed geodesic acreage, preserving accepted acreage
+  semantics across parent and derived planning regions.
+- The split engine must return exactly two interior polygonal regions.
+- Region interiors do not overlap and their union reconciles with the parent pasture.
+- Derived side acreage totals reconcile to parent mapped acreage within 0.5% numerical
+  tolerance, matching the accepted coverage reconciliation standard.
+- The line and derived regions are generated from the parent geometry and anchored
+  endpoints every time they are displayed; no screen-space geometry is persisted.
+- Existing map layer precedence remains readable. Selected assets, gate symbols, herd
+  badges, water points, and required attribution cannot be hidden by paddock fills.
+- Herd Focus may dim unrelated paddock plans but may not mutate or delete them.
+
+🔧 BLOCK 15 — AUTOMATED ACCEPTANCE GATES
+--------------------------------------------------------------------------------
+JVM / UNIT TESTS:
+1. Loupe pointer-to-crosshair conversion returns the exact accepted map coordinate.
+2. Cancel and pointer interruption accept no candidate.
+3. Snap selection chooses the nearest valid target within the configured tolerance.
+4. A valid straight split creates exactly two valid regions.
+5. Tangent, boundary-following, same-point, zero-area, and non-crossing lines are rejected.
+6. Derived regions are disjoint and exhaustive within the required tolerance.
+7. Side acreages reconcile with the parent pasture within 0.5%.
+8. Boundary-anchor resolution tracks valid canonical junction movement.
+9. Help preferences default on, persist across restart, and reset without touching data.
+10. Tip rotation is deterministic and uses only bundled content.
+
+ANDROID ROOM TESTS:
+1. MIGRATION_7_8 preserves every schema-7 entity and relationship.
+2. Paddock-plan schema, indices, and foreign keys match this contract.
+3. Create, edit, archive, reactivate, and delete survive database close and reopen.
+4. A second active plan for the same pasture is rejected atomically.
+5. Invalid or foreign-pasture segment anchors are rejected.
+6. Protected boundary edits cannot orphan an active paddock plan.
+7. Failed multi-record operations roll back completely.
+
+ARCHIVE TESTS:
+1. Real format-1 and format-2 archives restore into schema 8 with empty paddock plans and
+   every former record intact.
+2. Format 3 round-trips every accepted record and paddock plan with stable IDs.
+3. Record counts and SHA-256 integrity use the correct version-specific shape.
+4. Malformed plan relationships and geometry are rejected before replacement.
+5. Restore and Undo Last Restore preserve the complete pre-restore state.
+
+UI / ACCESSIBILITY TESTS WHERE PRACTICAL:
+1. Disabling Field Tips and contextual hints persists across restart.
+2. Welcome is first-use only unless explicitly replayed.
+3. The startup tip is non-modal and does not block a ready map.
+4. Help opens and closes without changing the map camera or selection state.
+5. Loupe and hint content expose meaningful accessibility descriptions.
+
+BUILD GATES:
+- Imagery-gateway regression suite passes.
+- JVM tests pass.
+- Android Room instrumentation tests pass.
+- Stable field APK compiles and its certificate is verified.
+- Play AAB compiles, signs, and matches the configured upload certificate.
+- No private signing material is committed.
+
+🎮 BLOCK 16 — PHYSICAL-GLASS ACCEPTANCE
+--------------------------------------------------------------------------------
+Test devices:
+- Michael's current Samsung phone
+- Samsung Tab S7
+
+Required sequence:
+1. Upgrade an existing Play or approved field RangeWater 1.1.0 installation containing
+   pastures, gates, water, herds, movements, circuits, roles, and forage observations.
+2. Confirm all existing records, camera state, map controls, and accepted calculations survive.
+3. Exercise the loupe while drawing a pasture, moving a corner, placing a gate, moving
+   water, and placing paddock endpoints.
+4. Confirm the crosshair coordinate—not the obscured finger position—is accepted.
+5. Confirm snapping feedback and shared-corner confirmations remain truthful.
+6. Create a valid paddock split and hand-check both displayed acreages against the parent.
+7. Move both endpoints, use Undo, Cancel, and Save, then cold reopen and verify persistence.
+8. Attempt invalid tangent, boundary-following, and non-crossing splits and verify clear rejection.
+9. Edit the parent boundary and verify valid plans track safely while invalidating edits are blocked.
+10. Confirm the plan changes no herd location, movement, circuit, water assignment, gate,
+    rest result, or historical forage observation.
+11. Verify first-use welcome, later rotating tips, immediate dismissal, and no artificial delay.
+12. Turn Field Tips and contextual hints off, cold reopen, and confirm both remain off.
+13. Replay the welcome, reset hints, and confirm no ranch data changes.
+14. Read every Field Guide section in phone portrait, phone landscape, and tablet layout.
+15. Create a format-3 backup, restore it on the other device, and verify the paddock plan.
+16. Use Undo Last Restore and confirm the complete prior state returns.
+
+Acceptance authority:
+- CI proves compilation and automated contracts.
+- Michael's physical-glass report is required before field acceptance.
+- Google Play internal testing must prove the 1.1.0-to-1.2.0 in-place update preserves
+  records before any production-promotion decision.
+- Production publication requires a separate explicit instruction from Michael for the
+  exact internally tested versionCode 20 bundle. No rebuild may be substituted silently.
+
+🖍️ BLOCK 17 — HUMAN-EDITABLE CONTENT AND TUNING KNOBS
+--------------------------------------------------------------------------------
+The following values may be tuned during draft review or device acceptance without
+changing the ranch-data meaning:
+- loupe diameter and visual magnification;
+- crosshair line weight and contrast treatment;
+- baseline startup-tip display duration, proposed at three seconds;
+- tip ordering and concise wording;
+- contextual-hint wording;
+- Field Guide wording and section order;
+- paddock-plan line and fill colors, provided permanent fences, gates, water coverage,
+  selections, and attribution remain distinguishable.
+
+The following are not mere tuning changes:
+- permanent splitting of PastureEntity;
+- more than one active split per pasture;
+- multi-segment or curved polywire;
+- automatic herd, circuit, water, forage, or rest assignment to a derived region;
+- changing Room or archive versions;
+- changing scientific thresholds or calculation meanings.
+
+🪨 BLOCK 18 — EXPLICITLY OUT OF SCOPE
+--------------------------------------------------------------------------------
+- executing permanent conversion of one pasture into multiple PastureEntity records in
+  RangeWater 1.2.0; the saved plan deliberately preserves a future no-redraw conversion path
+- curved, freehand, or multi-bend polywire
+- multiple simultaneous active cuts or automatic multi-paddock grids
+- equal-acre automatic line solving
+- automatic polywire length, reel count, post count, energizer, or cost estimates
+- non-grazable holes, roads, woods, buildings, ponds, or land-cover classification
+- gate-open/closed propagation of accessible water coverage
+- live GPS, background location, or distance-to-water
+- terrain, slope, DEM, hydraulic, or pipe-pressure analysis
+- animal-demand, stocking-density, carrying-capacity, or days-of-feed calculations
+- automatic rotation dates, forage growth, or biological readiness scoring
+- cloud accounts, remote tips, advertisements, analytics, or user tracking
+- parcel ownership lookup or SageWire Parcel Service integration
+- iPhone or iPad implementation
+
+These remain independent proposals. None may enter RW-TX-016-PMP without an explicit
+scope revision and Michael's ratification.
+
+🖍️ BLOCK 19 — REVIEW CARD
+--------------------------------------------------------------------------------
+Current decision state:
+- Product direction: APPROVED FOR CONTRACT PREPARATION by Michael on 2026-09-27.
+- Contract status: RATIFIED REVISION 1.
+- Implementation authority: GRANTED for this contract only.
+- Database mutation authority: GRANTED for the specified schema 7-to-8 migration.
+- Archive mutation authority: GRANTED for format 3 with format-1 and format-2 read support.
+- Signed field/internal-test artifact authority: GRANTED.
+- Google Play authority: NOT GRANTED.
+
+Recommended decision requiring explicit acceptance:
+- RangeWater 1.2.0 treats Divide Pasture as one saved, straight, temporary paddock plan
+  attached to the parent pasture. It does not permanently replace the parent pasture in
+  1.2.0, but it preserves the exact reusable blueprint for a separately ratified future
+  "Make Permanent Pastures" operation so the operator does not have to redraw the line.
+
+Ratification phrase:
+"I ratify RW-TX-016-PMP Revision 1 for RangeWater 1.2.0 Precision Mapping and Paddock Planning."
+
+Ratification record:
+- Michael stated on 2026-09-27:
+  "Ratify order via TX-016PMP Revision 1 for range water 1.2.0 precision mapping and
+  paddock planning."
+- The spoken/transcribed `TX-016PMP` identifier and spaced `range water` product name
+  are normalized to the sole matching prepared contract, RW-TX-016-PMP Revision 1 for
+  RangeWater 1.2.0 Precision Mapping and Paddock Planning.
+- No competing TX-016PMP or RW-TX-016 contract exists.
+
+After ratification, the implementation agent must:
+1. Preserve the ratification and new active resume point in RangeWater continuity records.
+2. Create codex/rw-tx-016-pmp from the required closed 1.1.0 baseline.
+3. Implement only the ratified contract.
+4. Run every automated gate.
+5. Deliver signed physical-test artifacts without publishing to production.
+
+================================================================================
+END — RW-TX-016-PMP — RATIFIED REVISION 1 — IMPLEMENTATION AUTHORIZED
+================================================================================

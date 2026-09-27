@@ -17,6 +17,11 @@ It holds governance and continuity artifacts, not application runtime code.
 
 ## Current evidence chain
 
+- `ratifications/RW-TX-016-PMP-REV1-RATIFICATION.cavecode`
+  - Status: RATIFIED — IMPLEMENTATION AUTHORIZED
+  - Records Michael's authority for RangeWater 1.2.0 Precision Mapping and Paddock Planning.
+  - Production publication remains separately gated.
+
 - `transitions/RW-FK-TR-001-RW-TX-015-FIELD-ACCEPTED.cavecode`
   - Status: FIELD ACCEPTED
   - Records RangeWater 1.1.0 physical acceptance on both target devices.
@@ -61,3 +66,5 @@ It holds governance and continuity artifacts, not application runtime code.
 - Only Michael may ratify project truth.
 - The future Forgekeeper engine belongs in a separate repository.
 - RangeWater 1.1.0 versionCode 19 is Google Play production published.
+- RangeWater 1.2.0 development is authorized only on `codex/rw-tx-016-pmp` under
+  `workorders/RW-TX-016-PMP.cavecode` Revision 1.
