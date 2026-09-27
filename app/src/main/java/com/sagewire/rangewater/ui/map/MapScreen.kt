@@ -6,10 +6,15 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
+import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.view.MotionEvent
+import android.view.GestureDetector
+import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,6 +62,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -89,6 +95,7 @@ import com.sagewire.rangewater.data.HerdLocationKind
 import com.sagewire.rangewater.data.MovementStatus
 import com.sagewire.rangewater.data.StockClass
 import com.sagewire.rangewater.data.PastureWithVertices
+import com.sagewire.rangewater.data.PaddockSplitPlanEntity
 import com.sagewire.rangewater.data.FenceJunctionEntity
 import com.sagewire.rangewater.data.ForageCalibrationSource
 import com.sagewire.rangewater.data.ForageCalculator
@@ -119,13 +126,22 @@ import com.sagewire.rangewater.spatial.CornerSnappingEngine
 import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
 import com.sagewire.rangewater.spatial.PastureCoverageMetrics
 import com.sagewire.rangewater.spatial.PastureFeatureConverter
+import com.sagewire.rangewater.spatial.PaddockBoundaryAnchor
+import com.sagewire.rangewater.spatial.PaddockSplitEngine
+import com.sagewire.rangewater.spatial.PaddockSplitFeatureConverter
+import com.sagewire.rangewater.spatial.PaddockSplitResult
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
+import com.sagewire.rangewater.ui.help.FieldGuideSection
+import com.sagewire.rangewater.ui.help.HelpPreferences
+import com.sagewire.rangewater.ui.help.HelpPreferencesRepository
+import com.sagewire.rangewater.ui.help.RangeWaterHelpContent
 import java.util.Locale
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraPosition
@@ -151,7 +167,8 @@ private enum class InteractionState {
     PASTURE_DRAWING,
     PASTURE_EDITING,
     GATE_PLACEMENT,
-    GATE_MOVING
+    GATE_MOVING,
+    PADDOCK_SPLIT_PLACEMENT
 }
 
 private enum class PastureEditMode {
@@ -204,6 +221,9 @@ fun MapScreen(
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val forageObservations by database.forageObservationDao().observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockPlanDao = remember(database) { database.paddockSplitPlanDao() }
+    val paddockPlans by paddockPlanDao.observeActive()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
     }
@@ -231,6 +251,12 @@ fun MapScreen(
     val cameraStateRepository = remember(appContext) {
         MapCameraStateRepository(appContext)
     }
+    val helpPreferencesRepository = remember(appContext) { HelpPreferencesRepository(appContext) }
+    var helpPreferences by remember { mutableStateOf(helpPreferencesRepository.get()) }
+    var showOverflowDialog by remember { mutableStateOf(false) }
+    var showHelpDialog by remember { mutableStateOf(false) }
+    var selectedGuideSection by remember { mutableStateOf<FieldGuideSection?>(null) }
+    var transientGuidance by remember { mutableStateOf<String?>(null) }
     var displayPreferences by remember {
         mutableStateOf(displayPreferencesRepository.getPreferences())
     }
@@ -303,6 +329,19 @@ fun MapScreen(
     var pastureEditNotes by remember { mutableStateOf("") }
     var showPastureDeleteDialog by remember { mutableStateOf(false) }
 
+    var paddockStartAnchor by remember { mutableStateOf<PaddockBoundaryAnchor?>(null) }
+    var paddockRetainedAnchor by remember { mutableStateOf<PaddockBoundaryAnchor?>(null) }
+    var movingPaddockStart by remember { mutableStateOf<Boolean?>(null) }
+    var paddockDraftResult by remember { mutableStateOf<PaddockSplitResult?>(null) }
+    var editingPaddockPlanId by remember { mutableStateOf<Long?>(null) }
+    var showPaddockPlanDialog by remember { mutableStateOf(false) }
+    var showPaddockSaveDialog by remember { mutableStateOf(false) }
+    var showPaddockDeleteDialog by remember { mutableStateOf(false) }
+    var paddockNameInput by remember { mutableStateOf("Paddock Split") }
+    var paddockSideAInput by remember { mutableStateOf("Paddock A") }
+    var paddockSideBInput by remember { mutableStateOf("Paddock B") }
+    var suppressMapClickUntil by remember { mutableLongStateOf(0L) }
+
     var showWaterEditDialog by remember { mutableStateOf(false) }
     var showWaterDeleteDialog by remember { mutableStateOf(false) }
     var waterEditName by remember { mutableStateOf("") }
@@ -311,8 +350,45 @@ fun MapScreen(
     var movingWaterPoint by remember { mutableStateOf<WaterPointEntity?>(null) }
     var draftWaterLocation by remember { mutableStateOf<LatLng?>(null) }
 
+    fun showContextHint(id: String) {
+        val message = RangeWaterHelpContent.contextualHints[id] ?: return
+        if (!helpPreferences.contextualHintsEnabled || id in helpPreferences.dismissedHintIds) return
+        transientGuidance = message
+        helpPreferencesRepository.dismissHint(id)
+        helpPreferences = helpPreferencesRepository.get()
+    }
+
+    LaunchedEffect(Unit) {
+        transientGuidance = if (!helpPreferences.welcomeSeen) {
+            helpPreferencesRepository.markWelcomeSeen()
+            helpPreferences = helpPreferencesRepository.get()
+            "${RangeWaterHelpContent.WELCOME_TITLE} ${RangeWaterHelpContent.WELCOME_BODY}"
+        } else if (helpPreferences.fieldTipsEnabled) {
+            val tipIndex = helpPreferencesRepository.advanceTip(RangeWaterHelpContent.fieldTips.size)
+            helpPreferences = helpPreferencesRepository.get()
+            "Field tip: ${RangeWaterHelpContent.fieldTips[tipIndex]}"
+        } else {
+            null
+        }
+        if (transientGuidance != null) {
+            val baselineMillis = 3_500
+            val timeoutMillis = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val accessibility = context.getSystemService(AccessibilityManager::class.java)
+                accessibility?.getRecommendedTimeoutMillis(
+                    baselineMillis,
+                    AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
+                ) ?: baselineMillis
+            } else {
+                baselineMillis
+            }
+            delay(timeoutMillis.toLong())
+            transientGuidance = null
+        }
+    }
+
     val selectedWater = waterPoints.firstOrNull { it.id == selectedWaterId }
     val selectedPasture = pastures.firstOrNull { it.pasture.id == selectedPastureId }
+    val selectedPaddockPlan = paddockPlans.firstOrNull { it.pastureId == selectedPastureId }
     val selectedHerd = herds.firstOrNull { it.id == selectedHerdId }
     val focusedHerd = herds.firstOrNull { it.id == focusedHerdId }
     val focusedCircuitPastureIds = remember(focusedHerd, herdCircuitAssignments, circuitPastures) {
@@ -354,6 +430,13 @@ fun MapScreen(
     )
     val effectivePastures = remember(pastures, ephemeralJunctionMoves.toMap()) {
         applyJunctionMovePreview(pastures, ephemeralJunctionMoves)
+    }
+    val resolvedPaddockPlans = remember(paddockPlans, effectivePastures) {
+        paddockPlans.mapNotNull { plan ->
+            val pasture = effectivePastures.firstOrNull { it.pasture.id == plan.pastureId }
+                ?: return@mapNotNull null
+            runCatching { plan.id to PaddockSplitEngine.resolve(plan, pasture) }.getOrNull()
+        }
     }
     val effectiveJunctionCoordinates = remember(allJunctions, ephemeralJunctionMoves.toMap()) {
         allJunctions.associate { junction ->
@@ -598,6 +681,125 @@ fun MapScreen(
 
     fun geometryError(): String? = GeometryValidator.validationError(draftVertices)
 
+    fun commitPrecisionPlacement(map: MapLibreMap, coordinate: LatLng) {
+        when (interactionState) {
+            InteractionState.WATER_MOVING -> draftWaterLocation = coordinate
+            InteractionState.WATER_PLACEMENT -> {
+                interactionState = InteractionState.ORDINARY
+                scope.launch {
+                    selectedWaterId = waterDao.insertWithDefaultName(coordinate.latitude, coordinate.longitude)
+                    selectedPastureId = null
+                }
+            }
+            InteractionState.GATE_PLACEMENT, InteractionState.GATE_MOVING -> {
+                val width = movingGate?.widthMeters ?: GateEntity.WIDTH_14_FT
+                when (
+                    val result = GateSnappingEngine.findCandidateSegmentScreenSpace(
+                        tapPoint = coordinate,
+                        pastures = pastures,
+                        projection = map.projection,
+                        tolerancePx = 36f * context.resources.displayMetrics.density,
+                        gateWidthMeters = width
+                    )
+                ) {
+                    is GateSnapResult.Snapped -> if (interactionState == InteractionState.GATE_MOVING) {
+                        draftGateMoveCandidate = result.candidate
+                    } else {
+                        candidateGate = result.candidate
+                    }
+                    GateSnapResult.FenceTooShort -> Toast.makeText(
+                        context,
+                        "Fence segment too short for gate width",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    GateSnapResult.NoFenceInRange -> Toast.makeText(
+                        context,
+                        "Release directly over a fence line",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            InteractionState.PASTURE_DRAWING -> {
+                val snapped = CornerSnappingEngine.findSnapJunction(
+                    coordinate,
+                    allJunctions,
+                    map.projection,
+                    32f * context.resources.displayMetrics.density
+                )
+                when {
+                    snapped != null && draftVertices.none { it.junctionId == snapped.id } -> {
+                        rememberUndoPoint()
+                        draftVertices.add(
+                            PastureCoordinate(
+                                latitude = snapped.latitude,
+                                longitude = snapped.longitude,
+                                elevationMeters = snapped.elevationMeters,
+                                elevationSource = snapped.elevationSource,
+                                verticalDatum = snapped.verticalDatum,
+                                verticalAccuracyMeters = snapped.verticalAccuracyMeters,
+                                elevationCapturedAt = snapped.elevationCapturedAt,
+                                junctionId = snapped.id
+                            )
+                        )
+                        activeSnappedJunction = snapped
+                        selectedVertexIndex = draftVertices.lastIndex
+                        draftRevision++
+                    }
+                    snapped != null -> Toast.makeText(
+                        context,
+                        "That corner is already in this pasture",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    else -> {
+                        rememberUndoPoint()
+                        draftVertices.add(coordinate.toPastureCoordinate())
+                        activeSnappedJunction = null
+                        selectedVertexIndex = draftVertices.lastIndex
+                        draftRevision++
+                    }
+                }
+            }
+            InteractionState.PADDOCK_SPLIT_PLACEMENT -> {
+                val pasture = selectedPasture ?: return
+                val anchor = PaddockSplitEngine.nearestBoundaryAnchor(
+                    coordinate.toPastureCoordinate(),
+                    pasture,
+                    screenToleranceMeters(map, coordinate, 40f * context.resources.displayMetrics.density)
+                )
+                if (anchor == null) {
+                    Toast.makeText(context, "Release directly over the pasture boundary", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                val retained = paddockRetainedAnchor
+                val first = paddockStartAnchor
+                if (first == null && retained == null) {
+                    paddockStartAnchor = anchor
+                    paddockDraftResult = null
+                    return
+                }
+                runCatching {
+                    when {
+                        retained != null && movingPaddockStart == true -> PaddockSplitEngine.split(pasture, anchor, retained)
+                        retained != null -> PaddockSplitEngine.split(pasture, retained, anchor)
+                        else -> PaddockSplitEngine.split(pasture, requireNotNull(first), anchor)
+                    }
+                }.onSuccess { result ->
+                    paddockStartAnchor = result.start
+                    paddockDraftResult = result
+                    showPaddockSaveDialog = true
+                }.onFailure { error ->
+                    Toast.makeText(
+                        context,
+                        error.message ?: "That line does not create two valid paddocks",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            InteractionState.ORDINARY,
+            InteractionState.PASTURE_EDITING -> Unit
+        }
+    }
+
     // 🪨 BLOCK 2 — VERIFIED LIFECYCLE, MEMORY, AND RENDER BRIDGE
     DisposableEffect(lifecycleOwner, mapView, appContext) {
         var destroyed = false
@@ -674,6 +876,9 @@ fun MapScreen(
         assignmentMap,
         displayPreferences.coverageScope,
         activeSnappedJunction,
+        paddockPlans,
+        paddockDraftResult,
+        paddockStartAnchor,
         mapInstance
     ) {
         pushAllOverlays(
@@ -696,7 +901,11 @@ fun MapScreen(
             coverageScope = displayPreferences.coverageScope,
             assignments = assignmentMap,
             sharedJunctionIds = junctionUsageMap.filterValues { it.size > 1 }.keys,
-            activeSnappedJunction = activeSnappedJunction
+            activeSnappedJunction = activeSnappedJunction,
+            resolvedPaddockPlans = resolvedPaddockPlans,
+            selectedPaddockPlanId = selectedPaddockPlan?.id,
+            paddockStartAnchor = paddockStartAnchor,
+            paddockDraftResult = paddockDraftResult
         )
     }
     LaunchedEffect(waterPoints, pastures, gates, herds, movements, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, focusedHerdId, selectedMovementId) {
@@ -771,14 +980,76 @@ fun MapScreen(
         pastureEditMode,
         allJunctions,
         pastures,
-        movingGate
+        movingGate,
+        selectedPasture,
+        paddockStartAnchor
     ) {
         val map = mapInstance
         if (map == null) {
             onDispose { }
         } else {
             val listener = MapLibreMap.OnMapClickListener { coordinate ->
+                if (SystemClock.uptimeMillis() < suppressMapClickUntil) {
+                    return@OnMapClickListener true
+                }
                 when (interactionState) {
+                    InteractionState.PADDOCK_SPLIT_PLACEMENT -> {
+                        val pasture = selectedPasture
+                        if (pasture == null) {
+                            interactionState = InteractionState.ORDINARY
+                        } else {
+                            val anchor = PaddockSplitEngine.nearestBoundaryAnchor(
+                                tap = coordinate.toPastureCoordinate(),
+                                pasture = pasture,
+                                toleranceMeters = screenToleranceMeters(
+                                    map,
+                                    coordinate,
+                                    40f * context.resources.displayMetrics.density
+                                )
+                            )
+                            if (anchor == null) {
+                                Toast.makeText(context, "Tap directly on the pasture boundary", Toast.LENGTH_SHORT).show()
+                            } else if (paddockStartAnchor == null) {
+                                val retained = paddockRetainedAnchor
+                                if (retained == null) {
+                                    paddockStartAnchor = anchor
+                                    paddockDraftResult = null
+                                    Toast.makeText(context, "First endpoint set. Tap the opposite boundary.", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    runCatching {
+                                        if (movingPaddockStart == true) {
+                                            PaddockSplitEngine.split(pasture, anchor, retained)
+                                        } else {
+                                            PaddockSplitEngine.split(pasture, retained, anchor)
+                                        }
+                                    }.onSuccess { result ->
+                                        paddockStartAnchor = result.start
+                                        paddockDraftResult = result
+                                        showPaddockSaveDialog = true
+                                    }.onFailure { error ->
+                                        Toast.makeText(
+                                            context,
+                                            error.message ?: "That line does not create two valid paddocks",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            } else {
+                                runCatching {
+                                    PaddockSplitEngine.split(pasture, requireNotNull(paddockStartAnchor), anchor)
+                                }.onSuccess { result ->
+                                    paddockDraftResult = result
+                                    showPaddockSaveDialog = true
+                                }.onFailure { error ->
+                                    Toast.makeText(
+                                        context,
+                                        error.message ?: "That line does not create two valid paddocks",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    }
                     InteractionState.GATE_PLACEMENT -> {
                         when (
                             val result = GateSnappingEngine.findCandidateSegmentScreenSpace(
@@ -1016,6 +1287,61 @@ fun MapScreen(
         }
     }
 
+    // A press-and-hold exposes the exact hidden map coordinate without changing the
+    // coordinate that the existing placement and snapping pipelines persist.
+    DisposableEffect(mapView, mapInstance, interactionState) {
+        val precisionMap = mapInstance
+        val supported = interactionState == InteractionState.WATER_PLACEMENT ||
+            interactionState == InteractionState.WATER_MOVING ||
+            interactionState == InteractionState.PASTURE_DRAWING ||
+            interactionState == InteractionState.GATE_PLACEMENT ||
+            interactionState == InteractionState.GATE_MOVING ||
+            interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT
+        if (precisionMap == null || !supported) {
+            onDispose { }
+        } else {
+            val magnifier = PrecisionLoupe.create(mapView)
+            var showing = false
+            val detector = GestureDetector(
+                context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDown(event: MotionEvent): Boolean = true
+                    override fun onLongPress(event: MotionEvent) {
+                        showing = true
+                        precisionMap.uiSettings.isScrollGesturesEnabled = false
+                        magnifier?.show(event.x, event.y)
+                        showContextHint("precision_loupe")
+                    }
+                }
+            )
+            val touchListener = android.view.View.OnTouchListener { _, event ->
+                detector.onTouchEvent(event)
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_MOVE -> if (showing) magnifier?.show(event.x, event.y)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (showing && event.actionMasked == MotionEvent.ACTION_UP) {
+                            suppressMapClickUntil = SystemClock.uptimeMillis() + 500L
+                            commitPrecisionPlacement(
+                                precisionMap,
+                                precisionMap.projection.fromScreenLocation(PointF(event.x, event.y))
+                            )
+                        }
+                        if (showing) magnifier?.dismiss()
+                        precisionMap.uiSettings.isScrollGesturesEnabled = true
+                        showing = false
+                    }
+                }
+                false
+            }
+            mapView.setOnTouchListener(touchListener)
+            onDispose {
+                magnifier?.dismiss()
+                precisionMap.uiSettings.isScrollGesturesEnabled = true
+                mapView.setOnTouchListener(null)
+            }
+        }
+    }
+
     // 🎮 BLOCK 5 — EXPLICIT VERTEX DRAGGING
     DisposableEffect(
         mapView,
@@ -1033,7 +1359,23 @@ fun MapScreen(
             onDispose { }
         } else {
             var dragIndex: Int? = null
+            val magnifier = PrecisionLoupe.create(mapView)
+            var loupeShowing = false
+            val loupeDetector = GestureDetector(
+                context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDown(event: MotionEvent): Boolean = true
+                    override fun onLongPress(event: MotionEvent) {
+                        if (dragIndex != null) {
+                            loupeShowing = true
+                            magnifier?.show(event.x, event.y)
+                            showContextHint("precision_loupe")
+                        }
+                    }
+                }
+            )
             val touchListener = android.view.View.OnTouchListener { _, event ->
+                loupeDetector.onTouchEvent(event)
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         val hit = queryFeaturesNear(
@@ -1074,6 +1416,7 @@ fun MapScreen(
                             draftVertices[index] = movedCoordinate
                             existing.junctionId?.let { ephemeralJunctionMoves[it] = movedCoordinate }
                             draftRevision++
+                            if (loupeShowing) magnifier?.show(event.x, event.y)
                             true
                         }
                     }
@@ -1098,6 +1441,8 @@ fun MapScreen(
                                 }
                             }
                             dragIndex = null
+                            if (loupeShowing) magnifier?.dismiss()
+                            loupeShowing = false
                             approvedSharedMoveJunctionId = null
                             map.uiSettings.isScrollGesturesEnabled = true
                             true
@@ -1108,6 +1453,7 @@ fun MapScreen(
             }
             mapView.setOnTouchListener(touchListener)
             onDispose {
+                magnifier?.dismiss()
                 mapView.setOnTouchListener(null)
                 map.uiSettings.isScrollGesturesEnabled = true
             }
@@ -1171,7 +1517,11 @@ fun MapScreen(
                                 coverageScope = displayPreferences.coverageScope,
                                 assignments = assignmentMap,
                                 sharedJunctionIds = junctionUsageMap.filterValues { it.size > 1 }.keys,
-                                activeSnappedJunction = activeSnappedJunction
+                                activeSnappedJunction = activeSnappedJunction,
+                                resolvedPaddockPlans = resolvedPaddockPlans,
+                                selectedPaddockPlanId = selectedPaddockPlan?.id,
+                                paddockStartAnchor = paddockStartAnchor,
+                                paddockDraftResult = paddockDraftResult
                             )
                             isMapStyleReady = true
                         }
@@ -1205,7 +1555,7 @@ fun MapScreen(
                 mapInstance?.let { applyMapMode(it, mode) }
             },
             onLayersClick = { showLayersDialog = true },
-            onDataClick = { showDataSafetyDialog = true },
+            onDataClick = { showOverflowDialog = true },
             onHerdsClick = {
                 herdManagerPastureFilterId = null
                 showHerdManagerDialog = true
@@ -1240,6 +1590,7 @@ fun MapScreen(
                     ) { Text("Add Water", fontSize = 12.sp, maxLines = 1) }
                     Button(
                         onClick = {
+                            showContextHint("draw_pasture")
                             interactionState = InteractionState.PASTURE_DRAWING
                             selectedWaterId = null
                             selectedPastureId = null
@@ -1363,6 +1714,33 @@ fun MapScreen(
                             interactionState = InteractionState.ORDINARY
                         }
                     }
+                }
+            )
+        }
+
+        if (interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT) {
+            PaddockPlacementControls(
+                text = if (paddockStartAnchor == null) {
+                    if (paddockRetainedAnchor == null) {
+                        "Tap the first endpoint on the pasture boundary"
+                    } else {
+                        "Tap a new ${if (movingPaddockStart == true) "start" else "end"} endpoint"
+                    }
+                } else {
+                    "Tap the second endpoint on another boundary segment"
+                },
+                canUndo = paddockStartAnchor != null || paddockDraftResult != null,
+                onUndo = {
+                    paddockDraftResult = null
+                    if (paddockRetainedAnchor == null) paddockStartAnchor = null
+                },
+                onCancel = {
+                    paddockStartAnchor = null
+                    paddockRetainedAnchor = null
+                    movingPaddockStart = null
+                    paddockDraftResult = null
+                    editingPaddockPlanId = null
+                    interactionState = InteractionState.ORDINARY
                 }
             )
         }
@@ -1506,6 +1884,7 @@ fun MapScreen(
                         showWaterEditDialog = true
                     },
                     onAssignPastures = {
+                        showContextHint("water_assignment")
                         assignmentDraftIds.clear()
                         assignmentDraftIds.addAll(assignmentMap[point.id].orEmpty())
                         showAssignPasturesDialog = true
@@ -1523,8 +1902,13 @@ fun MapScreen(
                     restStatus = selectedPastureRestStatus,
                     latestForageObservation = selectedPastureLatestForage,
                     isStockpiledWinter = selectedPastureIsStockpiledWinter,
+                    paddockPlan = selectedPaddockPlan,
+                    paddockResult = selectedPaddockPlan?.let { plan ->
+                        resolvedPaddockPlans.firstOrNull { it.first == plan.id }?.second
+                    },
                     onClose = { selectedPastureId = null },
                     onAddGate = {
+                        showContextHint("add_gate")
                         candidateGate = null
                         selectedGateId = null
                         interactionState = InteractionState.GATE_PLACEMENT
@@ -1534,8 +1918,28 @@ fun MapScreen(
                         pastureEditNotes = pasture.pasture.notes
                         showPastureDetailsDialog = true
                     },
-                    onRecordForage = { showForageObservationDialog = true },
+                    onRecordForage = {
+                        showContextHint("record_forage")
+                        showForageObservationDialog = true
+                    },
+                    onPaddockPlan = {
+                        showContextHint("paddock_split")
+                        if (selectedPaddockPlan != null) {
+                            showPaddockPlanDialog = true
+                        } else {
+                            editingPaddockPlanId = null
+                            paddockStartAnchor = null
+                            paddockRetainedAnchor = null
+                            movingPaddockStart = null
+                            paddockDraftResult = null
+                            paddockNameInput = "${pasture.pasture.name} Split"
+                            paddockSideAInput = "Paddock A"
+                            paddockSideBInput = "Paddock B"
+                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                        }
+                    },
                     onEditBoundary = {
+                        showContextHint("edit_boundary")
                         interactionState = InteractionState.PASTURE_EDITING
                         replaceDraft(pasture.orderedCoordinates())
                         undoSnapshots.clear()
@@ -1672,7 +2076,10 @@ fun MapScreen(
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         Button(
-                            onClick = { showPlanMoveDialog = true },
+                            onClick = {
+                                showContextHint("herd_movement")
+                                showPlanMoveDialog = true
+                            },
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 6.dp)
                         ) { Text("Move", fontSize = 11.sp) }
@@ -1701,7 +2108,295 @@ fun MapScreen(
             }
         }
 
+        transientGuidance?.let { message -> GuidanceBanner(message, onDismiss = { transientGuidance = null }) }
         ActiveAttribution(activeMode, currentZoom)
+    }
+
+    if (showOverflowDialog) {
+        AlertDialog(
+            onDismissRequest = { showOverflowDialog = false },
+            title = { Text("RangeWater Menu") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { showOverflowDialog = false; showHelpDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Help & Field Guide") }
+                    OutlinedButton(
+                        onClick = {
+                            showOverflowDialog = false
+                            showContextHint("data_safety")
+                            showDataSafetyDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Data Safety & Backups") }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showOverflowDialog = false }) { Text("Close") } }
+        )
+    }
+
+    if (showHelpDialog) {
+        RangeWaterHelpDialog(
+            preferences = helpPreferences,
+            selectedSection = selectedGuideSection,
+            onSelectSection = { selectedGuideSection = it },
+            onFieldTipsChanged = { enabled ->
+                helpPreferencesRepository.setFieldTipsEnabled(enabled)
+                helpPreferences = helpPreferencesRepository.get()
+            },
+            onContextualHintsChanged = { enabled ->
+                helpPreferencesRepository.setContextualHintsEnabled(enabled)
+                helpPreferences = helpPreferencesRepository.get()
+            },
+            onReplayWelcome = {
+                helpPreferencesRepository.replayWelcome()
+                helpPreferences = helpPreferencesRepository.get()
+                transientGuidance = "${RangeWaterHelpContent.WELCOME_TITLE} ${RangeWaterHelpContent.WELCOME_BODY}"
+                showHelpDialog = false
+            },
+            onResetHints = {
+                helpPreferencesRepository.resetHints()
+                helpPreferences = helpPreferencesRepository.get()
+                Toast.makeText(context, "Contextual hints reset", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = {
+                selectedGuideSection = null
+                showHelpDialog = false
+            }
+        )
+    }
+
+    if (showPaddockPlanDialog && selectedPaddockPlan != null) {
+        val plan = selectedPaddockPlan
+        val result = resolvedPaddockPlans.firstOrNull { it.first == plan.id }?.second
+        AlertDialog(
+            onDismissRequest = { showPaddockPlanDialog = false },
+            title = { Text(plan.name) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (result == null) {
+                        Text("This plan cannot be drawn against the current pasture boundary.", color = Color.Red)
+                    } else {
+                        Text(String.format(Locale.US, "%s: %.1f acres", plan.sideALabel, result.sideAAcres))
+                        Text(String.format(Locale.US, "%s: %.1f acres", plan.sideBLabel, result.sideBAcres))
+                        Text(
+                            String.format(Locale.US, "Parent pasture: %.1f acres (map estimate)", result.parentAcres),
+                            color = Color.Gray,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Text(
+                        "Temporary paddock plan only. This does not change the pasture boundary or prove fence installation.",
+                        color = Color(0xFFFFB74D),
+                        fontSize = 12.sp
+                    )
+                    OutlinedButton(
+                        enabled = result != null,
+                        onClick = {
+                            paddockNameInput = plan.name
+                            paddockSideAInput = plan.sideALabel
+                            paddockSideBInput = plan.sideBLabel
+                            editingPaddockPlanId = plan.id
+                            paddockStartAnchor = result?.start
+                            paddockRetainedAnchor = null
+                            movingPaddockStart = null
+                            paddockDraftResult = result
+                            showPaddockPlanDialog = false
+                            showPaddockSaveDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Edit Name & Labels") }
+                    OutlinedButton(
+                        onClick = {
+                            paddockNameInput = plan.name
+                            paddockSideAInput = plan.sideALabel
+                            paddockSideBInput = plan.sideBLabel
+                            editingPaddockPlanId = plan.id
+                            paddockStartAnchor = null
+                            paddockRetainedAnchor = null
+                            movingPaddockStart = null
+                            paddockDraftResult = null
+                            showPaddockPlanDialog = false
+                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Redraw Split Line") }
+                    if (result != null) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    paddockNameInput = plan.name
+                                    paddockSideAInput = plan.sideALabel
+                                    paddockSideBInput = plan.sideBLabel
+                                    editingPaddockPlanId = plan.id
+                                    paddockStartAnchor = null
+                                    paddockRetainedAnchor = result.end
+                                    movingPaddockStart = true
+                                    paddockDraftResult = null
+                                    showPaddockPlanDialog = false
+                                    interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Move Start", fontSize = 11.sp) }
+                            OutlinedButton(
+                                onClick = {
+                                    paddockNameInput = plan.name
+                                    paddockSideAInput = plan.sideALabel
+                                    paddockSideBInput = plan.sideBLabel
+                                    editingPaddockPlanId = plan.id
+                                    paddockStartAnchor = null
+                                    paddockRetainedAnchor = result.start
+                                    movingPaddockStart = false
+                                    paddockDraftResult = null
+                                    showPaddockPlanDialog = false
+                                    interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Move End", fontSize = 11.sp) }
+                        }
+                    }
+                    TextButton(
+                        onClick = { showPaddockPlanDialog = false; showPaddockDeleteDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Delete Blueprint…", color = Color.Red) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            runCatching { withContext(Dispatchers.IO) { paddockPlanDao.archive(plan.id) } }
+                                .onSuccess {
+                                    showPaddockPlanDialog = false
+                                    Toast.makeText(context, "Paddock plan archived", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Could not archive plan", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Archive", color = Color.Red) }
+            },
+            dismissButton = { TextButton(onClick = { showPaddockPlanDialog = false }) { Text("Close") } }
+        )
+    }
+
+    if (showPaddockSaveDialog && paddockDraftResult != null && selectedPasture != null) {
+        val result = requireNotNull(paddockDraftResult)
+        AlertDialog(
+            onDismissRequest = { showPaddockSaveDialog = false },
+            title = { Text(if (editingPaddockPlanId == null) "Save Paddock Plan" else "Update Paddock Plan") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = paddockNameInput,
+                        onValueChange = { paddockNameInput = it },
+                        label = { Text("Plan name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = paddockSideAInput,
+                        onValueChange = { paddockSideAInput = it },
+                        label = { Text(String.format(Locale.US, "Side A (%.1f ac)", result.sideAAcres)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = paddockSideBInput,
+                        onValueChange = { paddockSideBInput = it },
+                        label = { Text(String.format(Locale.US, "Side B (%.1f ac)", result.sideBAcres)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "Saved as a temporary-polywire planning blueprint. It does not permanently split the pasture.",
+                        color = Color(0xFFFFB74D),
+                        fontSize = 12.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val pastureId = selectedPasture.pasture.id
+                    val planId = editingPaddockPlanId
+                    scope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                if (planId == null) {
+                                    paddockPlanDao.create(
+                                        pastureId,
+                                        paddockNameInput,
+                                        paddockSideAInput,
+                                        paddockSideBInput,
+                                        result.start,
+                                        result.end
+                                    )
+                                } else {
+                                    paddockPlanDao.update(
+                                        planId,
+                                        paddockNameInput,
+                                        paddockSideAInput,
+                                        paddockSideBInput,
+                                        result.start,
+                                        result.end
+                                    )
+                                }
+                            }
+                        }.onSuccess {
+                            showPaddockSaveDialog = false
+                            paddockStartAnchor = null
+                            paddockRetainedAnchor = null
+                            movingPaddockStart = null
+                            paddockDraftResult = null
+                            editingPaddockPlanId = null
+                            interactionState = InteractionState.ORDINARY
+                            Toast.makeText(context, "Paddock plan saved", Toast.LENGTH_SHORT).show()
+                        }.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Could not save paddock plan", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showPaddockSaveDialog = false }) { Text("Back") } }
+        )
+    }
+
+    if (showPaddockDeleteDialog && selectedPaddockPlan != null) {
+        val plan = selectedPaddockPlan
+        AlertDialog(
+            onDismissRequest = { showPaddockDeleteDialog = false },
+            title = { Text("Delete Paddock Blueprint?") },
+            text = {
+                Text(
+                    "Deleting ${plan.name} permanently discards the reusable split line and labels. " +
+                        "Archive is recommended if you may use or permanently promote this plan later."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            runCatching { withContext(Dispatchers.IO) { paddockPlanDao.delete(plan.id) } }
+                                .onSuccess {
+                                    showPaddockDeleteDialog = false
+                                    Toast.makeText(context, "Paddock blueprint deleted", Toast.LENGTH_SHORT).show()
+                                }
+                                .onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Could not delete plan", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("Delete Permanently") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaddockDeleteDialog = false; showPaddockPlanDialog = true }) {
+                    Text("Keep Plan")
+                }
+            }
+        )
     }
 
     if (showHerdManagerDialog) {
@@ -1722,6 +2417,7 @@ fun MapScreen(
                     ) { Text("+ Create New Herd") }
                     OutlinedButton(
                         onClick = {
+                            showContextHint("grazing_circuit")
                             showHerdManagerDialog = false
                             showCircuitManagerDialog = true
                         },
@@ -3231,6 +3927,7 @@ private fun MapStatusAndModeControls(
                                     interactionState == InteractionState.WATER_MOVING -> Color(0xFF00E5FF)
                                 interactionState == InteractionState.GATE_PLACEMENT ||
                                     interactionState == InteractionState.GATE_MOVING -> Color(0xFFFF9100)
+                                interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT -> Color(0xFF00BCD4)
                                 focusedHerdColorHex != null -> Color(
                                     android.graphics.Color.parseColor(focusedHerdColorHex)
                                 )
@@ -3246,12 +3943,19 @@ private fun MapStatusAndModeControls(
                     Text(
                         when {
                             hasLoadError -> "Imagery load issue"
+                            isMapRendering && interactionState == InteractionState.ORDINARY ->
+                                if (activeMode == ActiveMapMode.LABELED) {
+                                    "Loading labeled map • z$zoom"
+                                } else {
+                                    "Loading aerial imagery • z$zoom"
+                                }
                             interactionState == InteractionState.PASTURE_DRAWING -> "Tap fence corners • z$zoom"
                             interactionState == InteractionState.PASTURE_EDITING -> "Edit boundary • z$zoom"
                             interactionState == InteractionState.WATER_PLACEMENT -> "Tap pasture to place • z$zoom"
                             interactionState == InteractionState.WATER_MOVING -> "Move water • z$zoom"
                             interactionState == InteractionState.GATE_PLACEMENT -> "Tap fence for gate • z$zoom"
                             interactionState == InteractionState.GATE_MOVING -> "Tap fence to move gate • z$zoom"
+                            interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT -> "Place paddock endpoints • z$zoom"
                             focusedHerdName != null -> "$focusedHerdName • z$zoom"
                             activeMode == ActiveMapMode.LABELED -> "USGS Labeled • z$zoom"
                             currentZoom >= MapConfig.DETAIL_TRANSITION_ZOOM -> "USDA Detail • z$zoom"
@@ -3458,6 +4162,36 @@ private fun BoxScope.BottomInstruction(text: String, action: String, onAction: (
         ) {
             Text(text, color = Color.White)
             TextButton(onClick = onAction) { Text(action) }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.PaddockPlacementControls(
+    text: String,
+    canUndo: Boolean,
+    onUndo: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, bottom = 56.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.Black.copy(alpha = 0.88f)
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+            Text(text, color = Color.White, fontSize = 12.sp)
+            Text(
+                "Temporary plan only—this does not change the pasture boundary.",
+                color = Color(0xFFFFB74D),
+                fontSize = 10.sp
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onUndo, enabled = canUndo) { Text("Undo") }
+                TextButton(onClick = onCancel) { Text("Cancel") }
+            }
         }
     }
 }
@@ -3961,16 +4695,117 @@ private fun ForageStandType.displayLabel(): String = when (this) {
 }
 
 @Composable
+private fun BoxScope.GuidanceBanner(message: String, onDismiss: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 112.dp)
+            .clickable(onClick = onDismiss),
+        shape = RoundedCornerShape(14.dp),
+        color = Color.Black.copy(alpha = 0.88f),
+        tonalElevation = 6.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(message, modifier = Modifier.weight(1f), color = Color.White, fontSize = 12.sp)
+            Text("×", color = Color.LightGray, fontSize = 18.sp)
+        }
+    }
+}
+
+@Composable
+private fun RangeWaterHelpDialog(
+    preferences: HelpPreferences,
+    selectedSection: FieldGuideSection?,
+    onSelectSection: (FieldGuideSection?) -> Unit,
+    onFieldTipsChanged: (Boolean) -> Unit,
+    onContextualHintsChanged: (Boolean) -> Unit,
+    onReplayWelcome: () -> Unit,
+    onResetHints: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(selectedSection?.title ?: "Help & Field Guide") },
+        text = {
+            if (selectedSection != null) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(selectedSection.body)
+                    OutlinedButton(onClick = { onSelectSection(null) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Back to Field Guide")
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    item {
+                        Text(
+                            "RangeWater keeps ranch records on this device and provides planning estimates—not surveys, proof of access, or feeding recommendations.",
+                            color = Color(0xFFFFB74D),
+                            fontSize = 12.sp
+                        )
+                    }
+                    item {
+                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                            Text("Brief field tips")
+                            Switch(checked = preferences.fieldTipsEnabled, onCheckedChange = onFieldTipsChanged)
+                        }
+                    }
+                    item {
+                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                            Text("One-time contextual hints")
+                            Switch(
+                                checked = preferences.contextualHintsEnabled,
+                                onCheckedChange = onContextualHintsChanged
+                            )
+                        }
+                    }
+                    item {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick = onReplayWelcome, modifier = Modifier.weight(1f)) {
+                                Text("Replay Welcome", fontSize = 11.sp)
+                            }
+                            OutlinedButton(onClick = onResetHints, modifier = Modifier.weight(1f)) {
+                                Text("Reset Hints", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                    item { Text("Field Guide", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
+                    items(RangeWaterHelpContent.fieldGuide) { section ->
+                        OutlinedButton(
+                            onClick = { onSelectSection(section) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(section.title, modifier = Modifier.fillMaxWidth()) }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
+}
+
+@Composable
 private fun BoxScope.PastureInspectionCard(
     pasture: PastureWithVertices,
     metrics: PastureCoverageMetrics,
     restStatus: PastureRestStatus?,
     latestForageObservation: PastureForageObservationEntity?,
     isStockpiledWinter: Boolean,
+    paddockPlan: PaddockSplitPlanEntity?,
+    paddockResult: PaddockSplitResult?,
     onClose: () -> Unit,
     onAddGate: () -> Unit,
     onEditDetails: () -> Unit,
     onRecordForage: () -> Unit,
+    onPaddockPlan: () -> Unit,
     onEditBoundary: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -4066,6 +4901,36 @@ private fun BoxScope.PastureInspectionCard(
                 acreage = metrics.beyondAcreage,
                 percentage = metrics.beyondPercentage
             )
+            if (paddockPlan != null && paddockResult != null) {
+                Text(
+                    String.format(
+                        Locale.US,
+                        "%s: %.1f ac • %s: %.1f ac",
+                        paddockPlan.sideALabel,
+                        paddockResult.sideAAcres,
+                        paddockPlan.sideBLabel,
+                        paddockResult.sideBAcres
+                    ),
+                    color = Color(0xFF00E5FF),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onPaddockPlan,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                ) {
+                    Text(
+                        if (paddockPlan == null) "Plan Paddock Split" else "Paddock Plan",
+                        color = Color(0xFF00E5FF),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -4367,7 +5232,11 @@ private fun pushAllOverlays(
     coverageScope: SpatialCoverageScope,
     assignments: Map<Long, List<Long>>,
     sharedJunctionIds: Set<Long>,
-    activeSnappedJunction: FenceJunctionEntity?
+    activeSnappedJunction: FenceJunctionEntity?,
+    resolvedPaddockPlans: List<Pair<Long, PaddockSplitResult>>,
+    selectedPaddockPlanId: Long?,
+    paddockStartAnchor: PaddockBoundaryAnchor?,
+    paddockDraftResult: PaddockSplitResult?
 ) {
     map?.getStyle { style ->
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
@@ -4426,6 +5295,12 @@ private fun pushAllOverlays(
         }.orEmpty()
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_SNAPPED_JUNCTION)
             ?.setGeoJson(FeatureCollection.fromFeatures(snapFeatures))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_REGIONS)
+            ?.setGeoJson(PaddockSplitFeatureConverter.regionFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_LINES)
+            ?.setGeoJson(PaddockSplitFeatureConverter.lineFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_DRAFT)
+            ?.setGeoJson(PaddockSplitFeatureConverter.draftFeatures(paddockStartAnchor, paddockDraftResult))
     }
 }
 
@@ -4440,6 +5315,20 @@ private fun SnappedGateCandidate.toConnectivity(gate: GateEntity) = GateWithConn
     pastureBName = pastureBName,
     isShared = isShared
 )
+
+private fun screenToleranceMeters(map: MapLibreMap, coordinate: LatLng, radiusPx: Float): Double {
+    val screen = map.projection.toScreenLocation(coordinate)
+    val edge = map.projection.fromScreenLocation(PointF(screen.x + radiusPx, screen.y))
+    val distance = FloatArray(1)
+    Location.distanceBetween(
+        coordinate.latitude,
+        coordinate.longitude,
+        edge.latitude,
+        edge.longitude,
+        distance
+    )
+    return distance[0].toDouble().coerceAtLeast(0.5)
+}
 
 internal fun applyJunctionMovePreview(
     pastures: List<PastureWithVertices>,

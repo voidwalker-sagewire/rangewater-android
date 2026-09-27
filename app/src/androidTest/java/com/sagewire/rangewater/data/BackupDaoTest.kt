@@ -193,6 +193,23 @@ class BackupDaoTest {
                     createdAt = now,
                     updatedAt = now
                 )
+            ),
+            paddockSplitPlans = listOf(
+                PaddockSplitPlanEntity(
+                    id = 90,
+                    pastureId = 10,
+                    name = "Triangle Split",
+                    sideALabel = "Upper",
+                    sideBLabel = "Lower",
+                    startJunctionAId = 20,
+                    startJunctionBId = 21,
+                    startSegmentRatio = 0.5,
+                    endJunctionAId = 21,
+                    endJunctionBId = 22,
+                    endSegmentRatio = 0.5,
+                    createdAt = now,
+                    updatedAt = now
+                )
             )
         )
     }

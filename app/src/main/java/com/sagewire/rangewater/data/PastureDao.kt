@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import com.sagewire.rangewater.spatial.PaddockSplitEngine
 
 /* 🪨 One transaction owns every pasture boundary and shared-junction mutation. */
 @Dao
@@ -87,6 +88,16 @@ interface PastureDao {
     @Query("SELECT COUNT(*) FROM pasture_forage_observations WHERE pastureId = :pastureId")
     suspend fun forageObservationCountForPasture(pastureId: Long): Int
 
+    @Query("SELECT * FROM paddock_split_plans WHERE pastureId = :pastureId ORDER BY id")
+    suspend fun paddockPlansForPasture(pastureId: Long): List<PaddockSplitPlanEntity>
+
+    @Query(
+        "SELECT COUNT(*) FROM paddock_split_plans WHERE " +
+            "startJunctionAId = :junctionId OR startJunctionBId = :junctionId OR " +
+            "endJunctionAId = :junctionId OR endJunctionBId = :junctionId"
+    )
+    suspend fun paddockPlanCountForJunction(junctionId: Long): Int
+
     @Query("SELECT COUNT(*) FROM gates WHERE junctionAId = :junctionAId AND junctionBId = :junctionBId")
     suspend fun gateCountOnSegment(junctionAId: Long, junctionBId: Long): Int
 
@@ -128,6 +139,11 @@ interface PastureDao {
         if (forageObservationCountForPasture(id) > 0) {
             throw IllegalStateException(
                 "Cannot delete pasture: It has historical forage observations."
+            )
+        }
+        if (paddockPlansForPasture(id).isNotEmpty()) {
+            throw IllegalStateException(
+                "Cannot delete pasture: Archive or delete its paddock split plans first."
             )
         }
         if (countActiveHerdsInPasture(id) > 0) {
@@ -191,6 +207,14 @@ interface PastureDao {
         check(getPastureEntity(pastureId) != null) { "Pasture $pastureId does not exist" }
         val existingVertices = verticesForPasture(pastureId)
         val newSegments = vertices.canonicalCoordinateSegments()
+        val paddockPlans = paddockPlansForPasture(pastureId)
+        paddockPlans.forEach { plan ->
+            check((plan.startJunctionAId to plan.startJunctionBId) in newSegments &&
+                (plan.endJunctionAId to plan.endJunctionBId) in newSegments
+            ) {
+                "Cannot alter fence: Paddock split '${plan.name}' is anchored to a changed segment"
+            }
+        }
         existingVertices.canonicalVertexSegments().forEach { (junctionAId, junctionBId) ->
             if (gateCountOnSegment(junctionAId, junctionBId) > 0 &&
                 (junctionAId to junctionBId) !in newSegments
@@ -208,6 +232,9 @@ interface PastureDao {
         }
         deleteVertices(pastureId)
         insertVertices(resolveVertexEntities(pastureId, vertices))
+        val updatedPasture = getById(pastureId)
+            ?: throw IllegalStateException("Pasture $pastureId disappeared during boundary update")
+        paddockPlans.forEach { PaddockSplitEngine.resolve(it, updatedPasture) }
         affectedPastureIds.forEach { touch(it, now) }
         deleteOrphanJunctions()
     }
@@ -219,6 +246,12 @@ interface PastureDao {
         now: Long = System.currentTimeMillis()
     ) {
         require(sourceJunctionId != targetJunctionId)
+        check(paddockPlanCountForJunction(sourceJunctionId) == 0) {
+            "Cannot merge: Junction #$sourceJunctionId anchors a paddock split"
+        }
+        check(paddockPlanCountForJunction(targetJunctionId) == 0) {
+            "Cannot merge: Junction #$targetJunctionId anchors a paddock split"
+        }
         check(gateCountForJunction(sourceJunctionId) == 0) {
             "Cannot merge: Junction #$sourceJunctionId serves as an anchor for an active gate"
         }

@@ -48,6 +48,9 @@ interface BackupDao {
     @Query("SELECT * FROM pasture_forage_observations ORDER BY id")
     suspend fun allPastureForageObservations(): List<PastureForageObservationEntity>
 
+    @Query("SELECT * FROM paddock_split_plans ORDER BY id")
+    suspend fun allPaddockSplitPlans(): List<PaddockSplitPlanEntity>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertWaterPoints(rows: List<WaterPointEntity>)
 
@@ -86,6 +89,12 @@ interface BackupDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPastureForageObservations(rows: List<PastureForageObservationEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertPaddockSplitPlans(rows: List<PaddockSplitPlanEntity>)
+
+    @Query("DELETE FROM paddock_split_plans")
+    suspend fun deletePaddockSplitPlans()
 
     @Query("DELETE FROM pasture_forage_observations")
     suspend fun deletePastureForageObservations()
@@ -140,12 +149,14 @@ interface BackupDao {
         circuitPastures = allCircuitPastures(),
         circuitPastureRoles = allCircuitPastureRoles(),
         herdCircuitAssignments = allHerdCircuitAssignments(),
-        pastureForageObservations = allPastureForageObservations()
+        pastureForageObservations = allPastureForageObservations(),
+        paddockSplitPlans = allPaddockSplitPlans()
     )
 
     /** Delete order and insert order deliberately follow the foreign-key graph. */
     @Transaction
     suspend fun replaceAll(data: RangeWaterBackupData) {
+        deletePaddockSplitPlans()
         deletePastureForageObservations()
         deleteCircuitPastureRoles()
         deleteHerdCircuitAssignments()
@@ -173,5 +184,6 @@ interface BackupDao {
         insertCircuitPastureRoles(data.circuitPastureRoles)
         insertHerdCircuitAssignments(data.herdCircuitAssignments)
         insertPastureForageObservations(data.pastureForageObservations)
+        insertPaddockSplitPlans(data.paddockSplitPlans)
     }
 }

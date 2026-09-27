@@ -48,6 +48,46 @@ interface SchemaSixSeedDao {
     @Insert suspend fun insertMovement(row: CattleMovementEntity)
 }
 
+@Database(
+    entities = [
+        WaterPointEntity::class,
+        PastureEntity::class,
+        FenceJunctionEntity::class,
+        PastureVertexEntity::class,
+        WaterPastureAssignmentEntity::class,
+        GateEntity::class,
+        HerdEntity::class,
+        CattleMovementEntity::class,
+        GrazingCircuitEntity::class,
+        GrazingCircuitPastureEntity::class,
+        GrazingCircuitPastureRoleEntity::class,
+        HerdGrazingCircuitAssignmentEntity::class,
+        PastureForageObservationEntity::class
+    ],
+    version = 7,
+    exportSchema = false
+)
+abstract class SchemaSevenTestDatabase : RoomDatabase() {
+    abstract fun seedDao(): SchemaSevenSeedDao
+}
+
+@Dao
+interface SchemaSevenSeedDao {
+    @Insert suspend fun insertWater(row: WaterPointEntity)
+    @Insert suspend fun insertPasture(row: PastureEntity)
+    @Insert suspend fun insertJunctions(rows: List<FenceJunctionEntity>)
+    @Insert suspend fun insertVertices(rows: List<PastureVertexEntity>)
+    @Insert suspend fun insertAssignment(row: WaterPastureAssignmentEntity)
+    @Insert suspend fun insertGate(row: GateEntity)
+    @Insert suspend fun insertHerd(row: HerdEntity)
+    @Insert suspend fun insertMovement(row: CattleMovementEntity)
+    @Insert suspend fun insertCircuit(row: GrazingCircuitEntity)
+    @Insert suspend fun insertCircuitPasture(row: GrazingCircuitPastureEntity)
+    @Insert suspend fun insertCircuitRole(row: GrazingCircuitPastureRoleEntity)
+    @Insert suspend fun insertHerdCircuit(row: HerdGrazingCircuitAssignmentEntity)
+    @Insert suspend fun insertForage(row: PastureForageObservationEntity)
+}
+
 @RunWith(AndroidJUnit4::class)
 class DatabaseMigrationTest {
     private val databaseName = "rangewater-migration-test"
@@ -94,7 +134,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_3_4,
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
-                RangeWaterDatabase.MIGRATION_6_7
+                RangeWaterDatabase.MIGRATION_6_7,
+                RangeWaterDatabase.MIGRATION_7_8
             )
             .allowMainThreadQueries()
             .build()
@@ -210,7 +251,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_3_4,
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
-                RangeWaterDatabase.MIGRATION_6_7
+                RangeWaterDatabase.MIGRATION_6_7,
+                RangeWaterDatabase.MIGRATION_7_8
             )
             .allowMainThreadQueries()
             .build()
@@ -291,7 +333,8 @@ class DatabaseMigrationTest {
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
-                RangeWaterDatabase.MIGRATION_6_7
+                RangeWaterDatabase.MIGRATION_6_7,
+                RangeWaterDatabase.MIGRATION_7_8
             )
             .allowMainThreadQueries()
             .build()
@@ -337,7 +380,11 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_5_6, RangeWaterDatabase.MIGRATION_6_7)
+            .addMigrations(
+                RangeWaterDatabase.MIGRATION_5_6,
+                RangeWaterDatabase.MIGRATION_6_7,
+                RangeWaterDatabase.MIGRATION_7_8
+            )
             .allowMainThreadQueries()
             .build()
         try {
@@ -463,7 +510,7 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_6_7)
+            .addMigrations(RangeWaterDatabase.MIGRATION_6_7, RangeWaterDatabase.MIGRATION_7_8)
             .allowMainThreadQueries()
             .build()
         try {
@@ -484,6 +531,122 @@ class DatabaseMigrationTest {
             )
             migrated.grazingCircuitDao().assignHerd(herdId, circuitId)
             assertEquals(circuitId, migrated.grazingCircuitDao().assignmentForHerd(herdId)?.circuitId)
+        } finally {
+            migrated.close()
+        }
+    }
+
+    @Test
+    fun migrationSevenToEightPreservesEveryExistingEntityAndCreatesWritablePaddockPlans() = runBlocking {
+        val schemaSeven = Room.databaseBuilder(context, SchemaSevenTestDatabase::class.java, databaseName)
+            .allowMainThreadQueries()
+            .build()
+        val now = 100L
+        try {
+            val seed = schemaSeven.seedDao()
+            seed.insertWater(WaterPointEntity(1, 40.005, -79.995, "Migration Tank", WaterSourceType.TANK, "", now, now))
+            seed.insertPasture(PastureEntity(10, "Migration Square", "schema seven", now, now))
+            seed.insertJunctions(
+                listOf(
+                    FenceJunctionEntity(20, 40.0, -80.0),
+                    FenceJunctionEntity(21, 40.0, -79.99),
+                    FenceJunctionEntity(22, 40.01, -79.99),
+                    FenceJunctionEntity(23, 40.01, -80.0)
+                )
+            )
+            seed.insertVertices(
+                listOf(
+                    PastureVertexEntity(30, 10, 0, 20),
+                    PastureVertexEntity(31, 10, 1, 21),
+                    PastureVertexEntity(32, 10, 2, 22),
+                    PastureVertexEntity(33, 10, 3, 23)
+                )
+            )
+            seed.insertAssignment(WaterPastureAssignmentEntity(1, 10, now))
+            seed.insertGate(GateEntity(40, "Migration Gate", 20, 21, 0.5, createdAt = now, updatedAt = now))
+            seed.insertHerd(
+                HerdEntity(
+                    id = 50,
+                    name = "Migration Herd",
+                    quantity = 20,
+                    countUnit = CountUnit.HEAD,
+                    stockClass = StockClass.DRY_COWS,
+                    markerColorHex = "#FF9100",
+                    locationKind = HerdLocationKind.PASTURE,
+                    currentPastureId = 10,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+            seed.insertMovement(
+                CattleMovementEntity(
+                    id = 60,
+                    herdId = 50,
+                    originLocationKind = HerdLocationKind.OFF_RANCH,
+                    originNameSnapshot = "OFF_RANCH",
+                    destinationLocationKind = HerdLocationKind.PASTURE,
+                    destinationPastureId = 10,
+                    destinationNameSnapshot = "Migration Square",
+                    quantity = 20,
+                    countUnit = CountUnit.HEAD,
+                    status = MovementStatus.COMPLETED,
+                    completedAt = now,
+                    unmappedRoute = true,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+            seed.insertCircuit(GrazingCircuitEntity(70, "Migration Circuit", "", now, now))
+            seed.insertCircuitPasture(GrazingCircuitPastureEntity(70, 10, 0, now))
+            seed.insertCircuitRole(GrazingCircuitPastureRoleEntity(70, 10, SeasonalPastureRole.ROTATION))
+            seed.insertHerdCircuit(HerdGrazingCircuitAssignmentEntity(50, 70, now))
+            seed.insertForage(
+                PastureForageObservationEntity(
+                    id = 80,
+                    pastureId = 10,
+                    observedAt = now,
+                    averageHeightInches = 8.0,
+                    sampleCount = 5,
+                    forageStandType = ForageStandType.TALL_FESCUE_CLOVER,
+                    standCondition = ForageStandCondition.GOOD,
+                    dmPerAcreInchLow = 300.0,
+                    dmPerAcreInchHigh = 350.0,
+                    calibrationSource = ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK,
+                    acreageSnapshot = 20.0,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+        } finally {
+            schemaSeven.close()
+        }
+
+        val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
+            .addMigrations(RangeWaterDatabase.MIGRATION_7_8)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            assertEquals("Migration Tank", migrated.waterPointDao().getById(1)?.name)
+            assertEquals("Migration Square", migrated.pastureDao().getById(10)?.pasture?.name)
+            assertEquals("Migration Gate", migrated.gateDao().getById(40)?.name)
+            assertEquals("Migration Herd", migrated.herdDao().getById(50)?.name)
+            assertEquals("Migration Circuit", migrated.grazingCircuitDao().getCircuit(70)?.name)
+            assertEquals(80L, migrated.forageObservationDao().latestForPasture(10)?.id)
+            assertTrue(migrated.paddockSplitPlanDao().observeAll().first().isEmpty())
+
+            val pasture = migrated.pastureDao().getById(10)!!
+            val start = com.sagewire.rangewater.spatial.PaddockSplitEngine.resolveAnchor(pasture, 20, 21, 0.5)
+            val end = com.sagewire.rangewater.spatial.PaddockSplitEngine.resolveAnchor(pasture, 22, 23, 0.5)
+            val planId = migrated.paddockSplitPlanDao().create(
+                pastureId = 10,
+                name = "Migration Split",
+                sideALabel = "West",
+                sideBLabel = "East",
+                start = start,
+                end = end,
+                now = 200
+            )
+            assertEquals("Migration Split", migrated.paddockSplitPlanDao().getById(planId)?.name)
         } finally {
             migrated.close()
         }

@@ -91,7 +91,8 @@ class RangeWaterArchiveCodecTest {
             circuitPastures = emptyList(),
             circuitPastureRoles = emptyList(),
             herdCircuitAssignments = emptyList(),
-            pastureForageObservations = emptyList()
+            pastureForageObservations = emptyList(),
+            paddockSplitPlans = emptyList()
         )
         val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply {
             remove("grazingCircuits")
@@ -99,6 +100,7 @@ class RangeWaterArchiveCodecTest {
             remove("circuitPastureRoles")
             remove("herdCircuitAssignments")
             remove("pastureForageObservations")
+            remove("paddockSplitPlans")
         }
         val dataBytes = gson.toJson(dataJson).toByteArray(StandardCharsets.UTF_8)
         val legacyCounts = legacyData.recordCounts()
@@ -118,6 +120,7 @@ class RangeWaterArchiveCodecTest {
                 remove("circuitPastureRoles")
                 remove("herdCircuitAssignments")
                 remove("pastureForageObservations")
+                remove("paddockSplitPlans")
             }
         }
         val archive = zip(
@@ -132,6 +135,38 @@ class RangeWaterArchiveCodecTest {
         assertEquals(legacyData, restored.data)
         assertTrue(restored.data.grazingCircuits.isEmpty())
         assertTrue(restored.data.pastureForageObservations.isEmpty())
+        assertTrue(restored.data.paddockSplitPlans.isEmpty())
+    }
+
+    @Test
+    fun formatTwoArchive_restoresWithEmptyPaddockPlans() {
+        val gson = Gson()
+        val legacyData = completeData().copy(paddockSplitPlans = emptyList())
+        val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply { remove("paddockSplitPlans") }
+        val dataBytes = gson.toJson(dataJson).toByteArray(StandardCharsets.UTF_8)
+        val manifest = RangeWaterBackupManifest(
+            formatId = RangeWaterArchiveCodec.FORMAT_ID,
+            formatVersion = 2,
+            databaseSchemaVersion = 7,
+            appVersionName = "1.1.0",
+            createdAt = 456L,
+            dataSha256 = sha256(dataBytes),
+            recordCounts = legacyData.recordCounts()
+        )
+        val manifestJson = gson.toJsonTree(manifest).asJsonObject.apply {
+            getAsJsonObject("recordCounts").remove("paddockSplitPlans")
+        }
+        val archive = zip(
+            linkedMapOf(
+                "manifest.json" to gson.toJson(manifestJson).toByteArray(StandardCharsets.UTF_8),
+                "data.json" to dataBytes
+            )
+        )
+
+        val restored = RangeWaterArchiveCodec.read(ByteArrayInputStream(archive))
+
+        assertEquals(legacyData, restored.data)
+        assertTrue(restored.data.paddockSplitPlans.isEmpty())
     }
 
     private fun completeData(): RangeWaterBackupData {
@@ -210,6 +245,23 @@ class RangeWaterArchiveCodecTest {
                     dmPerAcreInchHigh = 350.0,
                     calibrationSource = ForageCalibrationSource.OHIO_NRCS_GLCI_GRAZING_STICK,
                     acreageSnapshot = 21.8,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            ),
+            paddockSplitPlans = listOf(
+                PaddockSplitPlanEntity(
+                    id = 90,
+                    pastureId = 10,
+                    name = "Triangle Split",
+                    sideALabel = "Upper",
+                    sideBLabel = "Lower",
+                    startJunctionAId = 20,
+                    startJunctionBId = 21,
+                    startSegmentRatio = 0.5,
+                    endJunctionAId = 21,
+                    endJunctionBId = 22,
+                    endSegmentRatio = 0.5,
                     createdAt = now,
                     updatedAt = now
                 )

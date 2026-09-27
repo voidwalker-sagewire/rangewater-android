@@ -66,6 +66,9 @@ object MapConfig {
     const val SOURCE_PASTURE_DRAFT = "source-pasture-draft"
     const val SOURCE_PASTURE_HANDLES = "source-pasture-handles"
     const val SOURCE_SNAPPED_JUNCTION = "source-snapped-junction"
+    const val SOURCE_PADDOCK_REGIONS = "source-paddock-regions"
+    const val SOURCE_PADDOCK_LINES = "source-paddock-lines"
+    const val SOURCE_PADDOCK_DRAFT = "source-paddock-draft"
     const val LAYER_PASTURE_FILL = "layer-pasture-fill"
     const val LAYER_PASTURE_CASING = "layer-pasture-casing"
     const val LAYER_PASTURE_LINE = "layer-pasture-line"
@@ -74,6 +77,12 @@ object MapConfig {
     const val LAYER_PASTURE_DRAFT_LINE = "layer-pasture-draft-line"
     const val LAYER_PASTURE_HANDLES = "layer-pasture-handles"
     const val LAYER_SNAPPED_JUNCTION = "layer-snapped-junction"
+    const val LAYER_PADDOCK_REGIONS = "layer-paddock-regions"
+    const val LAYER_PADDOCK_LINES_CASING = "layer-paddock-lines-casing"
+    const val LAYER_PADDOCK_LINES = "layer-paddock-lines"
+    const val LAYER_PADDOCK_DRAFT_FILL = "layer-paddock-draft-fill"
+    const val LAYER_PADDOCK_DRAFT_LINE = "layer-paddock-draft-line"
+    const val LAYER_PADDOCK_DRAFT_HANDLE = "layer-paddock-draft-handle"
     const val LAYER_WATER_TRANSITION_FILL = "layer-water-transition-fill"
     const val LAYER_WATER_PREFERRED_FILL = "layer-water-preferred-fill"
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
@@ -170,6 +179,18 @@ object MapConfig {
             "$SOURCE_SNAPPED_JUNCTION": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PADDOCK_REGIONS": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PADDOCK_LINES": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_PADDOCK_DRAFT": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
             }
           },
           "layers": [
@@ -212,6 +233,25 @@ object MapConfig {
               "paint": {
                 "fill-color": "#FF2D95",
                 "fill-opacity": 0.08
+              }
+            },
+            {
+              "id": "$LAYER_PADDOCK_REGIONS",
+              "type": "fill",
+              "source": "$SOURCE_PADDOCK_REGIONS",
+              "paint": {
+                "fill-color": ["case", ["==", ["get", "side"], "A"], "#00E5FF", "#8BC34A"],
+                "fill-opacity": ["case", ["get", "selected"], 0.18, 0.10]
+              }
+            },
+            {
+              "id": "$LAYER_PADDOCK_DRAFT_FILL",
+              "type": "fill",
+              "source": "$SOURCE_PADDOCK_DRAFT",
+              "filter": ["==", ["get", "kind"], "region"],
+              "paint": {
+                "fill-color": ["case", ["==", ["get", "side"], "A"], "#00E5FF", "#8BC34A"],
+                "fill-opacity": 0.25
               }
             },
             {
@@ -288,6 +328,29 @@ object MapConfig {
               }
             },
             {
+              "id": "$LAYER_PADDOCK_LINES_CASING",
+              "type": "line",
+              "source": "$SOURCE_PADDOCK_LINES",
+              "paint": { "line-color": "#151515", "line-width": ["case", ["get", "selected"], 7.0, 5.0] }
+            },
+            {
+              "id": "$LAYER_PADDOCK_LINES",
+              "type": "line",
+              "source": "$SOURCE_PADDOCK_LINES",
+              "paint": {
+                "line-color": "#00E5FF",
+                "line-width": ["case", ["get", "selected"], 4.0, 2.5],
+                "line-dasharray": [2.0, 1.5]
+              }
+            },
+            {
+              "id": "$LAYER_PADDOCK_DRAFT_LINE",
+              "type": "line",
+              "source": "$SOURCE_PADDOCK_DRAFT",
+              "filter": ["==", ["get", "kind"], "line"],
+              "paint": { "line-color": "#FFFFFF", "line-width": 4.0, "line-dasharray": [2.0, 1.0] }
+            },
+            {
               "id": "$LAYER_PASTURE_DRAFT_CASING",
               "type": "line",
               "source": "$SOURCE_PASTURE_DRAFT",
@@ -326,6 +389,18 @@ object MapConfig {
                   "#FFFFFF"
                 ],
                 "circle-stroke-color": "#FF2D95",
+                "circle-stroke-width": 3.0
+              }
+            },
+            {
+              "id": "$LAYER_PADDOCK_DRAFT_HANDLE",
+              "type": "circle",
+              "source": "$SOURCE_PADDOCK_DRAFT",
+              "filter": ["==", ["get", "endpoint"], true],
+              "paint": {
+                "circle-radius": 10.0,
+                "circle-color": "#00E5FF",
+                "circle-stroke-color": "#FFFFFF",
                 "circle-stroke-width": 3.0
               }
             },

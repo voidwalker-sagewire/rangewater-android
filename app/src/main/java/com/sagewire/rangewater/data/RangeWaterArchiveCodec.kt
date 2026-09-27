@@ -17,8 +17,8 @@ import java.util.zip.ZipOutputStream
 /** Versioned, checksummed archive codec. It contains no Android storage assumptions. */
 object RangeWaterArchiveCodec {
     const val FORMAT_ID = "com.sagewire.rangewater.backup"
-    const val FORMAT_VERSION = 2
-    const val DATABASE_SCHEMA_VERSION = 7
+    const val FORMAT_VERSION = 3
+    const val DATABASE_SCHEMA_VERSION = 8
     const val MIME_TYPE = "application/vnd.sagewire.rangewater-backup"
     const val FILE_EXTENSION = ".rangewater"
 
@@ -113,6 +113,9 @@ object RangeWaterArchiveCodec {
                     if (!json.has(name) || json[name].isJsonNull) json.add(name, com.google.gson.JsonArray())
                 }
             }
+            if (manifest.formatVersion <= 2 && (!json.has("paddockSplitPlans") || json["paddockSplitPlans"].isJsonNull)) {
+                json.add("paddockSplitPlans", com.google.gson.JsonArray())
+            }
             gson.fromJson(json, RangeWaterBackupData::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Backup records cannot be read", error)
@@ -146,6 +149,7 @@ object RangeWaterArchiveCodec {
         "circuitPastures",
         "circuitPastureRoles",
         "herdCircuitAssignments",
-        "pastureForageObservations"
+        "pastureForageObservations",
+        "paddockSplitPlans"
     )
 }

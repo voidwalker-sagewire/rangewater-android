@@ -1,5 +1,7 @@
 package com.sagewire.rangewater.data
 
+import com.sagewire.rangewater.spatial.PaddockSplitEngine
+
 /** Rejects malformed archives before the live database transaction begins. */
 object RangeWaterBackupValidator {
     fun validate(data: RangeWaterBackupData) {
@@ -12,6 +14,7 @@ object RangeWaterBackupValidator {
         uniquePositiveIds("movement", data.movements.map { it.id })
         val circuitIds = uniquePositiveIds("grazing circuit", data.grazingCircuits.map { it.id })
         uniquePositiveIds("forage observation", data.pastureForageObservations.map { it.id })
+        uniquePositiveIds("paddock split", data.paddockSplitPlans.map { it.id })
 
         data.waterPoints.forEach { point ->
             requireCoordinate(point.latitude, point.longitude, "Water point #${point.id}")
@@ -173,6 +176,63 @@ object RangeWaterBackupValidator {
                 require(observation.dmPerAcreInchLow == expected.low &&
                     observation.dmPerAcreInchHigh == expected.high
                 ) { "Forage observation #${observation.id} has a mismatched Ohio preset" }
+            }
+        }
+
+        val activePlanPastures = mutableSetOf<Long>()
+        data.paddockSplitPlans.forEach { plan ->
+            require(plan.pastureId in pastureIds) {
+                "Paddock split #${plan.id} references a missing pasture"
+            }
+            require(plan.name.isNotBlank()) { "Paddock split #${plan.id} has no name" }
+            require(plan.sideALabel.isNotBlank() && plan.sideBLabel.isNotBlank()) {
+                "Paddock split #${plan.id} has a blank side label"
+            }
+            require(plan.startJunctionAId in junctionIds && plan.startJunctionBId in junctionIds &&
+                plan.endJunctionAId in junctionIds && plan.endJunctionBId in junctionIds
+            ) { "Paddock split #${plan.id} references a missing fence junction" }
+            require(plan.startJunctionAId < plan.startJunctionBId && plan.endJunctionAId < plan.endJunctionBId) {
+                "Paddock split #${plan.id} has non-canonical anchors"
+            }
+            require(plan.startSegmentRatio.isFinite() && plan.startSegmentRatio in 0.0..1.0 &&
+                plan.endSegmentRatio.isFinite() && plan.endSegmentRatio in 0.0..1.0
+            ) { "Paddock split #${plan.id} has an invalid endpoint ratio" }
+            val pastureSegments = data.vertices
+                .filter { it.pastureId == plan.pastureId }
+                .sortedBy { it.sequence }
+                .let { vertices ->
+                    vertices.indices.mapTo(mutableSetOf()) { index ->
+                        val first = vertices[index].junctionId
+                        val second = vertices[(index + 1) % vertices.size].junctionId
+                        minOf(first, second) to maxOf(first, second)
+                    }
+                }
+            require((plan.startJunctionAId to plan.startJunctionBId) in pastureSegments &&
+                (plan.endJunctionAId to plan.endJunctionBId) in pastureSegments
+            ) { "Paddock split #${plan.id} references a non-boundary segment" }
+            val pasture = data.pastures.first { it.id == plan.pastureId }
+            val junctionMap = data.junctions.associateBy { it.id }
+            val resolvedPasture = PastureWithVertices(
+                pasture = pasture,
+                vertices = data.vertices
+                    .filter { it.pastureId == plan.pastureId }
+                    .sortedBy { it.sequence }
+                    .map { vertex ->
+                        PastureVertexWithJunction(vertex, junctionMap.getValue(vertex.junctionId))
+                    }
+            )
+            try {
+                PaddockSplitEngine.resolve(plan, resolvedPasture)
+            } catch (error: IllegalArgumentException) {
+                throw IllegalArgumentException(
+                    "Paddock split #${plan.id} has invalid derived geometry: ${error.message}",
+                    error
+                )
+            }
+            if (plan.archivedAt == null) {
+                require(activePlanPastures.add(plan.pastureId)) {
+                    "A pasture has multiple active paddock splits"
+                }
             }
         }
     }

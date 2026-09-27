@@ -26,9 +26,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GrazingCircuitPastureEntity::class,
         GrazingCircuitPastureRoleEntity::class,
         HerdGrazingCircuitAssignmentEntity::class,
-        PastureForageObservationEntity::class
+        PastureForageObservationEntity::class,
+        PaddockSplitPlanEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
@@ -42,6 +43,7 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun grazingCircuitDao(): GrazingCircuitDao
     abstract fun forageObservationDao(): ForageObservationDao
     abstract fun pastureRestDao(): PastureRestDao
+    abstract fun paddockSplitPlanDao(): PaddockSplitPlanDao
     abstract fun backupDao(): BackupDao
 
     companion object {
@@ -360,6 +362,42 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_split_plans` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `sideALabel` TEXT NOT NULL,
+                        `sideBLabel` TEXT NOT NULL,
+                        `startJunctionAId` INTEGER NOT NULL,
+                        `startJunctionBId` INTEGER NOT NULL,
+                        `startSegmentRatio` REAL NOT NULL,
+                        `endJunctionAId` INTEGER NOT NULL,
+                        `endJunctionBId` INTEGER NOT NULL,
+                        `endSegmentRatio` REAL NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `archivedAt` INTEGER,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`startJunctionAId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`startJunctionBId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`endJunctionAId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`endJunctionBId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_pastureId` ON `paddock_split_plans` (`pastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_startJunctionAId` ON `paddock_split_plans` (`startJunctionAId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_startJunctionBId` ON `paddock_split_plans` (`startJunctionBId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_endJunctionAId` ON `paddock_split_plans` (`endJunctionAId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_endJunctionBId` ON `paddock_split_plans` (`endJunctionBId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_split_plans_archivedAt` ON `paddock_split_plans` (`archivedAt`)")
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -372,7 +410,8 @@ abstract class RangeWaterDatabase : RoomDatabase() {
                     MIGRATION_3_4,
                     MIGRATION_4_5,
                     MIGRATION_5_6,
-                    MIGRATION_6_7
+                    MIGRATION_6_7,
+                    MIGRATION_7_8
                 )
                     .build()
                     .also { instance = it }
