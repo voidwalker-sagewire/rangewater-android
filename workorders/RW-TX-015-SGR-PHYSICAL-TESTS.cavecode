@@ -20,6 +20,23 @@ Correction evidence:
 - Data, movement, circuit, map-focus, and production authority boundaries are unchanged.
 - Focused physical retest remains required before this finding may be closed.
 
+PHYSICAL EVIDENCE 1 — PLAY 1.0.1 BACKUP INTO FIELD 1.1.0
+--------------------------------------------------------------------------------
+Status: PASSED on Michael's Samsung phone using the original 1.1.0 field candidate.
+- Created and saved a portable backup from the Google Play RangeWater 1.0.1 installation.
+- Uninstalled the Play-signed application.
+- Installed the field-signed RangeWater 1.1.0 APK.
+- Restored the Google Play-created backup successfully.
+- Made edits after restore, fully closed RangeWater, reopened it, and confirmed the
+  restored and edited state remained intact.
+Evidence meaning:
+- PASSES format-1 read/restore across the Play-to-field signature boundary.
+- PASSES post-restore edit persistence across full close and reopen.
+- DOES NOT YET satisfy the separate format-2 cross-device restore or Undo Last Restore
+  requirements.
+- The herd-card Close defect is independent UI behavior and does not invalidate this
+  data-safety evidence.
+
 BEFORE INSTALLING
 --------------------------------------------------------------------------------
 [ ] In RangeWater 1.0.1, create a fresh .rangewater backup outside the app.
