@@ -3,7 +3,7 @@ RANGEWATER TRANSMISSION CONTRACT
 RW-TX-015-SGR — RANGEWATER 1.1.0 SEASONAL GRAZING
 ================================================================================
 Format: CaveCode v1.0 project contract
-Status: IMPLEMENTED — AUTOMATED ACCEPTANCE PASSED — PHYSICAL ACCEPTANCE PENDING
+Status: FIELD ACCEPTED — AUTOMATED AND PHYSICAL ACCEPTANCE PASSED — PRODUCTION NOT AUTHORIZED
 Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
 Prepared: 2026-09-26
 Revised: 2026-09-26 — added recorded-rest and Ohio grazing-stick forage scope
@@ -612,6 +612,14 @@ Acceptance authority:
 - CI success proves compilation and automated contracts.
 - Michael's physical-glass report is required before the transmission is accepted.
 - Internal testing precedes any production promotion.
+
+Field acceptance record:
+- Complete physical-glass checklist: PASSED on Michael's Samsung phone and Samsung Tab S7.
+- Acceptance date: 2026-09-27.
+- Michael's confirming statement after explicit both-device clarification: "Passed both devices."
+- Lifecycle state: FIELD ACCEPTED.
+- Production release authority remains NOT GRANTED; Google Play internal testing and a
+  separate production-promotion instruction are still required.
 
 🪨 BLOCK 13 — OHIO USDA-NRCS/GLCI GRAZING-STICK PRESET
 --------------------------------------------------------------------------------
