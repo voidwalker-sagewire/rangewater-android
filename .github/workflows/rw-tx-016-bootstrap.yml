@@ -1,0 +1,26 @@
+name: Publish RW-TX-016-PMP branch
+
+on:
+  push:
+    branches:
+      - codex/rw-tx-016-bootstrap
+    paths:
+      - .github/workflows/rw-tx-016-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out bootstrap branch
+        uses: actions/checkout@v4
+
+      - name: Verify bundle and publish development branch
+        shell: bash
+        run: |
+          git bundle verify RangeWater-RW-TX-016-PMP.bundle
+          git fetch RangeWater-RW-TX-016-PMP.bundle refs/heads/codex/rw-tx-016-pmp
+          test "$(git rev-parse FETCH_HEAD)" = '12be01aa5e623b623f7c841787f03f643a9bf654'
+          git push origin FETCH_HEAD:refs/heads/codex/rw-tx-016-pmp
