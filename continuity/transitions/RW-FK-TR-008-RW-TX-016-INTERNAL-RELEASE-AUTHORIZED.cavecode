@@ -1,0 +1,70 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-008 — RW-TX-016-PMP INTERNAL RELEASE AUTHORIZED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-008
+Project: RangeWater
+Title: RangeWater 1.2.0 Google Play Internal Release Authorization
+Revision: 1
+State: RATIFIED — INTERNAL RELEASE AUTHORIZED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-28T05:05:48-04:00
+Source-Type: Explicit human authorization
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Authorized-Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+Authorized-CI-Run: 145 / 36369176456
+Authorized-Version: RangeWater 1.2.0
+Authorized-VersionCode: 20
+Conflict-Status: NONE
+Human-Decision-Needed: NO for the internal-release operation
+
+🪨 BLOCK 1 — AUTHORIZATION
+--------------------------------------------------------------------------------
+Michael's explicit statement:
+"I authorize the Control Google Play internal testing release and in-place migration
+test from production Rangewater 1.1.0, version code 19, to Rangewater 1.2.0, version
+code 20, using the exact field accepted bundle from GitHub Actions run 145. This
+authorization does not authorize production publication."
+
+Normalized meaning:
+"Michael authorizes release of the exact field-accepted RangeWater 1.2.0 versionCode 20
+bundle from GitHub Actions run 145 to Google Play Internal testing and authorizes a
+controlled in-place update test from production 1.1.0 versionCode 19."
+
+🪨 BLOCK 2 — AUTHORIZED ARTIFACT
+--------------------------------------------------------------------------------
+- Application source:
+  b28ed7c20364f972c9d7282204a935b63cb79d96.
+- GitHub Actions run: 145 / 36369176456 — SUCCESS.
+- Artifact: RangeWater-Play-AAB.
+- Artifact digest:
+  sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
+- Version name: 1.2.0.
+- Version code: 20.
+- Package identity: com.sagewire.rangewater.
+
+🪨 BLOCK 3 — AUTHORIZED ACTIONS
+--------------------------------------------------------------------------------
+- Create or update a Google Play Internal testing release using only the exact authorized
+  versionCode 20 bundle.
+- Make that internal release available to the configured internal testers.
+- On an eligible device carrying production 1.1.0 versionCode 19, install the offered
+  internal 1.2.0 update without uninstalling.
+- Verify preserved ranch records, installed version, cold reopen, and continued usability.
+- Record the migration result as a separate transition.
+
+🛡️ BLOCK 4 — AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- This authorization does not authorize Google Play production publication.
+- It does not authorize a different bundle, source commit, version code, or package.
+- It does not authorize replacing or rebuilding production versionCode 19.
+- Production promotion remains NOT AUTHORIZED.
+- Internal delivery does not itself prove migration acceptance; Michael must report the
+  physical in-place migration result.
+
+================================================================================
+END — RW-FK-TR-008 — RATIFIED — INTERNAL RELEASE AUTHORIZED
+================================================================================

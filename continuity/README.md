@@ -52,6 +52,10 @@ It holds governance and continuity artifacts, not application runtime code.
   - Status: FIELD ACCEPTED
   - Records RangeWater 1.2.0 physical acceptance after the corrected precision-reticle
     retest, while keeping Play internal migration and production authorization separate.
+- `transitions/RW-FK-TR-008-RW-TX-016-INTERNAL-RELEASE-AUTHORIZED.cavecode`
+  - Status: RATIFIED — INTERNAL RELEASE AUTHORIZED
+  - Authorizes only the exact run-145 versionCode 20 bundle for Google Play Internal
+    testing and the controlled 1.1.0-to-1.2.0 in-place migration test.
 
 ## Preserved historical records
 

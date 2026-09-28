@@ -87,6 +87,8 @@ Active development authority:
   clunky but usable; yellow and green text can be difficult to read on white/light
   backgrounds.
 - Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
+- Google Play internal-release and controlled in-place migration-test authority: GRANTED
+  by Michael on 2026-09-28 for the exact run-145 versionCode 20 bundle.
 - Production promotion authority: NOT GRANTED.
 - Current checkpoint:
   continuity/captures/RW-FK-CAP-002-RW-TX-016-LOCAL-IMPLEMENTATION.cavecode.
@@ -94,6 +96,8 @@ Active development authority:
   continuity/captures/RW-FK-CAP-003-PRECISION-LOUPE-ALIGNMENT.cavecode.
 - Physical acceptance transition:
   continuity/transitions/RW-FK-TR-007-RW-TX-016-FIELD-ACCEPTED.cavecode.
+- Internal-release authorization transition:
+  continuity/transitions/RW-FK-TR-008-RW-TX-016-INTERNAL-RELEASE-AUTHORIZED.cavecode.
 - Physical acceptance card:
   workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
@@ -127,8 +131,9 @@ Active development authority:
    as separate operational evidence if Michael chooses.
 3. Preserve corrected source b28ed7c and run-145 artifacts as the field-accepted 1.2.0
    candidate identity.
-4. Complete a controlled Google Play internal 1.1.0-to-1.2.0 in-place migration using
-   the exact versionCode 20 bundle before any production-promotion decision.
+4. Execute the authorized controlled Google Play internal 1.1.0-to-1.2.0 in-place
+   migration using the exact versionCode 20 run-145 bundle, then record the result before
+   any production-promotion decision.
 5. Carry the non-blocking divider-placement and light-background contrast observations
    into later authorized polish work; they do not reopen field acceptance.
 6. The separate Forgekeeper engine remains future work outside this repository.

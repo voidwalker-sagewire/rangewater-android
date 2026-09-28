@@ -2,7 +2,7 @@
 RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
 ================================================================================
-Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION PENDING
+Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL RELEASE AUTHORIZED — MIGRATION PENDING
 Initial application implementation source: 5bcd1ba
 Corrected field-candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
 Production: NOT AUTHORIZED
@@ -116,6 +116,8 @@ sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
 Phone result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
 Samsung Tab S7 result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
 Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
+Google Play internal-release authority: GRANTED by Michael on 2026-09-28 for the exact
+run-145 versionCode 20 bundle only.
 Field acceptance authority: Michael after the complete physical sequence.
 Production promotion authority: NOT GRANTED; requires a later explicit instruction for the
 exact internally tested versionCode 20 bundle.
