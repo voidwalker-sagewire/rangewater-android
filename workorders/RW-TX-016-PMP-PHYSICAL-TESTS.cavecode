@@ -2,8 +2,9 @@
 RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
 ================================================================================
-Status: NOT STARTED — AUTOMATED VERIFICATION AND SIGNED ARTIFACT PENDING
-Application implementation source: 5bcd1ba
+Status: IN PROGRESS — AUTOMATED VERIFIED — PRECISION LOUPE CORRECTION RETEST PENDING
+Initial application implementation source: 5bcd1ba
+Corrected field-candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
 Production: NOT AUTHORIZED
 
 TEST DEVICES
@@ -29,6 +30,17 @@ TEST 1 — IN-PLACE MIGRATION AND PRESERVATION
 
 TEST 2 — PRECISION LOUPE
 --------------------------------------------------------------------------------
+[!] PHYSICAL FINDING — 2026-09-27:
+    Michael reported that during press-and-hold precision placement the post/handle
+    remained at the finger and did not appear at the expected location inside the loupe;
+    the crosshair and working point appeared misaligned. Test 2 did not pass.
+[+] CORRECTION IMPLEMENTED AND AUTOMATED VERIFIED:
+    Commit b28ed7c attaches the magnifier to MapLibre's actual render surface, separates
+    the loupe-window position from the source coordinate, places snapped fence/corner/
+    paddock coordinates under the crosshair before release, commits that displayed
+    coordinate, and refreshes after the next render frame so a dragged handle is visible.
+    GitHub Actions run 36369176456 (run 145) passed all automated gates.
+[ ] Install the exact run-145 field APK before repeating every item below.
 [ ] Press and hold while drawing a pasture; confirm the magnified inset and crosshair.
 [ ] Release after positioning; confirm the crosshair coordinate is accepted exactly once.
 [ ] Repeat while moving a corner, placing a gate, moving water, and placing both paddock
@@ -87,10 +99,12 @@ TEST 6 — FORMAT-3 BACKUP, RESTORE, AND UNDO
 
 FINAL REPORT
 --------------------------------------------------------------------------------
-Result: PENDING.
-Automated CI run: PENDING.
-Signed field APK identity: PENDING.
-Signed Play AAB identity: PENDING.
+Result: PENDING — corrected precision loupe requires physical retest.
+Automated CI run: PASSED — run 145 / 36369176456 — exact source b28ed7c.
+Signed field APK identity: RangeWater-Field-APK from run 145; artifact digest
+sha256:e2e7afe72bda14c0eb6d69f6be7f128642a4ad313e1d9e958fd410e5c6041212.
+Signed Play AAB identity: RangeWater-Play-AAB from run 145; artifact digest
+sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
 Phone result: PENDING.
 Samsung Tab S7 result: PENDING.
 Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
