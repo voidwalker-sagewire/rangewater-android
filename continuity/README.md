@@ -64,7 +64,14 @@ It holds governance and continuity artifacts, not application runtime code.
   - Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
   - Records the successful Play-installed 1.1.0-to-internal-1.2.0 in-place update,
     preserved format-2 ranch records, Android version confirmation, and cold reopen.
-  - Production promotion remains separately gated and is not authorized.
+- `transitions/RW-FK-TR-011-RW-TX-016-PRODUCTION-AUTHORIZED.cavecode`
+  - Status: RATIFIED — PRODUCTION PROMOTION AUTHORIZED
+  - Records Michael's explicit authority for the exact run-145 versionCode 20 bundle,
+    Google review submission, and 100% production rollout without a rebuild.
+- `transitions/RW-FK-TR-012-RANGEWATER-1.2.0-PRODUCTION-PUBLISHED.cavecode`
+  - Status: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED
+  - Records submission at 3:04 PM, Google approval at 3:25 PM, and completed Managed
+    publication of RangeWater 1.2.0 versionCode 20 on 2026-09-28.
 
 ## Preserved historical records
 
@@ -92,9 +99,11 @@ It holds governance and continuity artifacts, not application runtime code.
 - An automatic system may capture candidate memory.
 - Only Michael may ratify project truth.
 - The future Forgekeeper engine belongs in a separate repository.
-- RangeWater 1.1.0 versionCode 19 is Google Play production published.
-- RangeWater 1.2.0 development is authorized only on `codex/rw-tx-016-pmp` under
-  `workorders/RW-TX-016-PMP.cavecode` Revision 1.
+- RangeWater 1.2.0 versionCode 20 is Google Play production published at 100% rollout.
+- RangeWater 1.1.0 versionCode 19 is superseded for current distribution while its
+  accepted production history remains preserved.
+- RW-TX-016-PMP Revision 1 is closed — field accepted — Google Play production
+  published on `codex/rw-tx-016-pmp`.
 - Its completed physical sequence and controlled Google Play migration are recorded in
-  `workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode`; production promotion remains
-  separately gated and is not authorized.
+  `workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode`; production authority and
+  publication are recorded in RW-FK-TR-011 and RW-FK-TR-012.
