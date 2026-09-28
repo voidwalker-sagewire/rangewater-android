@@ -681,6 +681,44 @@ fun MapScreen(
 
     fun geometryError(): String? = GeometryValidator.validationError(draftVertices)
 
+    fun precisionDisplayCoordinate(map: MapLibreMap, rawCoordinate: LatLng): LatLng {
+        return when (interactionState) {
+            InteractionState.GATE_PLACEMENT, InteractionState.GATE_MOVING -> {
+                val width = movingGate?.widthMeters ?: GateEntity.WIDTH_14_FT
+                val result = GateSnappingEngine.findCandidateSegmentScreenSpace(
+                    tapPoint = rawCoordinate,
+                    pastures = pastures,
+                    projection = map.projection,
+                    tolerancePx = 36f * context.resources.displayMetrics.density,
+                    gateWidthMeters = width
+                )
+                (result as? GateSnapResult.Snapped)?.candidate?.derivedCoordinate ?: rawCoordinate
+            }
+            InteractionState.PASTURE_DRAWING -> {
+                CornerSnappingEngine.findSnapJunction(
+                    rawCoordinate,
+                    allJunctions,
+                    map.projection,
+                    32f * context.resources.displayMetrics.density
+                )?.let { LatLng(it.latitude, it.longitude) } ?: rawCoordinate
+            }
+            InteractionState.PADDOCK_SPLIT_PLACEMENT -> {
+                selectedPasture?.let { pasture ->
+                    PaddockSplitEngine.nearestBoundaryAnchor(
+                        rawCoordinate.toPastureCoordinate(),
+                        pasture,
+                        screenToleranceMeters(
+                            map,
+                            rawCoordinate,
+                            40f * context.resources.displayMetrics.density
+                        )
+                    )?.coordinate?.toLatLng()
+                } ?: rawCoordinate
+            }
+            else -> rawCoordinate
+        }
+    }
+
     fun commitPrecisionPlacement(map: MapLibreMap, coordinate: LatLng) {
         when (interactionState) {
             InteractionState.WATER_MOVING -> draftWaterLocation = coordinate
@@ -1302,6 +1340,14 @@ fun MapScreen(
         } else {
             val magnifier = PrecisionLoupe.create(mapView)
             var showing = false
+
+            fun showLoupe(event: MotionEvent) {
+                val raw = precisionMap.projection.fromScreenLocation(PointF(event.x, event.y))
+                val displayed = precisionDisplayCoordinate(precisionMap, raw)
+                val source = precisionMap.projection.toScreenLocation(displayed)
+                magnifier?.show(source.x, source.y, event.x, event.y)
+            }
+
             val detector = GestureDetector(
                 context,
                 object : GestureDetector.SimpleOnGestureListener() {
@@ -1309,7 +1355,7 @@ fun MapScreen(
                     override fun onLongPress(event: MotionEvent) {
                         showing = true
                         precisionMap.uiSettings.isScrollGesturesEnabled = false
-                        magnifier?.show(event.x, event.y)
+                        showLoupe(event)
                         showContextHint("precision_loupe")
                     }
                 }
@@ -1317,14 +1363,13 @@ fun MapScreen(
             val touchListener = android.view.View.OnTouchListener { _, event ->
                 detector.onTouchEvent(event)
                 when (event.actionMasked) {
-                    MotionEvent.ACTION_MOVE -> if (showing) magnifier?.show(event.x, event.y)
+                    MotionEvent.ACTION_MOVE -> if (showing) showLoupe(event)
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         if (showing && event.actionMasked == MotionEvent.ACTION_UP) {
+                            val raw = precisionMap.projection.fromScreenLocation(PointF(event.x, event.y))
+                            val accepted = precisionDisplayCoordinate(precisionMap, raw)
                             suppressMapClickUntil = SystemClock.uptimeMillis() + 500L
-                            commitPrecisionPlacement(
-                                precisionMap,
-                                precisionMap.projection.fromScreenLocation(PointF(event.x, event.y))
-                            )
+                            commitPrecisionPlacement(precisionMap, accepted)
                         }
                         if (showing) magnifier?.dismiss()
                         precisionMap.uiSettings.isScrollGesturesEnabled = true
@@ -1368,7 +1413,7 @@ fun MapScreen(
                     override fun onLongPress(event: MotionEvent) {
                         if (dragIndex != null) {
                             loupeShowing = true
-                            magnifier?.show(event.x, event.y)
+                            magnifier?.show(event.x, event.y, event.x, event.y)
                             showContextHint("precision_loupe")
                         }
                     }
@@ -1416,7 +1461,7 @@ fun MapScreen(
                             draftVertices[index] = movedCoordinate
                             existing.junctionId?.let { ephemeralJunctionMoves[it] = movedCoordinate }
                             draftRevision++
-                            if (loupeShowing) magnifier?.show(event.x, event.y)
+                            if (loupeShowing) magnifier?.show(event.x, event.y, event.x, event.y)
                             true
                         }
                     }
