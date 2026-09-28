@@ -64,11 +64,27 @@ Active development authority:
   format-1 and format-2 restore support.
 - Implementation authority: GRANTED for the ratified contract.
 - Production authority: NOT GRANTED.
-- Local application implementation: commit 5bcd1ba — CAPTURED, NOT VERIFIED.
-- Automated CI, signed candidate artifacts, physical acceptance, and Play internal
+- Initial application implementation: commit 5bcd1ba.
+- Deterministic split-geometry correction: commit
+  8e7684b7f983907011ad8c840d854a3c87cf6fdb.
+- Initial complete automated verification: PASSED in GitHub Actions run 36364189034
+  (run 144), including imagery gateway, JVM tests, Room instrumentation, debug APK,
+  signed field APK, and signed Play AAB gates.
+- Physical finding RW-FK-CAP-003: the precision loupe did not reliably show the same
+  post/handle or snapped coordinate represented by its crosshair on physical Samsung
+  glass. Physical acceptance therefore remains PENDING.
+- Corrected candidate source:
+  b28ed7c20364f972c9d7282204a935b63cb79d96.
+- Correction verification: PASSED in GitHub Actions run 36369176456 (run 145), including
+  connectedDebugAndroidTest, testDebugUnitTest, assembleDebug, bundleRelease, field
+  signing/certificate verification, and Play-bundle signing/certificate verification.
+- Corrected signed artifacts: RangeWater-Field-APK and RangeWater-Play-AAB from run 145.
+- Physical retest of the corrected loupe, remaining physical acceptance, and Play internal
   migration: PENDING.
 - Current checkpoint:
   continuity/captures/RW-FK-CAP-002-RW-TX-016-LOCAL-IMPLEMENTATION.cavecode.
+- Loupe physical-finding and correction record:
+  continuity/captures/RW-FK-CAP-003-PRECISION-LOUPE-ALIGNMENT.cavecode.
 - Physical acceptance card:
   workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
@@ -100,9 +116,9 @@ Active development authority:
 1. No repair, rebuild, or replacement of versionCode 19 is authorized or required.
 2. Storefront propagation or post-publication device visibility may be recorded later
    as separate operational evidence if Michael chooses.
-3. Preserve the local RW-TX-016-PMP implementation commits and obtain authorized push
-   access for codex/rw-tx-016-pmp without touching production or the Forgekeeper branch.
-4. Run every specified automated gate and produce signed field/internal-test artifacts.
+3. Install the exact run-145 field APK on Michael's Samsung phone and Samsung Tab S7,
+   then retest the press-and-hold loupe in every workflow listed in Test 2.
+4. Complete the remaining physical acceptance card against corrected source b28ed7c.
 5. Physical acceptance and controlled Google Play internal migration must pass before
    any separate production-promotion decision.
 6. The separate Forgekeeper engine remains future work outside this repository.
