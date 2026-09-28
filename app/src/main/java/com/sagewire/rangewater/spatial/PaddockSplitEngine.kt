@@ -7,8 +7,6 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.geom.PrecisionModel
-import org.locationtech.jts.operation.overlayng.OverlayNGRobust
-import org.locationtech.jts.operation.polygonize.Polygonizer
 import kotlin.math.cos
 import kotlin.math.sqrt
 
@@ -108,18 +106,34 @@ object PaddockSplitEngine {
             arrayOf(resolvedStart.coordinate.toJts(), resolvedEnd.coordinate.toJts())
         )
         require(line.length > 1e-12) { "Paddock split endpoints must be different" }
-        val inside = parent.intersection(line)
-        require(!inside.isEmpty && inside.length >= line.length * 0.999999) {
+        require(parent.covers(line)) {
             "Paddock split must pass through the pasture interior"
         }
 
-        val noded = OverlayNGRobust.union(listOf(parent.boundary, line))
-        val polygonizer = Polygonizer(true)
-        polygonizer.add(noded)
-        @Suppress("UNCHECKED_CAST")
-        val pieces = (polygonizer.polygons as Collection<Polygon>)
-            .filter { it.area > 0.0 && parent.covers(it.interiorPoint) }
-        require(pieces.size == 2) { "Paddock split must create exactly two regions" }
+        // Build both rings by walking the authoritative ordered fence boundary.
+        // This avoids polygonizer precision differences while preserving the exact
+        // persisted split anchors and their shared straight divider.
+        val startEdge = boundaryEdgeIndex(pasture, resolvedStart)
+        val endEdge = boundaryEdgeIndex(pasture, resolvedEnd)
+        require(startEdge != endEdge) { "Paddock split cannot follow one boundary segment" }
+        val firstRing = boundaryPath(
+            parentCoordinates,
+            startEdge,
+            endEdge,
+            resolvedStart.coordinate,
+            resolvedEnd.coordinate
+        )
+        val secondRing = boundaryPath(
+            parentCoordinates,
+            endEdge,
+            startEdge,
+            resolvedEnd.coordinate,
+            resolvedStart.coordinate
+        )
+        val pieces = listOf(firstRing.toJtsPolygon(), secondRing.toJtsPolygon())
+        require(pieces.all { it.isValid && it.area > 0.0 && parent.covers(it) }) {
+            "Paddock split must create exactly two valid regions"
+        }
 
         val ordered = pieces.sortedBy { polygon ->
             sideOfLine(resolvedStart.coordinate, resolvedEnd.coordinate, polygon.interiorPoint.coordinate)
@@ -179,6 +193,48 @@ object PaddockSplitEngine {
             )
         )
     }
+
+    private fun boundaryEdgeIndex(
+        pasture: PastureWithVertices,
+        anchor: PaddockBoundaryAnchor
+    ): Int {
+        val ordered = pasture.vertices.sortedBy { it.sequence }
+        return ordered.indices.first { index ->
+            val first = ordered[index].junctionId
+            val second = ordered[(index + 1) % ordered.size].junctionId
+            minOf(first, second) == anchor.junctionAId && maxOf(first, second) == anchor.junctionBId
+        }
+    }
+
+    private fun boundaryPath(
+        vertices: List<PastureCoordinate>,
+        startEdge: Int,
+        endEdge: Int,
+        start: PastureCoordinate,
+        end: PastureCoordinate
+    ): List<PastureCoordinate> {
+        val path = mutableListOf(start)
+        var vertexIndex = (startEdge + 1) % vertices.size
+        while (true) {
+            path += vertices[vertexIndex]
+            if (vertexIndex == endEdge) break
+            vertexIndex = (vertexIndex + 1) % vertices.size
+        }
+        path += end
+        return path.removeConsecutiveDuplicates()
+    }
+
+    private fun List<PastureCoordinate>.removeConsecutiveDuplicates(): List<PastureCoordinate> =
+        fold(mutableListOf()) { result, coordinate ->
+            if (result.lastOrNull()?.let {
+                    kotlin.math.abs(it.latitude - coordinate.latitude) <= 1e-12 &&
+                        kotlin.math.abs(it.longitude - coordinate.longitude) <= 1e-12
+                } != true
+            ) {
+                result += coordinate
+            }
+            result
+        }
 
     private data class Projection(
         val ratio: Double,
