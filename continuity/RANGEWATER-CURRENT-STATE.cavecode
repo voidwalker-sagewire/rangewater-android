@@ -86,7 +86,16 @@ Active development authority:
 - Non-blocking follow-up observations: temporary split-fence placement remains somewhat
   clunky but usable; yellow and green text can be difficult to read on white/light
   backgrounds.
-- Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
+- Google Play internal 1.1.0-to-1.2.0 in-place migration: PASSED on 2026-09-28.
+- The verified migration path used Play-installed production 1.1.0 versionCode 19 as
+  the baseline, restored a format-2 ranch archive, and installed the active internal
+  versionCode 20 update without uninstalling during the migration step.
+- All six migration checks passed: installation, record preservation, 1.2.0 feature
+  visibility, Android version confirmation, complete close, and cold-reopen persistence.
+- Operational note: the first attempt involved a separately signed field APK; after a
+  safe backup and clean Play-production baseline, stale Play Store track state cleared
+  only after Michael reset approximately 2.5 GB of Play Store application storage and
+  restarted the device. This was a delivery-state issue, not an application failure.
 - Google Play internal-release and controlled in-place migration-test authority: GRANTED
   by Michael on 2026-09-28 for the exact run-145 versionCode 20 bundle.
 - Google Play Internal testing release: PUBLISHED on 2026-09-28 at 5:17 AM
@@ -106,6 +115,8 @@ Active development authority:
   continuity/transitions/RW-FK-TR-008-RW-TX-016-INTERNAL-RELEASE-AUTHORIZED.cavecode.
 - Internal-release publication transition:
   continuity/transitions/RW-FK-TR-009-RW-TX-016-INTERNAL-RELEASE-PUBLISHED.cavecode.
+- Internal migration acceptance transition:
+  continuity/transitions/RW-FK-TR-010-RW-TX-016-PLAY-MIGRATION-ACCEPTED.cavecode.
 - Physical acceptance card:
   workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
@@ -139,13 +150,12 @@ Active development authority:
    as separate operational evidence if Michael chooses.
 3. Preserve corrected source b28ed7c and run-145 artifacts as the field-accepted 1.2.0
    candidate identity.
-4. On a device currently carrying production RangeWater 1.1.0 versionCode 19, open the
-   verified internal-test enrollment page, install the offered 1.2.0 update without
-   uninstalling, and confirm Android reports version 1.2.0.
-5. Verify preserved ranch records and cold-reopen usability, then record the migration
-   result before any production-promotion decision.
-6. Carry the non-blocking divider-placement and light-background contrast observations
-   into later authorized polish work; they do not reopen field acceptance.
+4. Preserve the accepted internal migration evidence and exact run-145 artifact identity.
+5. Do not promote versionCode 20 to production without Michael's later explicit
+   authorization for the exact accepted bundle.
+6. Carry the non-blocking divider-placement, light-background contrast, and missing
+   in-app version-display observations into later authorized polish work; they do not
+   reopen field acceptance.
 7. The separate Forgekeeper engine remains future work outside this repository.
 8. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
 

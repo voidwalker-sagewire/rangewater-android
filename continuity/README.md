@@ -60,6 +60,11 @@ It holds governance and continuity artifacts, not application runtime code.
   - Status: INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
   - Records active Google Play Internal delivery of the exact versionCode 20 bundle and
     verified tester enrollment without granting production authority.
+- `transitions/RW-FK-TR-010-RW-TX-016-PLAY-MIGRATION-ACCEPTED.cavecode`
+  - Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+  - Records the successful Play-installed 1.1.0-to-internal-1.2.0 in-place update,
+    preserved format-2 ranch records, Android version confirmation, and cold reopen.
+  - Production promotion remains separately gated and is not authorized.
 
 ## Preserved historical records
 
