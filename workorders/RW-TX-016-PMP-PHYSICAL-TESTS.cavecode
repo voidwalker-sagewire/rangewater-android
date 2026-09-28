@@ -2,10 +2,10 @@
 RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
 ================================================================================
-Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+Status: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED
 Initial application implementation source: 5bcd1ba
 Corrected field-candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
-Production: NOT AUTHORIZED
+Production: AUTHORIZED — APPROVED — PUBLISHED AT 100% ROLLOUT
 
 TEST DEVICES
 --------------------------------------------------------------------------------
@@ -133,8 +133,20 @@ Tester list: RangeWater Internal Testers — one authorized account.
 Verified tester state: Google Play reports mmiller62174@gmail.com is a tester for
 com.sagewire.rangewater.
 Field acceptance authority: Michael after the complete physical sequence.
-Production promotion authority: NOT GRANTED; requires a later explicit instruction for the
-exact internally tested versionCode 20 bundle.
+Production promotion authority: GRANTED by Michael on 2026-09-28 for the exact run-145
+versionCode 20 bundle, Google review submission, and 100% production rollout; no rebuild
+or replacement bundle was authorized.
+Google Play production submission: COMPLETED at 3:04 PM America/New_York on 2026-09-28.
+Google Play production review: APPROVED at 3:25 PM America/New_York on 2026-09-28.
+Google Play production publication: COMPLETED and confirmed at 3:53 PM
+America/New_York on 2026-09-28.
+Production release: RangeWater 1.2.0 (20) – Production — 100% rollout.
+Play Console evidence: "Last published on September 28, 2026" with no remaining changes
+ready to publish.
+Production authorization record:
+continuity/transitions/RW-FK-TR-011-RW-TX-016-PRODUCTION-AUTHORIZED.cavecode.
+Production publication record:
+continuity/transitions/RW-FK-TR-012-RANGEWATER-1.2.0-PRODUCTION-PUBLISHED.cavecode.
 
 NON-BLOCKING FOLLOW-UP OBSERVATIONS
 --------------------------------------------------------------------------------
