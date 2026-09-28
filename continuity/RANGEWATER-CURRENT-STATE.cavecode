@@ -64,6 +64,13 @@ Active development authority:
   format-1 and format-2 restore support.
 - Implementation authority: GRANTED for the ratified contract.
 - Production authority: NOT GRANTED.
+- Local application implementation: commit 5bcd1ba — CAPTURED, NOT VERIFIED.
+- Automated CI, signed candidate artifacts, physical acceptance, and Play internal
+  migration: PENDING.
+- Current checkpoint:
+  continuity/captures/RW-FK-CAP-002-RW-TX-016-LOCAL-IMPLEMENTATION.cavecode.
+- Physical acceptance card:
+  workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
   continuity/ratifications/RW-TX-016-PMP-REV1-RATIFICATION.cavecode.
 
@@ -93,7 +100,8 @@ Active development authority:
 1. No repair, rebuild, or replacement of versionCode 19 is authorized or required.
 2. Storefront propagation or post-publication device visibility may be recorded later
    as separate operational evidence if Michael chooses.
-3. Implement only RW-TX-016-PMP Revision 1 on codex/rw-tx-016-pmp.
+3. Preserve the local RW-TX-016-PMP implementation commits and obtain authorized push
+   access for codex/rw-tx-016-pmp without touching production or the Forgekeeper branch.
 4. Run every specified automated gate and produce signed field/internal-test artifacts.
 5. Physical acceptance and controlled Google Play internal migration must pass before
    any separate production-promotion decision.

@@ -1,0 +1,103 @@
+================================================================================
+RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
+RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
+================================================================================
+Status: NOT STARTED — AUTOMATED VERIFICATION AND SIGNED ARTIFACT PENDING
+Application implementation source: 5bcd1ba
+Production: NOT AUTHORIZED
+
+TEST DEVICES
+--------------------------------------------------------------------------------
+- Michael's current Samsung phone
+- Samsung Tab S7
+
+BEFORE INSTALLING
+--------------------------------------------------------------------------------
+[ ] Create a fresh external .rangewater backup from production RangeWater 1.1.0.
+[ ] Confirm the backup is visible outside the app.
+[ ] Preserve the exact 1.2.0 versionCode 20 candidate artifact and its CI run identity.
+[ ] Do not publish or promote the candidate to production.
+
+TEST 1 — IN-PLACE MIGRATION AND PRESERVATION
+--------------------------------------------------------------------------------
+[ ] Through Google Play internal testing, update an installed Play 1.1.0 build to the
+    exact internally tested 1.2.0 versionCode 20 bundle without uninstalling.
+[ ] Confirm pastures, gates, waters, assignments, herds, movements, circuits, roles,
+    forage observations, recorded rest, camera state, and layer settings survive.
+[ ] Confirm Android reports installed version 1.2.0.
+[ ] Cold reopen and confirm the preserved ranch remains usable.
+
+TEST 2 — PRECISION LOUPE
+--------------------------------------------------------------------------------
+[ ] Press and hold while drawing a pasture; confirm the magnified inset and crosshair.
+[ ] Release after positioning; confirm the crosshair coordinate is accepted exactly once.
+[ ] Repeat while moving a corner, placing a gate, moving water, and placing both paddock
+    endpoints.
+[ ] Confirm snapping feedback remains truthful at a shared corner and fence segment.
+[ ] Confirm the map camera does not drift during or after precision placement.
+[ ] Confirm quick ordinary taps still work in the accepted placement workflows.
+
+TEST 3 — PADDOCK PLANNING
+--------------------------------------------------------------------------------
+[ ] Select a pasture and choose Plan Paddock Split.
+[ ] Confirm the temporary-plan disclosure appears before saving.
+[ ] Place two endpoints on different valid boundary segments.
+[ ] Confirm exactly two subtle planning regions and one high-contrast temporary-polywire
+    line appear without obscuring permanent fences, gates, water coverage, herd badges,
+    or required attribution.
+[ ] Hand-check both displayed acreages and their reconciliation to the parent acreage.
+[ ] Rename the plan and both sides; save, cold reopen, and confirm persistence.
+[ ] Move Start and Move End independently with the precision loupe.
+[ ] Exercise Undo, Cancel, and Save; confirm Cancel makes no database change.
+[ ] Confirm a second active plan for the same pasture is rejected or unavailable.
+[ ] Attempt same-point, tangent, boundary-following, and non-crossing lines; confirm clear
+    rejection and no partial record.
+
+TEST 4 — PLAN SAFETY AND FUTURE BLUEPRINT
+--------------------------------------------------------------------------------
+[ ] Edit a parent boundary without detaching either endpoint; confirm the plan remains valid.
+[ ] Attempt a boundary edit that removes an anchored segment or invalidates the split;
+    confirm the edit is blocked without partial mutation.
+[ ] Confirm the plan changes no herd location, movement, circuit, water assignment, gate,
+    rest result, or historical forage observation.
+[ ] Archive the plan; confirm it stops rendering but remains retained.
+[ ] Confirm Delete Blueprint warns that the reusable no-redraw promotion seam will be lost
+    and recommends Archive.
+[ ] Confirm no action offers or executes permanent pasture conversion in 1.2.0.
+
+TEST 5 — WELCOME, TIPS, HINTS, AND FIELD GUIDE
+--------------------------------------------------------------------------------
+[ ] On first completed launch, confirm the brief RangeWater welcome is non-modal.
+[ ] On later cold launches, confirm one deterministic bundled Field Tip appears and can be
+    dismissed immediately.
+[ ] Confirm real imagery-loading status appears only while actual rendering is in progress.
+[ ] Turn Field Tips off, cold reopen, and confirm no startup tip.
+[ ] Turn contextual hints off, exercise major workflows, and confirm no contextual hint.
+[ ] Replay Welcome and Reset Hints; confirm no ranch record or map setting changes.
+[ ] Read every Field Guide section in phone portrait, phone landscape, and tablet layout.
+[ ] Confirm Help opens and closes without changing camera position or selected ranch asset.
+
+TEST 6 — FORMAT-3 BACKUP, RESTORE, AND UNDO
+--------------------------------------------------------------------------------
+[ ] Create a format-3 .rangewater backup containing an active paddock plan.
+[ ] Restore it on the other device and verify every legacy record plus the plan and labels.
+[ ] Restore a known format-1 backup and confirm an empty paddock-plan set with legacy records.
+[ ] Restore a known format-2 backup and confirm an empty paddock-plan set with legacy records.
+[ ] Use Undo Last Restore and confirm the complete prior schema-8 state returns.
+
+FINAL REPORT
+--------------------------------------------------------------------------------
+Result: PENDING.
+Automated CI run: PENDING.
+Signed field APK identity: PENDING.
+Signed Play AAB identity: PENDING.
+Phone result: PENDING.
+Samsung Tab S7 result: PENDING.
+Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
+Field acceptance authority: Michael after the complete physical sequence.
+Production promotion authority: NOT GRANTED; requires a later explicit instruction for the
+exact internally tested versionCode 20 bundle.
+
+================================================================================
+END — RW-TX-016-PMP PHYSICAL-GLASS ACCEPTANCE CARD — PENDING
+================================================================================

@@ -1,0 +1,47 @@
+================================================================================
+RW-FK-CAP-002 — RW-TX-016-PMP LOCAL IMPLEMENTATION CHECKPOINT
+================================================================================
+Status: CAPTURED — IMPLEMENTED LOCALLY — NOT VERIFIED
+Captured: 2026-09-28
+Branch: codex/rw-tx-016-pmp
+Baseline: 1ead13b9cee8be966696b071d6da6510103e3c3a
+Ratification commit: 5160e3f
+Application implementation commit: 5bcd1ba
+
+IMPLEMENTED SCOPE
+--------------------------------------------------------------------------------
+- RangeWater 1.2.0, versionCode 20 identity.
+- Room schema 8 and non-destructive MIGRATION_7_8.
+- Archive format 3 with format-1 and format-2 read compatibility.
+- Canonically anchored, one-active-per-pasture temporary paddock split plans.
+- Robust two-region validation, acreage reconciliation, map display, edit, archive, and
+  warned deletion workflow with a future no-redraw permanent-promotion seam.
+- Precision press-and-hold map loupe with crosshair and existing placement validation.
+- Device-local welcome, rotating Field Tips, contextual hints, real loading status, and
+  complete offline Help & Field Guide controls.
+- Automated unit, Room, migration, archive, and preference test additions.
+
+VERIFICATION STATE
+--------------------------------------------------------------------------------
+- git diff --check: PASSED before implementation commit.
+- Gradle 8.11.1 distribution SHA-256: VERIFIED against the wrapper-pinned checksum.
+- Local Gradle launch: PASSED.
+- Dependency resolution/build: BLOCKED in the current workspace because Google/Maven
+  plugin repositories are unavailable through its network path.
+- Terminal push: BLOCKED because no GitHub credential is configured.
+- Authorized signed-in GitHub browser upload: BLOCKED by GitHub with the explicit message
+  "Uploads are disabled" because that signed-in account lacks repository push access.
+- GitHub branch creation, CI execution, signed APK/AAB generation, physical testing, field
+  acceptance, internal Play migration, and production authority: NOT CLAIMED.
+
+AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+This capture records a local implementation checkpoint. It does not advance the work to
+Verified or Field Accepted, does not authorize replacing production versionCode 19, and
+does not authorize Google Play publication. Only later repository evidence, CI evidence,
+Michael's physical report, and a separate exact-artifact production instruction may advance
+those states.
+
+================================================================================
+END — RW-FK-CAP-002 — CAPTURED — IMPLEMENTED LOCALLY — NOT VERIFIED
+================================================================================
