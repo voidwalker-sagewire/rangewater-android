@@ -19,23 +19,22 @@ Final Authority: Michael
 🪨 BLOCK 2 — CURRENT PRODUCT STATE
 --------------------------------------------------------------------------------
 Production:
-- RangeWater 1.1.0, versionCode 19.
+- RangeWater 1.2.0, versionCode 20.
 - State: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
 - Rollout recorded: 100% of targeted users and all targeted countries/regions.
 - Released candidate source:
-  df061bc07d8b09c6f678d56b1d439aa3e4e02923.
-- Active continuity branch: codex/rw-tx-015-sgr.
-- Room schema: 7.
-- Archive write format: 2; format 1 and 2 restore support.
+  b28ed7c20364f972c9d7282204a935b63cb79d96.
+- Active continuity branch: codex/rw-tx-016-pmp.
+- Room schema: 8.
+- Archive write format: 3; format 1, 2, and 3 restore support.
 - Publication transition:
-  continuity/transitions/RW-FK-TR-005-RANGEWATER-1.1.0-PRODUCTION-PUBLISHED.cavecode.
-- Publication-record commit:
-  a6166698a877b215b6b1cb764d1b9ae1ac5619b7.
+  continuity/transitions/RW-FK-TR-012-RANGEWATER-1.2.0-PRODUCTION-PUBLISHED.cavecode.
 
 Prior production:
-- RangeWater 1.0.1, versionCode 18.
-- Released source: 6769df5f6f37fa369dc9e7d76dacb3c57a60c8a2.
-- State: SUPERSEDED for current distribution by versionCode 19.
+- RangeWater 1.1.0, versionCode 19.
+- Released source: df061bc07d8b09c6f678d56b1d439aa3e4e02923.
+- State: SUPERSEDED for current distribution by versionCode 20.
+- RangeWater 1.0.1, versionCode 18, remains preserved as earlier production history.
 
 🪨 BLOCK 3 — ACCEPTANCE AND AUTHORITY CHAIN
 --------------------------------------------------------------------------------
@@ -53,7 +52,7 @@ Prior production:
 - Production publication: COMPLETED by Michael on 2026-09-27.
 - Workorder RW-TX-015-SGR: CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED.
 
-Active development authority:
+RW-TX-016 release authority and acceptance:
 - RW-TX-016-PMP Revision 1: RATIFIED by Michael on 2026-09-27.
 - Target release: RangeWater 1.2.0, versionCode 20.
 - Feature branch: codex/rw-tx-016-pmp.
@@ -63,7 +62,8 @@ Active development authority:
 - Authorized data delta: Room schema 7-to-8 and archive write format 3 with legacy
   format-1 and format-2 restore support.
 - Implementation authority: GRANTED for the ratified contract.
-- Production authority: NOT GRANTED.
+- Production authority: GRANTED on 2026-09-28 for the exact run-145 versionCode 20
+  bundle, Google review submission, and 100% production rollout.
 - Initial application implementation: commit 5bcd1ba.
 - Deterministic split-geometry correction: commit
   8e7684b7f983907011ad8c840d854a3c87cf6fdb.
@@ -104,7 +104,12 @@ Active development authority:
 - Dedicated tester list: RangeWater Internal Testers — one authorized account.
 - Google tester enrollment page confirms mmiller62174@gmail.com is a tester for
   com.sagewire.rangewater.
-- Production promotion authority: NOT GRANTED.
+- Production submission: COMPLETED at 3:04 PM America/New_York on 2026-09-28.
+- Google production review: APPROVED at 3:25 PM America/New_York on 2026-09-28.
+- Managed publication: COMPLETED and confirmed at 3:53 PM America/New_York on
+  2026-09-28; Play Console reported "Last published on September 28, 2026" and no
+  remaining changes ready to publish.
+- Production release: RangeWater 1.2.0 (20) – Production at 100% rollout.
 - Current checkpoint:
   continuity/captures/RW-FK-CAP-002-RW-TX-016-LOCAL-IMPLEMENTATION.cavecode.
 - Loupe physical-finding and correction record:
@@ -117,6 +122,10 @@ Active development authority:
   continuity/transitions/RW-FK-TR-009-RW-TX-016-INTERNAL-RELEASE-PUBLISHED.cavecode.
 - Internal migration acceptance transition:
   continuity/transitions/RW-FK-TR-010-RW-TX-016-PLAY-MIGRATION-ACCEPTED.cavecode.
+- Production authorization transition:
+  continuity/transitions/RW-FK-TR-011-RW-TX-016-PRODUCTION-AUTHORIZED.cavecode.
+- Production publication transition:
+  continuity/transitions/RW-FK-TR-012-RANGEWATER-1.2.0-PRODUCTION-PUBLISHED.cavecode.
 - Physical acceptance card:
   workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
@@ -145,19 +154,23 @@ Active development authority:
 
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
-1. No repair, rebuild, or replacement of versionCode 19 is authorized or required.
+1. No repair, rebuild, or replacement of production versionCode 20 is authorized or
+   required.
 2. Storefront propagation or post-publication device visibility may be recorded later
    as separate operational evidence if Michael chooses.
 3. Preserve corrected source b28ed7c and run-145 artifacts as the field-accepted 1.2.0
    candidate identity.
 4. Preserve the accepted internal migration evidence and exact run-145 artifact identity.
-5. Do not promote versionCode 20 to production without Michael's later explicit
-   authorization for the exact accepted bundle.
+5. Preserve RW-FK-TR-011 and RW-FK-TR-012 as the authority and publication evidence
+   for the exact accepted versionCode 20 bundle; no later rebuild may inherit that
+   authority silently.
 6. Carry the non-blocking divider-placement, light-background contrast, and missing
    in-app version-display observations into later authorized polish work; they do not
    reopen field acceptance.
 7. The separate Forgekeeper engine remains future work outside this repository.
-8. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
+8. RW-TX-016-PMP Revision 1 is CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION
+   PUBLISHED. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains
+   ACTIVE.
 
 ================================================================================
 END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE
