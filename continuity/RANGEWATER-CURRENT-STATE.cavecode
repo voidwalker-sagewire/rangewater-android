@@ -89,6 +89,12 @@ Active development authority:
 - Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
 - Google Play internal-release and controlled in-place migration-test authority: GRANTED
   by Michael on 2026-09-28 for the exact run-145 versionCode 20 bundle.
+- Google Play Internal testing release: PUBLISHED on 2026-09-28 at 5:17 AM
+  America/New_York as "RangeWater 1.2.0 (20) – Internal Test."
+- Internal track state: ACTIVE; exact versionCode 20 available to internal testers.
+- Dedicated tester list: RangeWater Internal Testers — one authorized account.
+- Google tester enrollment page confirms mmiller62174@gmail.com is a tester for
+  com.sagewire.rangewater.
 - Production promotion authority: NOT GRANTED.
 - Current checkpoint:
   continuity/captures/RW-FK-CAP-002-RW-TX-016-LOCAL-IMPLEMENTATION.cavecode.
@@ -98,6 +104,8 @@ Active development authority:
   continuity/transitions/RW-FK-TR-007-RW-TX-016-FIELD-ACCEPTED.cavecode.
 - Internal-release authorization transition:
   continuity/transitions/RW-FK-TR-008-RW-TX-016-INTERNAL-RELEASE-AUTHORIZED.cavecode.
+- Internal-release publication transition:
+  continuity/transitions/RW-FK-TR-009-RW-TX-016-INTERNAL-RELEASE-PUBLISHED.cavecode.
 - Physical acceptance card:
   workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode.
 - Ratification record:
@@ -131,13 +139,15 @@ Active development authority:
    as separate operational evidence if Michael chooses.
 3. Preserve corrected source b28ed7c and run-145 artifacts as the field-accepted 1.2.0
    candidate identity.
-4. Execute the authorized controlled Google Play internal 1.1.0-to-1.2.0 in-place
-   migration using the exact versionCode 20 run-145 bundle, then record the result before
-   any production-promotion decision.
-5. Carry the non-blocking divider-placement and light-background contrast observations
+4. On a device currently carrying production RangeWater 1.1.0 versionCode 19, open the
+   verified internal-test enrollment page, install the offered 1.2.0 update without
+   uninstalling, and confirm Android reports version 1.2.0.
+5. Verify preserved ranch records and cold-reopen usability, then record the migration
+   result before any production-promotion decision.
+6. Carry the non-blocking divider-placement and light-background contrast observations
    into later authorized polish work; they do not reopen field acceptance.
-6. The separate Forgekeeper engine remains future work outside this repository.
-7. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
+7. The separate Forgekeeper engine remains future work outside this repository.
+8. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains ACTIVE.
 
 ================================================================================
 END — RW-FK-CURRENT-001 — RATIFIED — ACTIVE

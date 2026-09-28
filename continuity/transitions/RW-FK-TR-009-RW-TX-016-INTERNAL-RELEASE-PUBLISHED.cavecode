@@ -1,0 +1,81 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-009 — RW-TX-016-PMP INTERNAL RELEASE PUBLISHED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-009
+Project: RangeWater
+Title: RangeWater 1.2.0 Google Play Internal Release Published
+Revision: 1
+State: INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-28T05:17:00-04:00
+Source-Type: Google Play Console operational evidence plus ratified authorization
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+CI-Run: 145 / 36369176456
+Version: RangeWater 1.2.0
+VersionCode: 20
+Track: Google Play Internal testing
+Conflict-Status: NONE
+Human-Decision-Needed: Michael must perform and report the controlled in-place migration
+
+🪨 BLOCK 1 — DELIVERY TRANSITION
+--------------------------------------------------------------------------------
+Prior State: FIELD ACCEPTED — INTERNAL RELEASE AUTHORIZED
+New State: INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
+Transition Date: 2026-09-28
+Transition Authority: Michael's RW-FK-TR-008 authorization
+
+Google Play Console reported:
+- Track: Internal testing.
+- Track state: ACTIVE.
+- Release: RangeWater 1.2.0 (20) – Internal Test.
+- Bundle: versionCode 20 / versionName 1.2.0.
+- Release time: Sep 28, 2026 at 5:17 AM America/New_York.
+- Availability: Available to internal testers.
+
+🪨 BLOCK 2 — ARTIFACT IDENTITY
+--------------------------------------------------------------------------------
+- Application source:
+  b28ed7c20364f972c9d7282204a935b63cb79d96.
+- GitHub Actions run: 145 / 36369176456 — SUCCESS.
+- Uploaded artifact: RangeWater-1.2.0-play-upload.aab from RangeWater-Play-AAB.
+- Workflow artifact digest:
+  sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
+- Extracted AAB digest:
+  sha256:ef7e33fe84db23dc04947666a5e68443a06888678b20dfc18210a2c8bcc05cab.
+- Package identity: com.sagewire.rangewater.
+
+🪨 BLOCK 3 — TESTER ACCESS
+--------------------------------------------------------------------------------
+- Dedicated email list created: RangeWater Internal Testers.
+- Authorized tester account: mmiller62174@gmail.com.
+- The list was selected and saved for the RangeWater Internal testing track.
+- Verified enrollment page:
+  https://play.google.com/apps/internaltest/4701692647829131871
+- Google Play reported: "You're a tester for RangeWater (com.sagewire.rangewater)."
+
+🧪 BLOCK 4 — CONSOLE VALIDATION
+--------------------------------------------------------------------------------
+- VersionCode 20 was accepted by Google Play.
+- Supported-device counts showed no device losses compared with versionCode 19.
+- The earlier no-testers warning cleared after the dedicated tester list was saved.
+- Two non-blocking bundle warnings remained: no deobfuscation file and no native debug
+  symbols.
+- The release displayed "Available to internal testers."
+
+🛡️ BLOCK 5 — REMAINING GATE AND AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- On a device currently carrying production 1.1.0 versionCode 19, use Google Play to
+  install the offered internal 1.2.0 update without uninstalling.
+- Confirm installed version 1.2.0, preserved ranch records, and cold-reopen usability.
+- Internal delivery alone does not establish migration acceptance.
+- Production promotion remains NOT AUTHORIZED.
+- No production release was created or changed by this transition.
+
+================================================================================
+END — RW-FK-TR-009 — INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
+================================================================================
