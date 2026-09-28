@@ -2,7 +2,7 @@
 RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
 ================================================================================
-Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
+Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
 Initial application implementation source: 5bcd1ba
 Corrected field-candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
 Production: NOT AUTHORIZED
@@ -14,19 +14,28 @@ TEST DEVICES
 
 BEFORE INSTALLING
 --------------------------------------------------------------------------------
-[ ] Create a fresh external .rangewater backup from production RangeWater 1.1.0.
-[ ] Confirm the backup is visible outside the app.
-[ ] Preserve the exact 1.2.0 versionCode 20 candidate artifact and its CI run identity.
-[ ] Do not publish or promote the candidate to production.
+[x] Create a fresh external .rangewater backup from production RangeWater 1.1.0.
+[x] Confirm the backup is visible outside the app.
+[x] Preserve the exact 1.2.0 versionCode 20 candidate artifact and its CI run identity.
+[x] Do not publish or promote the candidate to production.
 
 TEST 1 — IN-PLACE MIGRATION AND PRESERVATION
 --------------------------------------------------------------------------------
-[ ] Through Google Play internal testing, update an installed Play 1.1.0 build to the
+[x] Through Google Play internal testing, update an installed Play 1.1.0 build to the
     exact internally tested 1.2.0 versionCode 20 bundle without uninstalling.
-[ ] Confirm pastures, gates, waters, assignments, herds, movements, circuits, roles,
+[x] Confirm pastures, gates, waters, assignments, herds, movements, circuits, roles,
     forage observations, recorded rest, camera state, and layer settings survive.
-[ ] Confirm Android reports installed version 1.2.0.
-[ ] Cold reopen and confirm the preserved ranch remains usable.
+[x] Confirm Android reports installed version 1.2.0.
+[x] Cold reopen and confirm the preserved ranch remains usable.
+
+Migration report — 2026-09-28:
+- Play-installed production 1.1.0 versionCode 19 was updated in place to internal 1.2.0
+  versionCode 20 without uninstalling during the migration step.
+- The restored format-2 baseline contained 3 water sources, 3 pastures, 17 gates,
+  0 herds, and 0 movements.
+- The expected ranch records survived; the welcome message and Help/Field Guide appeared;
+  Android reported 1.2.0; and the records remained after a complete close and cold reopen.
+- Michael reported: "It passed. All six checks succeeded."
 
 TEST 2 — PRECISION LOUPE
 --------------------------------------------------------------------------------
@@ -106,8 +115,8 @@ TEST 6 — FORMAT-3 BACKUP, RESTORE, AND UNDO
 
 FINAL REPORT
 --------------------------------------------------------------------------------
-Result: FIELD ACCEPTED — all required physical behavior reported passed; Google Play
-internal migration remains a separate pending gate.
+Result: FIELD ACCEPTED — all required physical behavior and the controlled Google Play
+internal 1.1.0-to-1.2.0 migration reported passed.
 Automated CI run: PASSED — run 145 / 36369176456 — exact source b28ed7c.
 Signed field APK identity: RangeWater-Field-APK from run 145; artifact digest
 sha256:e2e7afe72bda14c0eb6d69f6be7f128642a4ad313e1d9e958fd410e5c6041212.
@@ -115,7 +124,7 @@ Signed Play AAB identity: RangeWater-Play-AAB from run 145; artifact digest
 sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
 Phone result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
 Samsung Tab S7 result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
-Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
+Google Play internal 1.1.0-to-1.2.0 migration: PASSED on 2026-09-28.
 Google Play internal-release authority: GRANTED by Michael on 2026-09-28 for the exact
 run-145 versionCode 20 bundle only.
 Google Play internal delivery: PUBLISHED on 2026-09-28 at 5:17 AM America/New_York.
@@ -133,7 +142,10 @@ NON-BLOCKING FOLLOW-UP OBSERVATIONS
   complete it reliably after the correction.
 - Yellow and green text on a white/light background can be difficult to read and should
   receive a later contrast/accessibility polish pass.
-- Neither observation blocked field acceptance of the exact corrected candidate.
+- The installed version is not displayed inside the accepted application UI; direct
+  confirmation currently requires Android App Info. Add an in-app version/build display
+  in a later authorized release.
+- None of these observations blocked field acceptance of the exact corrected candidate.
 
 ================================================================================
 END — RW-TX-016-PMP PHYSICAL-GLASS ACCEPTANCE CARD — FIELD ACCEPTED
