@@ -1,0 +1,80 @@
+================================================================================
+RANGEWATER CONTINUITY CAPTURE
+RW-FK-CAP-003 — PRECISION LOUPE PHYSICAL ALIGNMENT FINDING
+================================================================================
+Record-ID: RW-FK-CAP-003
+Project: RangeWater
+Title: Precision Loupe Physical Alignment Finding and Corrected Candidate
+Revision: 1
+State: VERIFIED CORRECTION — FIELD RETEST PENDING
+Authority: Michael for the physical observation; repository and CI for implementation evidence
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-27
+Source-Type: Michael physical-device report; repository inspection; GitHub Actions evidence
+Source-Reference: Current RangeWater collaboration; GitHub Actions run 36369176456
+Repository: voidwalker-sagewire/rangewater-android
+Branch: codex/rw-tx-016-pmp
+Commit: b28ed7c20364f972c9d7282204a935b63cb79d96
+Predecessor: 8e7684b7f983907011ad8c840d854a3c87cf6fdb
+Successor: UNKNOWN
+Conflict-Status: NONE
+Human-Decision-Needed: Michael must physically retest the corrected APK
+
+🪨 BLOCK 1 — PHYSICAL OBSERVATION
+--------------------------------------------------------------------------------
+- Michael reported that the press-and-hold precision loupe did not align truthfully on
+  physical glass.
+- The post or handle appeared to remain beneath his finger instead of appearing at the
+  expected location in the magnified window.
+- The loupe crosshair and working coordinate appeared misaligned.
+- This observation blocks RW-TX-016-PMP Test 2 and prevents field acceptance of 1.2.0.
+- No claim is made that every device or placement workflow failed in the same way.
+
+🪨 BLOCK 2 — REPOSITORY FINDING
+--------------------------------------------------------------------------------
+- The original PrecisionLoupe attached Android Magnifier to the MapView container even
+  though MapLibre renders through a child SurfaceView or TextureView.
+- The original loupe always magnified the raw finger coordinate while gates, shared
+  corners, and paddock endpoints could accept a different snapped coordinate.
+- The original window used Android's default offset and did not independently place the
+  loupe relative to the finger and available screen space.
+- MapLibre overlay updates are asynchronous, so a moved handle could be one rendered
+  frame behind the magnified content.
+- These are code-supported causes consistent with Michael's observation; only physical
+  retesting can prove that the correction resolves the field behavior.
+
+🎮 BLOCK 3 — CORRECTION
+--------------------------------------------------------------------------------
+Corrected source b28ed7c:
+- locates and magnifies MapLibre's actual SurfaceView or TextureView render child;
+- distinguishes the crosshair source coordinate from the finger-controlled window position;
+- resolves valid gate, shared-corner, and paddock-boundary snapping before display;
+- uses that displayed coordinate for release acceptance;
+- positions the loupe above and horizontally away from the finger where screen space allows;
+- clamps the loupe window to visible map bounds; and
+- refreshes the magnifier on the next display frame so moving overlays remain visible.
+
+🧪 BLOCK 4 — AUTOMATED EVIDENCE
+--------------------------------------------------------------------------------
+- GitHub Actions workflow: Build RangeWater Field APK and Play Bundle.
+- Run: 145 / 36369176456.
+- Exact source: b28ed7c20364f972c9d7282204a935b63cb79d96.
+- Result: SUCCESS.
+- Passed gates: imagery gateway test, JVM unit tests, Android Room instrumentation tests,
+  assembleDebug, bundleRelease, stable field signing/certificate verification, and Play
+  bundle signing/certificate verification.
+- Artifacts: RangeWater-Field-APK and RangeWater-Play-AAB.
+
+🖍️ BLOCK 5 — REMAINING GATE
+--------------------------------------------------------------------------------
+- Install the exact run-145 RangeWater-Field-APK on both required Samsung devices.
+- Repeat every precision-loupe workflow in Test 2 of the physical acceptance card.
+- Confirm the crosshair shows the exact point accepted on release, including snapped
+  paddock endpoints and fence-aligned gates.
+- Confirm dragged pasture handles are visible inside the loupe and do not remain hidden
+  beneath the finger.
+- Physical acceptance and production promotion remain NOT GRANTED.
+
+================================================================================
+END — RW-FK-CAP-003 — VERIFIED CORRECTION — FIELD RETEST PENDING
+================================================================================
