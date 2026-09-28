@@ -95,5 +95,6 @@ It holds governance and continuity artifacts, not application runtime code.
 - RangeWater 1.1.0 versionCode 19 is Google Play production published.
 - RangeWater 1.2.0 development is authorized only on `codex/rw-tx-016-pmp` under
   `workorders/RW-TX-016-PMP.cavecode` Revision 1.
-- Its physical sequence is prepared in `workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode`;
-  every item remains pending until a verified signed candidate exists.
+- Its completed physical sequence and controlled Google Play migration are recorded in
+  `workorders/RW-TX-016-PMP-PHYSICAL-TESTS.cavecode`; production promotion remains
+  separately gated and is not authorized.
