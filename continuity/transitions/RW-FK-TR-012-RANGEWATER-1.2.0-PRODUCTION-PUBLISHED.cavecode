@@ -1,0 +1,67 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-012 — RANGEWATER 1.2.0 GOOGLE PLAY PRODUCTION PUBLISHED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-012
+Project: RangeWater
+Title: RangeWater 1.2.0 Google Play Production Published
+Revision: 1
+State: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-28T15:53:19-04:00
+Source-Type: Michael Play Console report
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+CI-Run: 145 / 36369176456
+Version: RangeWater 1.2.0
+VersionCode: 20
+Track: Google Play Production
+Rollout: 100%
+Conflict-Status: NONE
+
+🪨 BLOCK 1 — PUBLICATION TRANSITION
+--------------------------------------------------------------------------------
+Prior State: RATIFIED — PRODUCTION PROMOTION AUTHORIZED
+New State: FIELD ACCEPTED — GOOGLE PLAY PRODUCTION PUBLISHED
+Transition Date: 2026-09-28
+
+The exact run-145 versionCode 20 bundle was promoted without rebuilding, submitted to
+Google Play Production, approved by Google, and manually published through Managed
+publishing at a full rollout.
+
+🧭 BLOCK 2 — PLAY CONSOLE TIMELINE
+--------------------------------------------------------------------------------
+- 3:04 PM America/New_York: Michael reported the production changes submitted.
+- 3:25 PM America/New_York: Michael reported Google accepted the changes.
+- Managed publishing then showed the approved release under Changes ready to publish.
+- Michael selected Start full rollout under the standing production authorization.
+- 3:53 PM America/New_York: publication was confirmed from the Play Console state.
+- The Play Console reported: "Last published on September 28, 2026."
+- No changes remained ready to publish after the action.
+
+🛡️ BLOCK 3 — RELEASE IDENTITY AND ACCEPTANCE
+--------------------------------------------------------------------------------
+- Production release: RangeWater 1.2.0 (20) – Production.
+- Application source: b28ed7c20364f972c9d7282204a935b63cb79d96.
+- Automated verification: PASSED — GitHub Actions run 145 / 36369176456.
+- Physical-glass acceptance: PASSED on Michael's Samsung phone and Samsung Tab S7.
+- Controlled Play 1.1.0-to-1.2.0 in-place migration: PASSED.
+- Production authority: GRANTED in RW-FK-TR-011 for this exact artifact.
+- Rollout: 100%.
+- No rebuild or replacement bundle was used or authorized.
+
+🪨 BLOCK 4 — CURRENT INTERPRETATION
+--------------------------------------------------------------------------------
+- RangeWater 1.2.0 versionCode 20 is the current Google Play production release.
+- RangeWater 1.1.0 versionCode 19 is superseded for current distribution while its
+  release and acceptance records remain preserved.
+- Storefront propagation and post-publication device visibility may be recorded later
+  as operational evidence; neither reopens the completed publication transition.
+- RW-TX-016-PMP Revision 1 is closed as field accepted and production published.
+
+================================================================================
+END — RW-FK-TR-012 — RANGEWATER 1.2.0 PRODUCTION PUBLISHED
+================================================================================

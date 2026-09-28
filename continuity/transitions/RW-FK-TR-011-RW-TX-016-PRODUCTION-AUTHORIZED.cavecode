@@ -1,0 +1,55 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-011 — RW-TX-016-PMP PRODUCTION PROMOTION AUTHORIZED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-011
+Project: RangeWater
+Title: RangeWater 1.2.0 Production Promotion Authorized
+Revision: 1
+State: RATIFIED — PRODUCTION PROMOTION AUTHORIZED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-28T15:03:46-04:00
+Source-Type: Michael explicit production authorization
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+CI-Run: 145 / 36369176456
+Version: RangeWater 1.2.0
+VersionCode: 20
+Track: Google Play Production
+Rollout: 100%
+Conflict-Status: NONE
+
+🪨 BLOCK 1 — AUTHORIZATION TRANSITION
+--------------------------------------------------------------------------------
+Prior State: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+New State: RATIFIED — PRODUCTION PROMOTION AUTHORIZED
+Transition Date: 2026-09-28
+
+Michael explicitly authorized the exact field-accepted RangeWater 1.2.0 versionCode 20
+Play App Bundle from GitHub Actions run 145 for Google Play Production, submission for
+Google review, and a 100% production rollout.
+
+🗣️ BLOCK 2 — AUTHORITY STATEMENT
+--------------------------------------------------------------------------------
+Michael stated:
+
+"I authorize the exact field accepted range water 1.2.0 version code 20 bundle from
+GitHub Actions run 145 for Google Play production. I authorize submission for Google
+review and a 100% production rollout. No rebuild or replacement bundle is authorized."
+
+🛡️ BLOCK 3 — ARTIFACT BOUNDARY
+--------------------------------------------------------------------------------
+- Authorized source: b28ed7c20364f972c9d7282204a935b63cb79d96.
+- Authorized CI identity: GitHub Actions run 145 / 36369176456.
+- Authorized artifact: RangeWater-Play-AAB versionCode 20 from run 145.
+- Authorized artifact digest:
+  sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
+- No rebuild, replacement bundle, or silent artifact substitution was authorized.
+- This authority covered submission, Google review, and full production rollout.
+
+================================================================================
+END — RW-FK-TR-011 — PRODUCTION PROMOTION AUTHORIZED
+================================================================================
