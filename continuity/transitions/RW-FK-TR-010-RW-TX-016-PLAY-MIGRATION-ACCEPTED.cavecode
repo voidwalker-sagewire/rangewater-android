@@ -1,0 +1,93 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-010 — RW-TX-016-PMP GOOGLE PLAY MIGRATION ACCEPTED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-010
+Project: RangeWater
+Title: RangeWater 1.2.0 Google Play In-Place Migration Accepted
+Revision: 1
+State: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-28T13:32:02-04:00
+Source-Type: Michael physical-device report plus preserved release identity
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+CI-Run: 145 / 36369176456
+Version: RangeWater 1.2.0
+VersionCode: 20
+Track: Google Play Internal testing
+Conflict-Status: NONE
+Human-Decision-Needed: Production promotion requires a later explicit authorization
+
+🪨 BLOCK 1 — ACCEPTANCE TRANSITION
+--------------------------------------------------------------------------------
+Prior State: INTERNAL RELEASE PUBLISHED — MIGRATION PENDING
+New State: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+Transition Date: 2026-09-28
+Transition Authority: Michael's completed physical migration report
+
+Michael reported that all six controlled migration checks succeeded after Google Play
+installed the internal update over the Play-installed production baseline without an
+application uninstall.
+
+🪨 BLOCK 2 — CONTROLLED BASELINE AND DATA IDENTITY
+--------------------------------------------------------------------------------
+- The first update attempt encountered a distribution-signing boundary because the
+  installed RangeWater 1.1.0 was the separately signed field APK rather than the
+  Google Play production artifact.
+- A fresh external format-2 backup was created and confirmed visible before replacement.
+- The field APK was removed only after backup confirmation.
+- Google Play Production RangeWater 1.1.0 versionCode 19 was installed.
+- The format-2 archive preview identified:
+  - created Sep 28, 2026 at 5:49 AM America/New_York;
+  - RangeWater 1.1.0 / archive format 2;
+  - 3 water sources;
+  - 3 pastures;
+  - 17 gates;
+  - 0 herds;
+  - 0 movements.
+- The archive restored successfully into the Play-installed 1.1.0 baseline.
+- The restored production baseline was reopened before the internal update sequence.
+
+🪨 BLOCK 3 — GOOGLE PLAY DELIVERY PATH
+--------------------------------------------------------------------------------
+- The tester account was enrolled through the verified Internal testing invitation.
+- Google Play initially continued to show Open because its local track state was stale.
+- Michael cleared approximately 2.5 GB of Google Play Store application storage and
+  restarted the device.
+- Google Play then offered Update for the active internal versionCode 20 release.
+- The Play-installed production 1.1.0 application was updated in place to internal
+  RangeWater 1.2.0 versionCode 20.
+- RangeWater was not uninstalled during the actual 1.1.0-to-1.2.0 migration step.
+
+🧪 BLOCK 4 — SIX-CHECK PHYSICAL RESULT
+--------------------------------------------------------------------------------
+[x] Google Play completed the in-place update.
+[x] Three pastures, three water sources, seventeen gates, and the expected ranch state
+    remained present after the update.
+[x] RangeWater 1.2.0 behavior appeared, including the welcome message and Help/Field
+    Guide surfaces.
+[x] Android application information reported version 1.2.0.
+[x] RangeWater was closed completely after the update.
+[x] Cold reopen succeeded and the preserved records remained available.
+
+Michael's final report:
+"It passed. All six checks succeeded."
+
+🛡️ BLOCK 5 — AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- The exact run-145 versionCode 20 bundle has now passed automated verification,
+  physical-glass feature acceptance, and controlled Google Play in-place migration.
+- This transition accepts the Internal testing migration result only.
+- Production promotion remains NOT AUTHORIZED.
+- No production release was created, modified, promoted, or published by this
+  transition.
+- Any production action requires Michael's later explicit authorization for this exact
+  accepted bundle.
+
+================================================================================
+END — RW-FK-TR-010 — GOOGLE PLAY INTERNAL MIGRATION ACCEPTED
+================================================================================
