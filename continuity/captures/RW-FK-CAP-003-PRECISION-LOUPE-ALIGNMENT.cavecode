@@ -6,7 +6,7 @@ Record-ID: RW-FK-CAP-003
 Project: RangeWater
 Title: Precision Loupe Physical Alignment Finding and Corrected Candidate
 Revision: 1
-State: VERIFIED CORRECTION — FIELD RETEST PENDING
+State: FIELD RETEST PASSED — SUPERSEDED AS AN OPEN BLOCKER
 Authority: Michael for the physical observation; repository and CI for implementation evidence
 Recorded-By: Codex/Ash
 Recorded-At: 2026-09-27
@@ -18,7 +18,7 @@ Commit: b28ed7c20364f972c9d7282204a935b63cb79d96
 Predecessor: 8e7684b7f983907011ad8c840d854a3c87cf6fdb
 Successor: UNKNOWN
 Conflict-Status: NONE
-Human-Decision-Needed: Michael must physically retest the corrected APK
+Human-Decision-Needed: NO — Michael accepted the corrected physical behavior
 
 🪨 BLOCK 1 — PHYSICAL OBSERVATION
 --------------------------------------------------------------------------------
@@ -65,16 +65,21 @@ Corrected source b28ed7c:
   bundle signing/certificate verification.
 - Artifacts: RangeWater-Field-APK and RangeWater-Play-AAB.
 
-🖍️ BLOCK 5 — REMAINING GATE
+🖍️ BLOCK 5 — PHYSICAL RETEST RESULT
 --------------------------------------------------------------------------------
-- Install the exact run-145 RangeWater-Field-APK on both required Samsung devices.
-- Repeat every precision-loupe workflow in Test 2 of the physical acceptance card.
-- Confirm the crosshair shows the exact point accepted on release, including snapped
-  paddock endpoints and fence-aligned gates.
-- Confirm dragged pasture handles are visible inside the loupe and do not remain hidden
-  beneath the finger.
-- Physical acceptance and production promotion remain NOT GRANTED.
+- On 2026-09-27 Michael reported that RangeWater 1.2.0 passed all physical tests.
+- He specifically reported drawing a pasture, moving corner posts, placing a gate,
+  placing and moving water, and positioning the paddock fence multiple times.
+- He reported that the corrected reticle "worked exactly fine."
+- The correction is therefore physically accepted and this finding no longer blocks
+  field acceptance.
+- Temporary split-fence placement remains somewhat clunky but usable; this is retained
+  as non-blocking follow-up work.
+- Yellow and green text on a white/light background can be difficult to read; this is
+  retained as non-blocking contrast/accessibility follow-up work.
+- Google Play internal migration and production promotion remain separate gates.
+- Production promotion remains NOT GRANTED.
 
 ================================================================================
-END — RW-FK-CAP-003 — VERIFIED CORRECTION — FIELD RETEST PENDING
+END — RW-FK-CAP-003 — FIELD RETEST PASSED
 ================================================================================

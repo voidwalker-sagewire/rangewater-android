@@ -1,0 +1,89 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-007 — RW-TX-016-PMP VERIFIED -> FIELD ACCEPTED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-FK-TR-007
+Project: RangeWater
+Title: RangeWater 1.2.0 Physical Field Acceptance
+Revision: 1
+State: FIELD ACCEPTED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Codex/Ash
+Recorded-At: 2026-09-27T23:50:59-04:00
+Source-Type: Explicit human acceptance plus repository and CI evidence
+Repository: voidwalker-sagewire/rangewater-android
+Product-Branch: codex/rw-tx-016-pmp
+Accepted-Application-Source: b28ed7c20364f972c9d7282204a935b63cb79d96
+Conflict-Status: NONE
+Human-Decision-Needed: NO for physical acceptance
+
+🪨 BLOCK 1 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Artifact: RW-TX-016-PMP Revision 1 — RangeWater 1.2.0, versionCode 20
+Prior State: AUTOMATED VERIFIED — PHYSICAL RETEST PENDING
+New State: FIELD ACCEPTED
+Transition Date: 2026-09-27
+Transition Authority: Michael
+
+Michael's acceptance statement:
+"I believe Range Water 1.2.0 passed all the tests."
+
+Michael's precision-reticle result:
+"It worked exactly fine."
+
+Normalized meaning:
+"The exact corrected RangeWater 1.2.0 field candidate passed the required physical
+acceptance sequence, including the precision-reticle correction."
+
+🪨 BLOCK 2 — ACCEPTED IMPLEMENTATION IDENTITY
+--------------------------------------------------------------------------------
+- Corrected application source:
+  b28ed7c20364f972c9d7282204a935b63cb79d96.
+- GitHub Actions run: 145 / 36369176456 — SUCCESS.
+- Signed field artifact: RangeWater-Field-APK.
+- Field artifact digest:
+  sha256:e2e7afe72bda14c0eb6d69f6be7f128642a4ad313e1d9e958fd410e5c6041212.
+- Signed Play artifact: RangeWater-Play-AAB.
+- Play artifact digest:
+  sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
+
+🪨 BLOCK 3 — PHYSICAL EVIDENCE
+--------------------------------------------------------------------------------
+Michael reported that he:
+- drew a pasture;
+- moved corner posts;
+- placed a gate;
+- placed and moved water;
+- positioned the temporary paddock fence multiple times; and
+- restored a backup from a former build.
+
+The corrected red reticle and crosshair behaved correctly during physical use. The
+accepted point, magnified point, and resulting map placement no longer showed the prior
+misalignment.
+
+🖍️ BLOCK 4 — NON-BLOCKING FOLLOW-UP OBSERVATIONS
+--------------------------------------------------------------------------------
+- Temporary split-fence placement remains somewhat clunky, although Michael could place
+  it successfully and accepted it for this release.
+- Yellow and green text on a white/light background can be difficult to read.
+- These observations are preserved as later usability and accessibility polish. They do
+  not revoke or qualify the field-acceptance decision.
+
+🪨 BLOCK 5 — AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- FIELD ACCEPTED does not mean Google Play internal migration accepted.
+- Controlled Play-to-Play 1.1.0-to-1.2.0 migration remains PENDING.
+- FIELD ACCEPTED does not authorize production publication.
+- Production promotion remains NOT AUTHORIZED.
+- No application code or release action is performed by this transition record.
+
+🌐 BLOCK 6 — PUBLIC-SAFE SUMMARY
+--------------------------------------------------------------------------------
+RangeWater 1.2.0 versionCode 20 passed physical field acceptance after its precision
+reticle correction. Google Play internal migration and production promotion remain
+separate gates.
+
+================================================================================
+END — RW-FK-TR-007 — FIELD ACCEPTED
+================================================================================

@@ -22,6 +22,11 @@ It holds governance and continuity artifacts, not application runtime code.
   - Records application commit `5bcd1ba` and the current CI/push access blockers without
     advancing field or production authority.
 
+- `captures/RW-FK-CAP-003-PRECISION-LOUPE-ALIGNMENT.cavecode`
+  - Status: FIELD RETEST PASSED
+  - Preserves the physical alignment finding, corrected source `b28ed7c`, automated
+    evidence, and Michael's successful reticle retest.
+
 - `ratifications/RW-TX-016-PMP-REV1-RATIFICATION.cavecode`
   - Status: RATIFIED — IMPLEMENTATION AUTHORIZED
   - Records Michael's authority for RangeWater 1.2.0 Precision Mapping and Paddock Planning.
@@ -43,6 +48,10 @@ It holds governance and continuity artifacts, not application runtime code.
 - `transitions/RW-FK-TR-006-CAP-001-SUPERSEDED.cavecode`
   - Status: SUPERSEDED
   - Closes the earlier candidate capture through its later accepted evidence.
+- `transitions/RW-FK-TR-007-RW-TX-016-FIELD-ACCEPTED.cavecode`
+  - Status: FIELD ACCEPTED
+  - Records RangeWater 1.2.0 physical acceptance after the corrected precision-reticle
+    retest, while keeping Play internal migration and production authorization separate.
 
 ## Preserved historical records
 

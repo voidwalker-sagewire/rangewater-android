@@ -2,7 +2,7 @@
 RANGEWATER 1.2.0 PHYSICAL-GLASS ACCEPTANCE CARD
 RW-TX-016-PMP REVISION 1 — FIELD CANDIDATE VERSION CODE 20
 ================================================================================
-Status: IN PROGRESS — AUTOMATED VERIFIED — PRECISION LOUPE CORRECTION RETEST PENDING
+Status: FIELD ACCEPTED — GOOGLE PLAY INTERNAL MIGRATION PENDING
 Initial application implementation source: 5bcd1ba
 Corrected field-candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
 Production: NOT AUTHORIZED
@@ -40,78 +40,94 @@ TEST 2 — PRECISION LOUPE
     paddock coordinates under the crosshair before release, commits that displayed
     coordinate, and refreshes after the next render frame so a dragged handle is visible.
     GitHub Actions run 36369176456 (run 145) passed all automated gates.
-[ ] Install the exact run-145 field APK before repeating every item below.
-[ ] Press and hold while drawing a pasture; confirm the magnified inset and crosshair.
-[ ] Release after positioning; confirm the crosshair coordinate is accepted exactly once.
-[ ] Repeat while moving a corner, placing a gate, moving water, and placing both paddock
+[x] Install the exact run-145 field APK before repeating every item below.
+[x] Press and hold while drawing a pasture; confirm the magnified inset and crosshair.
+[x] Release after positioning; confirm the crosshair coordinate is accepted exactly once.
+[x] Repeat while moving a corner, placing a gate, moving water, and placing both paddock
     endpoints.
-[ ] Confirm snapping feedback remains truthful at a shared corner and fence segment.
-[ ] Confirm the map camera does not drift during or after precision placement.
-[ ] Confirm quick ordinary taps still work in the accepted placement workflows.
+[x] Confirm snapping feedback remains truthful at a shared corner and fence segment.
+[x] Confirm the map camera does not drift during or after precision placement.
+[x] Confirm quick ordinary taps still work in the accepted placement workflows.
+
+Retest report — 2026-09-27:
+- Michael reported the corrected reticle "worked exactly fine."
+- He drew a pasture, moved corner posts, placed a gate, placed and moved water, and
+  positioned the paddock fence repeatedly.
+- The split-fence placement remained somewhat clunky, but was usable and did not block
+  acceptance.
 
 TEST 3 — PADDOCK PLANNING
 --------------------------------------------------------------------------------
-[ ] Select a pasture and choose Plan Paddock Split.
-[ ] Confirm the temporary-plan disclosure appears before saving.
-[ ] Place two endpoints on different valid boundary segments.
-[ ] Confirm exactly two subtle planning regions and one high-contrast temporary-polywire
+[x] Select a pasture and choose Plan Paddock Split.
+[x] Confirm the temporary-plan disclosure appears before saving.
+[x] Place two endpoints on different valid boundary segments.
+[x] Confirm exactly two subtle planning regions and one high-contrast temporary-polywire
     line appear without obscuring permanent fences, gates, water coverage, herd badges,
     or required attribution.
-[ ] Hand-check both displayed acreages and their reconciliation to the parent acreage.
-[ ] Rename the plan and both sides; save, cold reopen, and confirm persistence.
-[ ] Move Start and Move End independently with the precision loupe.
-[ ] Exercise Undo, Cancel, and Save; confirm Cancel makes no database change.
-[ ] Confirm a second active plan for the same pasture is rejected or unavailable.
-[ ] Attempt same-point, tangent, boundary-following, and non-crossing lines; confirm clear
+[x] Hand-check both displayed acreages and their reconciliation to the parent acreage.
+[x] Rename the plan and both sides; save, cold reopen, and confirm persistence.
+[x] Move Start and Move End independently with the precision loupe.
+[x] Exercise Undo, Cancel, and Save; confirm Cancel makes no database change.
+[x] Confirm a second active plan for the same pasture is rejected or unavailable.
+[x] Attempt same-point, tangent, boundary-following, and non-crossing lines; confirm clear
     rejection and no partial record.
 
 TEST 4 — PLAN SAFETY AND FUTURE BLUEPRINT
 --------------------------------------------------------------------------------
-[ ] Edit a parent boundary without detaching either endpoint; confirm the plan remains valid.
-[ ] Attempt a boundary edit that removes an anchored segment or invalidates the split;
+[x] Edit a parent boundary without detaching either endpoint; confirm the plan remains valid.
+[x] Attempt a boundary edit that removes an anchored segment or invalidates the split;
     confirm the edit is blocked without partial mutation.
-[ ] Confirm the plan changes no herd location, movement, circuit, water assignment, gate,
+[x] Confirm the plan changes no herd location, movement, circuit, water assignment, gate,
     rest result, or historical forage observation.
-[ ] Archive the plan; confirm it stops rendering but remains retained.
-[ ] Confirm Delete Blueprint warns that the reusable no-redraw promotion seam will be lost
+[x] Archive the plan; confirm it stops rendering but remains retained.
+[x] Confirm Delete Blueprint warns that the reusable no-redraw promotion seam will be lost
     and recommends Archive.
-[ ] Confirm no action offers or executes permanent pasture conversion in 1.2.0.
+[x] Confirm no action offers or executes permanent pasture conversion in 1.2.0.
 
 TEST 5 — WELCOME, TIPS, HINTS, AND FIELD GUIDE
 --------------------------------------------------------------------------------
-[ ] On first completed launch, confirm the brief RangeWater welcome is non-modal.
-[ ] On later cold launches, confirm one deterministic bundled Field Tip appears and can be
+[x] On first completed launch, confirm the brief RangeWater welcome is non-modal.
+[x] On later cold launches, confirm one deterministic bundled Field Tip appears and can be
     dismissed immediately.
-[ ] Confirm real imagery-loading status appears only while actual rendering is in progress.
-[ ] Turn Field Tips off, cold reopen, and confirm no startup tip.
-[ ] Turn contextual hints off, exercise major workflows, and confirm no contextual hint.
-[ ] Replay Welcome and Reset Hints; confirm no ranch record or map setting changes.
-[ ] Read every Field Guide section in phone portrait, phone landscape, and tablet layout.
-[ ] Confirm Help opens and closes without changing camera position or selected ranch asset.
+[x] Confirm real imagery-loading status appears only while actual rendering is in progress.
+[x] Turn Field Tips off, cold reopen, and confirm no startup tip.
+[x] Turn contextual hints off, exercise major workflows, and confirm no contextual hint.
+[x] Replay Welcome and Reset Hints; confirm no ranch record or map setting changes.
+[x] Read every Field Guide section in phone portrait, phone landscape, and tablet layout.
+[x] Confirm Help opens and closes without changing camera position or selected ranch asset.
 
 TEST 6 — FORMAT-3 BACKUP, RESTORE, AND UNDO
 --------------------------------------------------------------------------------
-[ ] Create a format-3 .rangewater backup containing an active paddock plan.
-[ ] Restore it on the other device and verify every legacy record plus the plan and labels.
-[ ] Restore a known format-1 backup and confirm an empty paddock-plan set with legacy records.
-[ ] Restore a known format-2 backup and confirm an empty paddock-plan set with legacy records.
-[ ] Use Undo Last Restore and confirm the complete prior schema-8 state returns.
+[x] Create a format-3 .rangewater backup containing an active paddock plan.
+[x] Restore it on the other device and verify every legacy record plus the plan and labels.
+[x] Restore a known format-1 backup and confirm an empty paddock-plan set with legacy records.
+[x] Restore a known format-2 backup and confirm an empty paddock-plan set with legacy records.
+[x] Use Undo Last Restore and confirm the complete prior schema-8 state returns.
 
 FINAL REPORT
 --------------------------------------------------------------------------------
-Result: PENDING — corrected precision loupe requires physical retest.
+Result: FIELD ACCEPTED — all required physical behavior reported passed; Google Play
+internal migration remains a separate pending gate.
 Automated CI run: PASSED — run 145 / 36369176456 — exact source b28ed7c.
 Signed field APK identity: RangeWater-Field-APK from run 145; artifact digest
 sha256:e2e7afe72bda14c0eb6d69f6be7f128642a4ad313e1d9e958fd410e5c6041212.
 Signed Play AAB identity: RangeWater-Play-AAB from run 145; artifact digest
 sha256:47697fe68ed428199b35ffc2d58347aa41a131d0176ebe2828a4ac56535d91b7.
-Phone result: PENDING.
-Samsung Tab S7 result: PENDING.
+Phone result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
+Samsung Tab S7 result: PASSED under Michael's report that RangeWater 1.2.0 passed all tests.
 Google Play internal 1.1.0-to-1.2.0 migration: PENDING.
 Field acceptance authority: Michael after the complete physical sequence.
 Production promotion authority: NOT GRANTED; requires a later explicit instruction for the
 exact internally tested versionCode 20 bundle.
 
+NON-BLOCKING FOLLOW-UP OBSERVATIONS
+--------------------------------------------------------------------------------
+- Temporary split-fence placement is still somewhat clunky even though Michael could
+  complete it reliably after the correction.
+- Yellow and green text on a white/light background can be difficult to read and should
+  receive a later contrast/accessibility polish pass.
+- Neither observation blocked field acceptance of the exact corrected candidate.
+
 ================================================================================
-END — RW-TX-016-PMP PHYSICAL-GLASS ACCEPTANCE CARD — PENDING
+END — RW-TX-016-PMP PHYSICAL-GLASS ACCEPTANCE CARD — FIELD ACCEPTED
 ================================================================================
