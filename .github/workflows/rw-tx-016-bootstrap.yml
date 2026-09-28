@@ -23,4 +23,4 @@ jobs:
           git bundle verify RangeWater-RW-TX-016-PMP.bundle
           git fetch RangeWater-RW-TX-016-PMP.bundle refs/heads/codex/rw-tx-016-pmp
           test "$(git rev-parse FETCH_HEAD)" = '12be01aa5e623b623f7c841787f03f643a9bf654'
-          git push origin FETCH_HEAD:refs/heads/codex/rw-tx-016-pmp
+          git push --force origin FETCH_HEAD:refs/heads/codex/rw-tx-016-pmp
