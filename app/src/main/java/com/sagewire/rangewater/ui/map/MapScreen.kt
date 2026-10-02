@@ -102,6 +102,7 @@ import com.sagewire.rangewater.data.MovementStatus
 import com.sagewire.rangewater.data.StockClass
 import com.sagewire.rangewater.data.PastureWithVertices
 import com.sagewire.rangewater.data.PaddockPlanEntity
+import com.sagewire.rangewater.data.PaddockDividerEntity
 import com.sagewire.rangewater.data.PaddockNodeDraft
 import com.sagewire.rangewater.data.PaddockPlanNodeKind
 import com.sagewire.rangewater.data.FenceJunctionEntity
@@ -371,6 +372,9 @@ fun MapScreen(
     var showPaddockPlanDialog by remember { mutableStateOf(false) }
     var showPaddockSaveDialog by remember { mutableStateOf(false) }
     var showPaddockDeleteDialog by remember { mutableStateOf(false) }
+    var pendingPaddockDividerDelete by remember { mutableStateOf<PaddockDividerEntity?>(null) }
+    var renamingPaddockDivider by remember { mutableStateOf<PaddockDividerEntity?>(null) }
+    var paddockDividerNameInput by remember { mutableStateOf("") }
     var paddockNameInput by remember { mutableStateOf("Paddock Split") }
     var paddockSideAInput by remember { mutableStateOf("Paddock A") }
     var paddockSideBInput by remember { mutableStateOf("Paddock B") }
@@ -2491,41 +2495,65 @@ fun MapScreen(
                     record.taskStatus?.let { status ->
                         Text("Task: ${status.name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }}")
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                editingFieldRecord = record
-                                fieldDraftCoordinate = record.latitude to record.longitude
-                                fieldLocationAccuracy = null
-                                selectedFieldRecordId = null
-                                showFieldRecordEditor = true
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) { Text("Edit") }
-                        if (record.recordType == FieldRecordType.TASK) {
+                    if (record.archivedAt == null) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedButton(
                                 onClick = {
-                                    scope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            if (record.taskStatus == FieldTaskStatus.COMPLETED) {
-                                                fieldRecordDao.reopenTask(record.id)
-                                            } else {
-                                                fieldRecordDao.completeTask(record.id)
-                                            }
-                                        }
-                                    }
+                                    editingFieldRecord = record
+                                    fieldDraftCoordinate = record.latitude to record.longitude
+                                    fieldLocationAccuracy = null
+                                    selectedFieldRecordId = null
+                                    showFieldRecordEditor = true
                                 },
                                 modifier = Modifier.weight(1f)
-                            ) { Text(if (record.taskStatus == FieldTaskStatus.COMPLETED) "Reopen" else "Complete") }
+                            ) { Text("Edit") }
+                            if (record.recordType == FieldRecordType.TASK) {
+                                OutlinedButton(
+                                    onClick = {
+                                        scope.launch {
+                                            runCatching {
+                                                withContext(Dispatchers.IO) {
+                                                    if (record.taskStatus == FieldTaskStatus.COMPLETED) {
+                                                        fieldRecordDao.reopenTask(record.id)
+                                                    } else {
+                                                        fieldRecordDao.completeTask(record.id)
+                                                    }
+                                                }
+                                            }.onFailure { error ->
+                                                Toast.makeText(context, error.message ?: "Task update failed", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) { Text(if (record.taskStatus == FieldTaskStatus.COMPLETED) "Reopen" else "Complete") }
+                            }
                         }
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    runCatching { withContext(Dispatchers.IO) { fieldRecordDao.archive(record.id) } }
+                                        .onSuccess { selectedFieldRecordId = null }
+                                        .onFailure { error ->
+                                            Toast.makeText(context, error.message ?: "Archive failed", Toast.LENGTH_LONG).show()
+                                        }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Archive", color = Color.Red) }
+                    } else {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    runCatching { withContext(Dispatchers.IO) { fieldRecordDao.reactivate(record.id) } }
+                                        .onSuccess { selectedFieldRecordId = null; showFieldLedger = true }
+                                        .onFailure { error ->
+                                            Toast.makeText(context, error.message ?: "Reactivation failed", Toast.LENGTH_LONG).show()
+                                        }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Reactivate") }
                     }
-                    TextButton(
-                        onClick = {
-                            scope.launch { withContext(Dispatchers.IO) { fieldRecordDao.archive(record.id) } }
-                            selectedFieldRecordId = null
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Archive", color = Color.Red) }
                 }
             },
             confirmButton = { TextButton(onClick = { selectedFieldRecordId = null }) { Text("Close") } }
@@ -2688,11 +2716,15 @@ fun MapScreen(
     if (showPaddockPlanDialog && selectedPaddockPlan != null) {
         val plan = selectedPaddockPlan
         val result = resolvedPaddockPlans.firstOrNull { it.plan.id == plan.id }
+        val planDividers = paddockDividers.filter { it.planId == plan.id }.sortedBy { it.sequence }
         AlertDialog(
             onDismissRequest = { showPaddockPlanDialog = false },
             title = { Text(plan.name) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     if (result == null) {
                         Text("This plan cannot be drawn against the current pasture boundary.", color = Color.Red)
                     } else {
@@ -2730,6 +2762,48 @@ fun MapScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Add Divider") }
+                    planDividers.forEach { divider ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                divider.name + if (divider.archivedAt == null) "" else " (archived)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                TextButton(
+                                    enabled = divider.archivedAt != null || planDividers.count { it.archivedAt == null } > 1,
+                                    onClick = {
+                                        scope.launch {
+                                            runCatching {
+                                                withContext(Dispatchers.IO) {
+                                                    if (divider.archivedAt == null) {
+                                                        paddockPlanDao.archiveDivider(divider.id)
+                                                    } else {
+                                                        paddockPlanDao.reactivateDivider(divider.id)
+                                                    }
+                                                }
+                                            }.onFailure { error ->
+                                                Toast.makeText(context, error.message ?: "Divider change was blocked", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                ) { Text(if (divider.archivedAt == null) "Archive" else "Reactivate", fontSize = 10.sp) }
+                                TextButton(onClick = {
+                                    renamingPaddockDivider = divider
+                                    paddockDividerNameInput = divider.name
+                                }) { Text("Rename", fontSize = 10.sp) }
+                                TextButton(onClick = { pendingPaddockDividerDelete = divider }) {
+                                    Text("Delete", color = Color.Red, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
                     TextButton(
                         onClick = { showPaddockPlanDialog = false; showPaddockDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth()
@@ -2753,6 +2827,67 @@ fun MapScreen(
                 ) { Text("Archive", color = Color.Red) }
             },
             dismissButton = { TextButton(onClick = { showPaddockPlanDialog = false }) { Text("Close") } }
+        )
+    }
+
+    renamingPaddockDivider?.let { divider ->
+        AlertDialog(
+            onDismissRequest = { renamingPaddockDivider = null },
+            title = { Text("Rename Divider") },
+            text = {
+                OutlinedTextField(
+                    value = paddockDividerNameInput,
+                    onValueChange = { paddockDividerNameInput = it },
+                    label = { Text("Divider name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    enabled = paddockDividerNameInput.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    paddockPlanDao.renameDivider(divider.id, paddockDividerNameInput)
+                                }
+                            }.onSuccess { renamingPaddockDivider = null }
+                                .onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Could not rename divider", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { renamingPaddockDivider = null }) { Text("Cancel") } }
+        )
+    }
+
+    pendingPaddockDividerDelete?.let { divider ->
+        AlertDialog(
+            onDismissRequest = { pendingPaddockDividerDelete = null },
+            title = { Text("Delete Divider?") },
+            text = {
+                Text(
+                    "Delete ${divider.name} permanently? Shared nodes used by other dividers remain. " +
+                        "The operation is blocked if the remaining active plan would be invalid."
+                )
+            },
+            confirmButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    onClick = {
+                        scope.launch {
+                            runCatching { withContext(Dispatchers.IO) { paddockPlanDao.deleteDivider(divider.id) } }
+                                .onSuccess { pendingPaddockDividerDelete = null }
+                                .onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Divider deletion was blocked", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    }
+                ) { Text("Delete Permanently") }
+            },
+            dismissButton = { TextButton(onClick = { pendingPaddockDividerDelete = null }) { Text("Keep Divider") } }
         )
     }
 

@@ -167,7 +167,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
                 RangeWaterDatabase.MIGRATION_6_7,
-                RangeWaterDatabase.MIGRATION_7_8
+                RangeWaterDatabase.MIGRATION_7_8,
+                RangeWaterDatabase.MIGRATION_8_9
             )
             .allowMainThreadQueries()
             .build()
@@ -284,7 +285,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
                 RangeWaterDatabase.MIGRATION_6_7,
-                RangeWaterDatabase.MIGRATION_7_8
+                RangeWaterDatabase.MIGRATION_7_8,
+                RangeWaterDatabase.MIGRATION_8_9
             )
             .allowMainThreadQueries()
             .build()
@@ -366,7 +368,8 @@ class DatabaseMigrationTest {
                 RangeWaterDatabase.MIGRATION_4_5,
                 RangeWaterDatabase.MIGRATION_5_6,
                 RangeWaterDatabase.MIGRATION_6_7,
-                RangeWaterDatabase.MIGRATION_7_8
+                RangeWaterDatabase.MIGRATION_7_8,
+                RangeWaterDatabase.MIGRATION_8_9
             )
             .allowMainThreadQueries()
             .build()
@@ -415,7 +418,8 @@ class DatabaseMigrationTest {
             .addMigrations(
                 RangeWaterDatabase.MIGRATION_5_6,
                 RangeWaterDatabase.MIGRATION_6_7,
-                RangeWaterDatabase.MIGRATION_7_8
+                RangeWaterDatabase.MIGRATION_7_8,
+                RangeWaterDatabase.MIGRATION_8_9
             )
             .allowMainThreadQueries()
             .build()
@@ -542,7 +546,11 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_6_7, RangeWaterDatabase.MIGRATION_7_8)
+            .addMigrations(
+                RangeWaterDatabase.MIGRATION_6_7,
+                RangeWaterDatabase.MIGRATION_7_8,
+                RangeWaterDatabase.MIGRATION_8_9
+            )
             .allowMainThreadQueries()
             .build()
         try {

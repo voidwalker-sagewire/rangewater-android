@@ -89,14 +89,19 @@ class PaddockPlanDaoTest {
             now = 100
         )
         val center = dao.nodes(id).single { it.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT }
-        val vertical = dao.addStraightDivider(
-            id,
+        val vertical = dao.connectWaypointWithNewDivider(
+            center.id,
             "Vertical",
-            PaddockSplitEngine.resolveAnchor(pasture, 1, 2, 0.5),
-            PaddockSplitEngine.resolveAnchor(pasture, 3, 4, 0.5),
-            now = 110
+            listOf(
+                PaddockSplitEngine.resolveAnchor(pasture, 1, 2, 0.5).toDraft(),
+                PaddockNodeDraft(
+                    existingNodeId = center.id,
+                    nodeKind = PaddockPlanNodeKind.INTERIOR_JUNCTION
+                ),
+                PaddockSplitEngine.resolveAnchor(pasture, 3, 4, 0.5).toDraft()
+            ),
+            now = 120
         )
-        dao.promoteWaypointAndConnect(center.id, vertical, 1, now = 120)
         assertEquals(PaddockPlanNodeKind.INTERIOR_JUNCTION, dao.observeNodeById(center.id)?.nodeKind)
 
         try {
@@ -108,6 +113,52 @@ class PaddockPlanDaoTest {
         dao.unlinkNodeFromDivider(center.id, vertical)
         dao.demoteJunction(center.id, now = 130)
         assertEquals(PaddockPlanNodeKind.INTERIOR_WAYPOINT, dao.observeNodeById(center.id)?.nodeKind)
+    }
+
+    @Test
+    fun rejectedConnectShareRollsBackPromotionAndNewDivider() = runBlocking {
+        val pastureId = squarePasture()
+        val pasture = db.pastureDao().getById(pastureId)!!
+        val dao = db.paddockPlanDao()
+        val id = dao.createWithDivider(
+            pastureId,
+            "Rollback plan",
+            "Horizontal",
+            listOf(
+                PaddockSplitEngine.resolveAnchor(pasture, 1, 4, 0.5).toDraft(),
+                PaddockNodeDraft(
+                    nodeKind = PaddockPlanNodeKind.INTERIOR_WAYPOINT,
+                    latitude = 40.005,
+                    longitude = -79.995
+                ),
+                PaddockSplitEngine.resolveAnchor(pasture, 2, 3, 0.5).toDraft()
+            ),
+            now = 100
+        )
+        val center = dao.nodes(id).single { it.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT }
+        val bottom = PaddockSplitEngine.resolveAnchor(pasture, 1, 2, 0.5).toDraft()
+
+        try {
+            dao.connectWaypointWithNewDivider(
+                center.id,
+                "Invalid double-back",
+                listOf(
+                    bottom,
+                    PaddockNodeDraft(
+                        existingNodeId = center.id,
+                        nodeKind = PaddockPlanNodeKind.INTERIOR_JUNCTION
+                    ),
+                    bottom
+                ),
+                now = 120
+            )
+            fail("Expected invalid connection to roll back")
+        } catch (_: Exception) {
+        }
+
+        assertEquals(PaddockPlanNodeKind.INTERIOR_WAYPOINT, dao.observeNodeById(center.id)?.nodeKind)
+        assertEquals(1, dao.dividers(id).size)
+        assertEquals(3, dao.nodeRefs(id).size)
     }
 
     private fun com.sagewire.rangewater.spatial.PaddockBoundaryAnchor.toDraft() = PaddockNodeDraft(

@@ -207,6 +207,29 @@ interface PaddockPlanDao {
         return dividerId
     }
 
+    /**
+     * Explicitly promotes one private waypoint and connects a new divider to it.
+     * The promotion, divider insert, references, and whole-plan validation share one
+     * transaction so a rejected connection leaves the saved plan unchanged.
+     */
+    @Transaction
+    suspend fun connectWaypointWithNewDivider(
+        waypointNodeId: Long,
+        dividerName: String,
+        points: List<PaddockNodeDraft>,
+        now: Long = System.currentTimeMillis()
+    ): Long {
+        val waypoint = nodesForNode(waypointNodeId)
+        check(waypoint.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT) {
+            "Only a private waypoint can be promoted"
+        }
+        require(points.count { it.existingNodeId == waypointNodeId } == 1) {
+            "The new divider must reference the selected waypoint exactly once"
+        }
+        updateNode(waypoint.copy(nodeKind = PaddockPlanNodeKind.INTERIOR_JUNCTION, updatedAt = now))
+        return addDivider(waypoint.planId, dividerName, points, now)
+    }
+
     @Transaction
     suspend fun createWithDivider(
         pastureId: Long,
@@ -299,6 +322,12 @@ interface PaddockPlanDao {
         setDividerArchiveRaw(dividerId, null, now)
         normalizeDividerSequences(divider.planId, now)
         reconcileLabels(divider.planId, emptyList())
+    }
+
+    @Transaction
+    suspend fun renameDivider(dividerId: Long, name: String, now: Long = System.currentTimeMillis()) {
+        val divider = dividersForNodeMutation(dividerId)
+        updateDivider(divider.copy(name = normalizedLabel(name, divider.name), updatedAt = now))
     }
 
     @Transaction
