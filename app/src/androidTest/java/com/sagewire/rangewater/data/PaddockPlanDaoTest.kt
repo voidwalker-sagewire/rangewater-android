@@ -110,7 +110,14 @@ class PaddockPlanDaoTest {
         } catch (_: IllegalStateException) {
         }
 
-        dao.unlinkNodeFromDivider(center.id, vertical)
+        try {
+            dao.unlinkNodeFromDivider(center.id, vertical)
+            fail("Expected unlink that leaves a visual crossing to be blocked")
+        } catch (_: IllegalArgumentException) {
+        }
+        assertEquals(PaddockPlanNodeKind.INTERIOR_JUNCTION, dao.observeNodeById(center.id)?.nodeKind)
+
+        dao.deleteDivider(vertical, now = 125)
         dao.demoteJunction(center.id, now = 130)
         assertEquals(PaddockPlanNodeKind.INTERIOR_WAYPOINT, dao.observeNodeById(center.id)?.nodeKind)
     }
@@ -161,11 +168,86 @@ class PaddockPlanDaoTest {
         assertEquals(3, dao.nodeRefs(id).size)
     }
 
+    @Test
+    fun savedDividerPointEditsValidateAtomicallyAndRollbackOnFailure() = runBlocking {
+        val pastureId = squarePasture()
+        val pasture = db.pastureDao().getById(pastureId)!!
+        val dao = db.paddockPlanDao()
+        val id = dao.createWithDivider(
+            pastureId,
+            "Editable plan",
+            "Bent divider",
+            listOf(
+                PaddockSplitEngine.resolveAnchor(pasture, 1, 4, 0.5).toDraft(),
+                PaddockNodeDraft(
+                    nodeKind = PaddockPlanNodeKind.INTERIOR_WAYPOINT,
+                    latitude = 40.005,
+                    longitude = -79.995
+                ),
+                PaddockSplitEngine.resolveAnchor(pasture, 2, 3, 0.5).toDraft()
+            ),
+            now = 100
+        )
+        val divider = dao.dividers(id).single()
+        val initialNodes = dao.nodes(id).associateBy { it.id }
+        val ordered = dao.nodeRefs(id).sortedBy { it.sequence }.map { initialNodes.getValue(it.nodeId) }
+        val waypoint = ordered[1]
+
+        dao.replaceDividerPath(
+            divider.id,
+            ordered.map { node ->
+                node.toDraft().let { draft ->
+                    if (node.id == waypoint.id) draft.copy(latitude = 40.006) else draft
+                }
+            },
+            now = 120
+        )
+        assertEquals(40.006, dao.observeNodeById(waypoint.id)?.latitude ?: Double.NaN, 0.0)
+        assertEquals(2, dao.resolve(id).regions.size)
+
+        val savedNodes = dao.nodes(id).associateBy { it.id }
+        val savedPath = dao.nodeRefs(id).sortedBy { it.sequence }.map { savedNodes.getValue(it.nodeId) }
+        val first = savedPath.first()
+        val last = savedPath.last()
+        try {
+            dao.replaceDividerPath(
+                divider.id,
+                savedPath.map { node ->
+                    if (node.id == last.id) {
+                        node.toDraft().copy(
+                            boundaryJunctionAId = first.boundaryJunctionAId,
+                            boundaryJunctionBId = first.boundaryJunctionBId,
+                            boundarySegmentRatio = first.boundarySegmentRatio
+                        )
+                    } else {
+                        node.toDraft()
+                    }
+                },
+                now = 130
+            )
+            fail("Expected invalid saved edit to roll back")
+        } catch (_: Exception) {
+        }
+
+        assertEquals(40.006, dao.observeNodeById(waypoint.id)?.latitude ?: Double.NaN, 0.0)
+        assertEquals(savedPath.last(), dao.observeNodeById(last.id))
+    }
+
     private fun com.sagewire.rangewater.spatial.PaddockBoundaryAnchor.toDraft() = PaddockNodeDraft(
         nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
         boundaryJunctionAId = junctionAId,
         boundaryJunctionBId = junctionBId,
         boundarySegmentRatio = segmentRatio
+    )
+
+    private fun PaddockPlanNodeEntity.toDraft() = PaddockNodeDraft(
+        existingNodeId = id,
+        nodeKind = nodeKind,
+        boundaryJunctionAId = boundaryJunctionAId,
+        boundaryJunctionBId = boundaryJunctionBId,
+        boundarySegmentRatio = boundarySegmentRatio,
+        latitude = latitude,
+        longitude = longitude
     )
 
     private suspend fun squarePasture(): Long {

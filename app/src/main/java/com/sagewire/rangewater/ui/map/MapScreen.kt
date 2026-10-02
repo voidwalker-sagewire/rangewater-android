@@ -375,6 +375,11 @@ fun MapScreen(
     var showPaddockDeleteDialog by remember { mutableStateOf(false) }
     var pendingPaddockDividerDelete by remember { mutableStateOf<PaddockDividerEntity?>(null) }
     var renamingPaddockDivider by remember { mutableStateOf<PaddockDividerEntity?>(null) }
+    var editingPaddockDividerPoints by remember { mutableStateOf<PaddockDividerEntity?>(null) }
+    var showPaddockPointEditor by remember { mutableStateOf(false) }
+    var movingPaddockDraftPointIndex by remember { mutableStateOf<Int?>(null) }
+    var insertingPaddockDraftPointIndex by remember { mutableStateOf<Int?>(null) }
+    val paddockPointEditHistory = remember { mutableStateListOf<List<PaddockNodeDraft>>() }
     var paddockDividerNameInput by remember { mutableStateOf("") }
     var paddockNameInput by remember { mutableStateOf("Paddock Split") }
     var paddockSideAInput by remember { mutableStateOf("Paddock A") }
@@ -828,6 +833,53 @@ fun MapScreen(
             pasture,
             screenToleranceMeters(map, coordinate, 40f * context.resources.displayMetrics.density)
         )
+        val moveIndex = movingPaddockDraftPointIndex
+        val insertIndex = insertingPaddockDraftPointIndex
+        if (editingPaddockDividerPoints != null && (moveIndex != null || insertIndex != null)) {
+            if (moveIndex != null) {
+                val current = paddockCustomPoints[moveIndex]
+                val replacement = if (current.nodeKind == PaddockPlanNodeKind.BOUNDARY_ANCHOR) {
+                    if (anchor == null) {
+                        Toast.makeText(context, "Boundary endpoints must stay on the pasture boundary", Toast.LENGTH_LONG).show()
+                        return
+                    }
+                    anchor.toNodeDraft().copy(existingNodeId = current.existingNodeId)
+                } else {
+                    val inside = suggestFieldPasture(
+                        coordinate.latitude to coordinate.longitude,
+                        listOf(pasture)
+                    ) == pasture.pasture.id
+                    if (!inside) {
+                        Toast.makeText(context, "Interior points must stay inside the pasture", Toast.LENGTH_LONG).show()
+                        return
+                    }
+                    current.copy(latitude = coordinate.latitude, longitude = coordinate.longitude)
+                }
+                paddockCustomPoints[moveIndex] = replacement
+            } else if (insertIndex != null) {
+                val inside = suggestFieldPasture(
+                    coordinate.latitude to coordinate.longitude,
+                    listOf(pasture)
+                ) == pasture.pasture.id
+                if (!inside || anchor != null) {
+                    Toast.makeText(context, "Place the new waypoint inside the pasture", Toast.LENGTH_LONG).show()
+                    return
+                }
+                paddockCustomPoints.add(
+                    insertIndex,
+                    PaddockNodeDraft(
+                        nodeKind = PaddockPlanNodeKind.INTERIOR_WAYPOINT,
+                        latitude = coordinate.latitude,
+                        longitude = coordinate.longitude
+                    )
+                )
+            }
+            movingPaddockDraftPointIndex = null
+            insertingPaddockDraftPointIndex = null
+            interactionState = InteractionState.ORDINARY
+            showPaddockPointEditor = true
+            return
+        }
         if (paddockCustomPoints.isEmpty()) {
             if (anchor == null) {
                 Toast.makeText(context, "Start the custom divider on the pasture boundary", Toast.LENGTH_SHORT).show()
@@ -1952,7 +2004,11 @@ fun MapScreen(
         if (interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT) {
             PaddockPlacementControls(
                 text = if (paddockCustomMode) {
-                    if (connectingPaddockWaypointId != null && paddockCustomPoints.size == 1) {
+                    if (movingPaddockDraftPointIndex != null) {
+                        "Tap the new location for this point"
+                    } else if (insertingPaddockDraftPointIndex != null) {
+                        "Tap inside the pasture to add the waypoint"
+                    } else if (connectingPaddockWaypointId != null && paddockCustomPoints.size == 1) {
                         "Shared junction selected • Tap inside for waypoints or tap the boundary to finish"
                     } else if (paddockCustomPoints.isEmpty()) {
                         "Tap the first endpoint on the pasture boundary"
@@ -1969,7 +2025,13 @@ fun MapScreen(
                     "Tap the second endpoint on another boundary segment"
                 },
                 canUndo = if (paddockCustomMode) {
-                    paddockCustomPoints.size > if (connectingPaddockWaypointId == null) 0 else 1
+                    if (editingPaddockDividerPoints != null &&
+                        (movingPaddockDraftPointIndex != null || insertingPaddockDraftPointIndex != null)
+                    ) {
+                        false
+                    } else {
+                        paddockCustomPoints.size > if (connectingPaddockWaypointId == null) 0 else 1
+                    }
                 }
                     else paddockStartAnchor != null || paddockDraftResult != null,
                 onUndo = {
@@ -1984,6 +2046,20 @@ fun MapScreen(
                     }
                 },
                 onCancel = {
+                    if (editingPaddockDividerPoints != null &&
+                        (movingPaddockDraftPointIndex != null || insertingPaddockDraftPointIndex != null)
+                    ) {
+                        if (paddockPointEditHistory.isNotEmpty()) {
+                            val snapshot = paddockPointEditHistory.removeAt(paddockPointEditHistory.lastIndex)
+                            paddockCustomPoints.clear()
+                            paddockCustomPoints.addAll(snapshot)
+                        }
+                        movingPaddockDraftPointIndex = null
+                        insertingPaddockDraftPointIndex = null
+                        interactionState = InteractionState.ORDINARY
+                        showPaddockPointEditor = true
+                        return@PaddockPlacementControls
+                    }
                     paddockStartAnchor = null
                     paddockRetainedAnchor = null
                     movingPaddockStart = null
@@ -2856,6 +2932,27 @@ fun MapScreen(
                                     renamingPaddockDivider = divider
                                     paddockDividerNameInput = divider.name
                                 }) { Text("Rename", fontSize = 10.sp) }
+                                TextButton(
+                                    enabled = divider.archivedAt == null,
+                                    onClick = {
+                                        val nodeById = paddockPlanNodes.associateBy { it.id }
+                                        val points = paddockNodeRefs
+                                            .filter { it.dividerId == divider.id }
+                                            .sortedBy { it.sequence }
+                                            .mapNotNull { ref -> nodeById[ref.nodeId]?.toDraft() }
+                                        if (points.size < 2) {
+                                            Toast.makeText(context, "Divider path is incomplete", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            editingPaddockDividerPoints = divider
+                                            paddockCustomMode = true
+                                            paddockCustomPoints.clear()
+                                            paddockCustomPoints.addAll(points)
+                                            paddockPointEditHistory.clear()
+                                            showPaddockPlanDialog = false
+                                            showPaddockPointEditor = true
+                                        }
+                                    }
+                                ) { Text("Edit Points", fontSize = 10.sp) }
                                 TextButton(onClick = { pendingPaddockDividerDelete = divider }) {
                                     Text("Delete", color = Color.Red, fontSize = 10.sp)
                                 }
@@ -2886,6 +2983,100 @@ fun MapScreen(
             },
             dismissButton = { TextButton(onClick = { showPaddockPlanDialog = false }) { Text("Close") } }
         )
+    }
+
+    editingPaddockDividerPoints?.let { divider ->
+        if (showPaddockPointEditor) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Edit ${divider.name}") },
+                text = {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("Changes stay in memory until Save. The complete plan must remain valid.", fontSize = 12.sp)
+                        paddockCustomPoints.forEachIndexed { index, point ->
+                            Column(Modifier.fillMaxWidth()) {
+                                Text(
+                                    "Point ${index + 1}: ${point.nodeKind.name.lowercase().replace('_', ' ')}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(onClick = {
+                                        paddockPointEditHistory += paddockCustomPoints.toList()
+                                        movingPaddockDraftPointIndex = index
+                                        showPaddockPointEditor = false
+                                        interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                                    }) { Text("Move", fontSize = 10.sp) }
+                                    if (index < paddockCustomPoints.lastIndex) {
+                                        TextButton(onClick = {
+                                            paddockPointEditHistory += paddockCustomPoints.toList()
+                                            insertingPaddockDraftPointIndex = index + 1
+                                            showPaddockPointEditor = false
+                                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                                        }) { Text("Add After", fontSize = 10.sp) }
+                                    }
+                                    TextButton(
+                                        enabled = point.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT &&
+                                            paddockCustomPoints.size > 2,
+                                        onClick = {
+                                            paddockPointEditHistory += paddockCustomPoints.toList()
+                                            paddockCustomPoints.removeAt(index)
+                                        }
+                                    ) { Text("Remove", fontSize = 10.sp) }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        val points = paddockCustomPoints.toList()
+                        scope.launch {
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    paddockPlanDao.replaceDividerPath(divider.id, points)
+                                }
+                            }.onSuccess {
+                                showPaddockPointEditor = false
+                                editingPaddockDividerPoints = null
+                                paddockPointEditHistory.clear()
+                                paddockCustomPoints.clear()
+                                paddockCustomMode = false
+                                showPaddockPlanDialog = true
+                                Toast.makeText(context, "Divider points saved", Toast.LENGTH_SHORT).show()
+                            }.onFailure { error ->
+                                Toast.makeText(context, error.message ?: "Edited divider is not valid", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(
+                            enabled = paddockPointEditHistory.isNotEmpty(),
+                            onClick = {
+                                if (paddockPointEditHistory.isNotEmpty()) {
+                                    val snapshot = paddockPointEditHistory.removeAt(paddockPointEditHistory.lastIndex)
+                                    paddockCustomPoints.clear()
+                                    paddockCustomPoints.addAll(snapshot)
+                                }
+                            }
+                        ) { Text("Undo") }
+                        TextButton(onClick = {
+                            showPaddockPointEditor = false
+                            editingPaddockDividerPoints = null
+                            paddockPointEditHistory.clear()
+                            paddockCustomPoints.clear()
+                            paddockCustomMode = false
+                            showPaddockPlanDialog = true
+                        }) { Text("Cancel") }
+                    }
+                }
+            )
+        }
     }
 
     renamingPaddockDivider?.let { divider ->
@@ -6013,6 +6204,16 @@ private fun PaddockBoundaryAnchor.toNodeDraft() = PaddockNodeDraft(
     boundaryJunctionAId = junctionAId,
     boundaryJunctionBId = junctionBId,
     boundarySegmentRatio = segmentRatio
+)
+
+private fun com.sagewire.rangewater.data.PaddockPlanNodeEntity.toDraft() = PaddockNodeDraft(
+    existingNodeId = id,
+    nodeKind = nodeKind,
+    boundaryJunctionAId = boundaryJunctionAId,
+    boundaryJunctionBId = boundaryJunctionBId,
+    boundarySegmentRatio = boundarySegmentRatio,
+    latitude = latitude,
+    longitude = longitude
 )
 
 private fun resolvePaddockDraftPath(

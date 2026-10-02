@@ -187,7 +187,12 @@ interface PaddockPlanDao {
                     "A private waypoint must be explicitly promoted before another divider can connect"
                 }
                 existingId
-            } ?: insertNode(draft.toEntity(planId, now))
+            } ?: run {
+                require(draft.nodeKind != PaddockPlanNodeKind.INTERIOR_JUNCTION) {
+                    "A shared junction must be created through the explicit Connect/Share operation"
+                }
+                insertNode(draft.toEntity(planId, now))
+            }
         }
         val dividerId = insertDivider(
             PaddockDividerEntity(
@@ -258,6 +263,53 @@ interface PaddockPlanDao {
         check(current.nodeKind == node.nodeKind) { "Use the explicit promotion or demotion operation to change node kind" }
         updateNode(node.copy(createdAt = current.createdAt, updatedAt = now))
         reconcileLabels(node.planId, emptyList())
+    }
+
+    @Transaction
+    suspend fun replaceDividerPath(
+        dividerId: Long,
+        points: List<PaddockNodeDraft>,
+        now: Long = System.currentTimeMillis()
+    ) {
+        val divider = dividersForNodeMutation(dividerId)
+        check(divider.archivedAt == null) { "Archived dividers cannot be edited" }
+        val plan = getPlan(divider.planId) ?: throw IllegalArgumentException("Paddock plan #${divider.planId} not found")
+        check(plan.archivedAt == null) { "Archived plans cannot be edited" }
+        require(points.size >= 2) { "A divider requires at least two points" }
+        val existingIds = points.mapNotNull { it.existingNodeId }
+        require(existingIds.distinct().size == existingIds.size) { "A divider cannot reference one node more than once" }
+
+        val planNodes = nodes(divider.planId).associateBy { it.id }
+        val replacementIds = points.map { draft ->
+            draft.existingNodeId?.let { nodeId ->
+                val current = planNodes[nodeId]
+                    ?: throw IllegalArgumentException("Paddock node #$nodeId is not part of this plan")
+                check(current.nodeKind == draft.nodeKind) {
+                    "Use the explicit promotion or demotion operation to change node kind"
+                }
+                updateNode(
+                    draft.toEntity(divider.planId, now).copy(
+                        id = current.id,
+                        createdAt = current.createdAt
+                    )
+                )
+                nodeId
+            } ?: run {
+                require(draft.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT) {
+                    "Only a private interior waypoint can be added while editing a saved divider"
+                }
+                insertNode(draft.toEntity(divider.planId, now))
+            }
+        }
+
+        val oldNodeIds = nodeRefs(divider.planId)
+            .filter { it.dividerId == dividerId }
+            .map { it.nodeId }
+        replaceDividerRefs(dividerId, replacementIds)
+        oldNodeIds.forEach { nodeId -> if (referenceCount(nodeId) == 0) deleteNodeRaw(nodeId) }
+        updateDivider(divider.copy(updatedAt = now))
+        updatePlan(plan.copy(updatedAt = now))
+        reconcileLabels(divider.planId, emptyList())
     }
 
     @Transaction
