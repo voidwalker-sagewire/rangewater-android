@@ -148,6 +148,10 @@ RW-TX-017 implementation and verification:
   continuity/transitions/RW-FK-TR-015-RW-TX-017-MPO-VERIFIED.cavecode.
 - Physical test card:
   workorders/RW-TX-017-MPO-PHYSICAL-TESTS.cavecode.
+- Google Play Internal testing authority: GRANTED by Michael on 2026-10-02 for the
+  exact verified versionCode 21 bundle from run 162 only.
+- Internal-release authorization transition:
+  continuity/transitions/RW-FK-TR-016-RW-TX-017-INTERNAL-RELEASE-AUTHORIZED.cavecode.
 
 🪨 BLOCK 4 — SUPERSESSION STATUS
 --------------------------------------------------------------------------------
@@ -188,9 +192,9 @@ RW-TX-017 implementation and verification:
    in-app version-display observations into later authorized polish work; they do not
    reopen field acceptance.
 7. The separate Forgekeeper engine remains future work outside this repository.
-8. RW-TX-017-MPO Revision 2 is VERIFIED and awaits Michael's physical-glass testing;
-   do not advance it to Field Accepted or perform any Google Play action without new,
-   explicit authority.
+8. RW-TX-017-MPO Revision 2 is VERIFIED and awaits Michael's physical-glass testing.
+   Internal testing is authorized only for the exact run-162 versionCode 21 bundle;
+   production submission and publication remain unauthorized.
 9. RW-TX-016-PMP Revision 1 is CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION
    PUBLISHED. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains
    ACTIVE.
