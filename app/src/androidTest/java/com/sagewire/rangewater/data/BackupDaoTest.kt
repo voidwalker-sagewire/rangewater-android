@@ -140,12 +140,14 @@ class BackupDaoTest {
             junctions = listOf(
                 FenceJunctionEntity(20, 40.0, -100.0),
                 FenceJunctionEntity(21, 40.0, -99.99),
-                FenceJunctionEntity(22, 40.01, -99.99)
+                FenceJunctionEntity(22, 40.01, -99.99),
+                FenceJunctionEntity(23, 40.01, -100.0)
             ),
             vertices = listOf(
                 PastureVertexEntity(30, 10, 0, 20),
                 PastureVertexEntity(31, 10, 1, 21),
-                PastureVertexEntity(32, 10, 2, 22)
+                PastureVertexEntity(32, 10, 2, 22),
+                PastureVertexEntity(33, 10, 3, 23)
             ),
             assignments = listOf(WaterPastureAssignmentEntity(1, 10, now)),
             gates = listOf(GateEntity(40, "North Gate", 20, 21, 0.5, createdAt = now, updatedAt = now)),
@@ -205,7 +207,7 @@ class BackupDaoTest {
             ),
             paddockPlanNodes = listOf(
                 PaddockPlanNodeEntity(91, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 20, 21, 0.5, createdAt = now, updatedAt = now),
-                PaddockPlanNodeEntity(92, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 21, 22, 0.5, createdAt = now, updatedAt = now)
+                PaddockPlanNodeEntity(92, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 22, 23, 0.5, createdAt = now, updatedAt = now)
             ),
             paddockDividers = listOf(PaddockDividerEntity(90, 90, "Triangle Split", 0, now, now)),
             paddockDividerNodeRefs = listOf(
