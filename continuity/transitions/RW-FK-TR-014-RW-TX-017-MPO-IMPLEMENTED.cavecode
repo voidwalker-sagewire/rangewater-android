@@ -1,0 +1,38 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-014 — RW-TX-017-MPO ASSIGNED -> IMPLEMENTED
+================================================================================
+Record-ID: RW-FK-TR-014
+Project: RangeWater
+State: IMPLEMENTED
+Authority: RW-TX-017-MPO Revision 2, ratified and assigned by Michael
+Implemented-By: Ash / OpenAI Codex
+Recorded-At: 2026-10-02T05:07:31Z
+Repository: voidwalker-sagewire/rangewater-android
+Branch: codex/rw-tx-017-mpo
+Baseline: b28ed7c20364f972c9d7282204a935b63cb79d96
+Implementation-Commit: 5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb
+
+IMPLEMENTED CONTRACT
+--------------------------------------------------------------------------------
+- RangeWater 1.3.0, versionCode 21, Room schema 9, archive format 4.
+- Multi-divider polystrand plans, custom waypoints, explicit shared junctions,
+  transactional point editing, equal-area assistance, region labels, and guarded
+  divider/plan lifecycle operations.
+- Offline Field Ledger with seven record types, Task lifecycle, precise map placement,
+  filters, archive/reactivation, and independent historical coordinates.
+- Schema-8 semantic migration, format-1 through format-4 restore compatibility,
+  format-4 backup, and Undo Last Restore coverage.
+- No Google Play action, permanent pasture conversion, parcel lookup, cloud sync,
+  background tracking, or other excluded scope was implemented or authorized.
+
+STATE TRANSITION
+--------------------------------------------------------------------------------
+Prior State: ASSIGNED
+New State: IMPLEMENTED
+Field Acceptance: NOT YET GRANTED
+Release Authority: NOT GRANTED
+
+================================================================================
+END — RW-FK-TR-014 — RW-TX-017-MPO IMPLEMENTED
+================================================================================

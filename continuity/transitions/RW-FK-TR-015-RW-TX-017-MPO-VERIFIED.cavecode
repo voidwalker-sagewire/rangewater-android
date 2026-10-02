@@ -1,0 +1,36 @@
+================================================================================
+RANGEWATER CONTINUITY TRANSITION RECORD
+RW-FK-TR-015 — RW-TX-017-MPO IMPLEMENTED -> VERIFIED
+================================================================================
+Record-ID: RW-FK-TR-015
+Project: RangeWater
+State: VERIFIED
+Verified-At: 2026-10-02T05:07:31Z
+Candidate-Commit: 5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb
+GitHub-Actions-Run: 162 (36967155368)
+Run-Conclusion: SUCCESS
+
+VERIFIED GATES
+--------------------------------------------------------------------------------
+- Imagery-gateway regression suite: PASSED.
+- Debug JVM geometry and archive tests: PASSED.
+- Android Room migration and transaction instrumentation tests: PASSED.
+- Stable-signed RangeWater 1.3.0 field APK build and certificate check: PASSED.
+- Signed RangeWater 1.3.0 Play AAB build and upload-certificate check: PASSED.
+
+ARTIFACTS
+--------------------------------------------------------------------------------
+- RangeWater-Field-APK, artifact 11209802565,
+  SHA-256 aad9e02c434a823ef6686c62ad5add5c1c1e9785982a54d6de5e6295091c2a06.
+- RangeWater-Play-AAB, artifact 11210551297,
+  SHA-256 a55f0933c4608cff7d8d412ba230aafd1bfbd9c66d99fe9ee6726841ffbf0110.
+
+AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+Automated verification does not constitute physical-glass acceptance or release authority.
+Michael must complete and accept the physical test card before field acceptance. Google
+Play internal testing, production submission, and publication remain unauthorized.
+
+================================================================================
+END — RW-FK-TR-015 — RW-TX-017-MPO VERIFIED
+================================================================================

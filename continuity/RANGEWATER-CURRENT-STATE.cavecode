@@ -4,7 +4,7 @@ RW-FK-CURRENT-001
 ================================================================================
 Format: CaveCode current-state pointer index
 Format Status: RATIFIED — ACTIVE
-Content Snapshot: 2026-09-28
+Content Snapshot: 2026-10-02
 Project: RangeWater
 Repository: voidwalker-sagewire/rangewater-android
 Final Authority: Michael
@@ -131,6 +131,24 @@ RW-TX-016 release authority and acceptance:
 - Ratification record:
   continuity/ratifications/RW-TX-016-PMP-REV1-RATIFICATION.cavecode.
 
+RW-TX-017 implementation and verification:
+- RW-TX-017-MPO Revision 2: RATIFIED and ASSIGNED by Michael.
+- Active implementation branch: codex/rw-tx-017-mpo.
+- Target: RangeWater 1.3.0, versionCode 21, Room schema 9, archive format 4.
+- Exact implementation candidate:
+  5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb.
+- Automated verification: PASSED in GitHub Actions run 36967155368 (run 162), including
+  imagery-gateway regression, JVM tests, Room instrumentation, signed field APK,
+  field-certificate verification, signed Play AAB, and upload-certificate verification.
+- State: VERIFIED — PENDING PHYSICAL-GLASS ACCEPTANCE.
+- Google Play internal testing, production submission, and publication: NOT AUTHORIZED.
+- Implementation transition:
+  continuity/transitions/RW-FK-TR-014-RW-TX-017-MPO-IMPLEMENTED.cavecode.
+- Verification transition:
+  continuity/transitions/RW-FK-TR-015-RW-TX-017-MPO-VERIFIED.cavecode.
+- Physical test card:
+  workorders/RW-TX-017-MPO-PHYSICAL-TESTS.cavecode.
+
 🪨 BLOCK 4 — SUPERSESSION STATUS
 --------------------------------------------------------------------------------
 - RW-FK-CONFLICT-001 isolated pilot branch drift: RESOLVED.
@@ -150,7 +168,9 @@ RW-TX-016 release authority and acceptance:
 4. RANGEWATER.cavecode.txt for historical project context
 5. workorders/RW-TX-015-SGR.cavecode and its acceptance card
 6. workorders/RW-TX-016-PMP.cavecode and its ratification record
-7. exact Git commits, CI runs, artifacts, and physical evidence
+7. workorders/RW-TX-017-MPO.cavecode, its ratification/assignment records, transitions,
+   and physical test card
+8. exact Git commits, CI runs, artifacts, and physical evidence
 
 🖍️ BLOCK 6 — NEXT AUTHORITY ACTIONS
 --------------------------------------------------------------------------------
@@ -168,7 +188,10 @@ RW-TX-016 release authority and acceptance:
    in-app version-display observations into later authorized polish work; they do not
    reopen field acceptance.
 7. The separate Forgekeeper engine remains future work outside this repository.
-8. RW-TX-016-PMP Revision 1 is CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION
+8. RW-TX-017-MPO Revision 2 is VERIFIED and awaits Michael's physical-glass testing;
+   do not advance it to Field Accepted or perform any Google Play action without new,
+   explicit authority.
+9. RW-TX-016-PMP Revision 1 is CLOSED — FIELD ACCEPTED — GOOGLE PLAY PRODUCTION
    PUBLISHED. RW-FK-002 Revision 1 remains RATIFIED and IMPLEMENTED; this index remains
    ACTIVE.
 
