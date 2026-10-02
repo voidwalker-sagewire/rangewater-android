@@ -1,0 +1,631 @@
+================================================================================
+RANGEWATER TRANSMISSION CONTRACT — RATIFIED REVISION 2
+RW-TX-017-MPO — RANGEWATER 1.3.0 MULTIPLE POLYSTRAND PLANNING & FIELD LEDGER
+================================================================================
+Format: CaveCode v1.0 project contract
+Status: RATIFIED REVISION 2 — ASSIGNED FOR IMPLEMENTATION
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Prepared: 2026-09-29
+Document creation authorized: 2026-09-29 by Michael
+Revised: 2026-09-30 — added explicit shared-interior-junction lifecycle, guarded node-kind
+promotion/demotion, database constraints, and corresponding automated and physical tests
+Ratified: 2026-09-30 by Michael
+Assigned: 2026-09-30 to Ash / OpenAI Codex
+Recovery confirmation: 2026-10-01 by Michael
+
+🪨 BLOCK 1 — IDENTITY, BASELINE, AND AUTHORITY BOUNDARY
+--------------------------------------------------------------------------------
+- Product: RangeWater
+- Proposed release: 1.3.0
+- Proposed versionCode: 21
+- Package identity: com.sagewire.rangewater — unchanged
+- Proposed feature branch: codex/rw-tx-017-mpo
+- Required baseline: closed, field-accepted, Google Play production RangeWater 1.2.0
+- Accepted 1.2.0 candidate source: b28ed7c20364f972c9d7282204a935b63cb79d96
+- Current continuity branch while this proposal is prepared: codex/rw-tx-016-pmp
+- Current Room schema: 8
+- Proposed Room schema: 9
+- Current archive write format: 3
+- Proposed archive write format: 4, with read support for formats 1, 2, 3, and 4
+- Primary device classes: compatible Android phones and tablets
+
+MISSION:
+- Expand the accepted single straight temporary-divider planner into a practical
+  multi-divider, waypoint-capable polystrand planning system, and add a fast offline
+  Field Ledger for recording geolocated ranch observations and work without turning
+  RangeWater into a cloud account or workforce-management system.
+
+AUTHORITY BOUNDARY:
+- Michael ratified RW-TX-017-MPO Revision 2 on 2026-09-30.
+- Michael assigned the ratified work order to Ash / OpenAI Codex for implementation on
+  2026-09-30.
+- Michael reconfirmed both decisions and authorized restoration of the work order,
+  ratification record, and assignment record on 2026-10-01.
+- This authority permits the branch, source, schema, archive, version, build, automated
+  verification, signed field artifacts, and physical testing defined by Revision 2.
+- Google Play internal testing, production submission, and publication remain separate
+  authority gates and are not authorized by this ratification or assignment.
+
+PROTECTED BASELINE:
+- Every accepted RangeWater 1.2.0 record, calculation, map interaction, help behavior,
+  precision-loupe correction, backup path, and production identity remains protected.
+- Existing one-line paddock plans must migrate forward without being redrawn.
+- No accepted permanent pasture boundary is silently split, renamed, or replaced.
+
+🪨 BLOCK 2 — PROPOSED PRODUCT SCOPE
+--------------------------------------------------------------------------------
+The proposed RangeWater 1.3.0 scope contains two principal capabilities:
+
+1. Multiple Polystrand Planning
+   - more than one temporary divider in one mapped pasture;
+   - independent temporary-divider plans in multiple pastures;
+   - straight assisted placement and custom waypoint routing;
+   - combined-region acreage feedback; and
+   - preservation of the future no-redraw permanent-conversion seam.
+
+2. Field Ledger
+   - seven fast record categories adapted from the inspected Track & Trace FARM flow;
+   - precise map-point or foreground device-location capture;
+   - optional pasture association;
+   - map markers and a filterable newest-first ledger;
+   - task completion plus individual edit and archive controls; and
+   - complete offline Room and .rangewater backup coverage.
+
+The two capabilities share RangeWater's map and backup system but do not silently alter
+one another. A Field Ledger record does not create a divider, and a divider does not
+create a Field Ledger record.
+
+🎮 BLOCK 3 — MULTIPLE POLYSTRAND PRODUCT MEANING
+--------------------------------------------------------------------------------
+- User-facing feature name: Plan Polystrand.
+- A polystrand divider is a saved planning line representing proposed temporary fence
+  inside one mapped pasture.
+- A plan may contain one or several dividers.
+- A divider may be straight or may contain ordered interior waypoints.
+- Waypoints allow practical routing around strip pits, cliffs, trees, buildings, roads,
+  ponds, fixed water infrastructure, and other obstacles.
+- The line is not a surveyed boundary, permanent fence, gate, movement route, circuit,
+  herd location, or proof that temporary fence has been installed.
+- The parent pasture remains one canonical PastureEntity.
+- Multiple polystrand plans are allowed across the ranch. Planning in one pasture never
+  consumes a ranch-wide or pasture-wide one-time allowance.
+- RangeWater 1.3.0 does not permanently convert a divider into child pastures.
+
+🎮 BLOCK 4 — POLYSTRAND PLACEMENT MODES
+--------------------------------------------------------------------------------
+4A. ASSISTED EQUAL-AREA MODE
+
+- The operator chooses an intended region count or an equal-area objective supported by
+  the accepted implementation.
+- RangeWater may suggest a valid straight boundary-to-boundary divider near the
+  requested acreage balance.
+- Suggested geometry is a planning aid, not a surveyed or guaranteed equal division.
+- The operator reviews both the line and displayed acreage before Save.
+- If terrain or obstacles require a bend, the operator may switch to Custom Waypoints.
+
+4B. CUSTOM WAYPOINT MODE
+
+- For the first divider, the operator places a start endpoint on the selected pasture boundary.
+- The operator may place zero or more ordered interior waypoints.
+- The first divider ends on another valid part of the boundary.
+- Later dividers may begin or end at a boundary node or a deliberately selected shared
+  interior polystrand node when the complete network still forms valid regions.
+- The precision loupe is available for endpoints and every waypoint.
+- Waypoints must remain inside or on the selected parent pasture.
+- The line may not self-cross, double back along the boundary, overlap another active
+  divider segment, or create zero-area or otherwise invalid regions.
+
+4C. EDITING CONTROLS
+
+- Add Waypoint places a new point on a selected divider segment.
+- Move Point repositions an endpoint or interior waypoint with the precision loupe.
+- Remove Waypoint removes only an interior point; endpoints cannot be removed separately.
+- Undo reverses the latest in-memory placement or movement.
+- Cancel restores the last saved plan without a database write.
+- Save remains unavailable until the complete combined plan validates.
+- A divider may be renamed, archived, reactivated when safe, or deleted with confirmation.
+
+🎮 BLOCK 5 — COMBINED GEOMETRY AND ACREAGE FEEDBACK
+--------------------------------------------------------------------------------
+- All active dividers in one plan are evaluated together against the parent polygon.
+- The combined linework must polygonize the parent into two or more valid, positive-area,
+  non-overlapping planning regions.
+- Every derived region remains contained by the parent pasture.
+- Region interiors may not overlap, and their union must reconcile with the parent.
+- Turf remains authoritative for displayed geodesic acreage.
+- Derived region acreages must reconcile to parent mapped acreage within 0.5% numerical
+  tolerance, preserving RangeWater's accepted map-estimate semantics.
+- During placement, RangeWater displays the current valid region acreages and updates
+  them as endpoints or waypoints move.
+- The interface may offer an equal-area target, but the operator remains free to accept
+  unequal acreages.
+- Default region labels are generated in stable plan order and may be renamed after the
+  combined geometry is valid.
+- Any geometry edit that changes region topology requires truthful label review rather
+  than silently attaching an old label to an unrelated new region.
+- A small numerical implementation safety threshold may reject sliver regions; the UI
+  must not describe that threshold as a universal agricultural minimum.
+
+🎮 BLOCK 6 — MULTI-DIVIDER OPERATOR WORKFLOW
+--------------------------------------------------------------------------------
+1. Select a pasture.
+2. Choose Plan Polystrand.
+3. Open an existing active plan or create a new plan.
+4. Choose Assisted Equal Area or Custom Waypoints.
+5. Place the first endpoint, optional waypoints, and final endpoint.
+6. Review all derived regions and their mapped acreage estimates.
+7. Save the divider or continue adding another divider.
+8. Review the complete plan, names, linework, and region acreages.
+9. Save or Cancel.
+
+Rules:
+- A pasture may have one active planning set containing multiple active dividers.
+- Archived historical planning sets may coexist with the active set.
+- A divider in one pasture has no effect on any other pasture.
+- Quartering, strip-grazing layouts, wagon-wheel-like arrangements, and obstacle-aware
+  routes are allowed when the combined geometry passes validation.
+- Dividers may deliberately meet at a shared interior polystrand node, allowing validated
+  wagon-wheel-like layouts.
+- A line crossing that does not reference the same durable shared node is rejected.
+- A visual crossing alone never creates a junction, and an interior polystrand node is
+  never confused with a permanent FenceJunctionEntity.
+
+🪨 BLOCK 7 — PROPOSED POLYSTRAND DATA MODEL
+--------------------------------------------------------------------------------
+7A. PLAN CONTAINER
+
+Table: paddock_plans
+Entity: PaddockPlanEntity
+
+Fields:
+- id: Long, stable primary key
+- pastureId: Long, required, indexed
+- name: String, required, trimmed
+- createdAt: Long, required
+- updatedAt: Long, required
+- archivedAt: Long?, nullable
+
+Rules:
+- At most one active plan container exists per pasture.
+- Archived plans remain available for history and possible future reuse.
+- The parent pasture uses ON DELETE RESTRICT / NO ACTION.
+
+7B. POLYSTRAND NODES
+
+Table: paddock_plan_nodes
+Entity: PaddockPlanNodeEntity
+
+Fields:
+- id: Long, stable primary key
+- planId: Long, required, indexed
+- nodeKind: PaddockPlanNodeKind, required
+- boundaryJunctionAId: Long?, nullable
+- boundaryJunctionBId: Long?, nullable
+- boundarySegmentRatio: Double?, nullable
+- latitude: Double?, nullable
+- longitude: Double?, nullable
+- createdAt: Long, required
+- updatedAt: Long, required
+
+PaddockPlanNodeKind enum:
+- BOUNDARY_ANCHOR
+- INTERIOR_JUNCTION
+- INTERIOR_WAYPOINT
+
+Rules:
+- BOUNDARY_ANCHOR requires one canonical consecutive junction pair and one finite ratio
+  from 0.0 through 1.0; its coordinate is derived from the current canonical boundary.
+- INTERIOR_JUNCTION and INTERIOR_WAYPOINT require finite latitude and longitude inside
+  the parent pasture and must not carry boundary-anchor fields.
+- Multiple divider paths may reference one INTERIOR_JUNCTION to create an intentional
+  wagon-wheel center or other shared temporary-fence meeting point.
+- An INTERIOR_WAYPOINT normally belongs to one divider path and bends that route without
+  creating a connection to another divider.
+- Polystrand nodes are planning geometry and never become permanent FenceJunctionEntity
+  rows merely because they are saved or shared.
+- Sharing is explicit. Placing one line visually over another node does not silently
+  convert that node into an INTERIOR_JUNCTION or attach the lines.
+- Moving an INTERIOR_JUNCTION previews every active divider that references it and every
+  affected derived region. Save revalidates and commits the complete affected plan
+  atomically; failure leaves the node and every divider unchanged.
+- A shared node cannot be deleted while any active or archived divider path still
+  references it. The operator must first remove or redirect each reference, or delete
+  the referencing divider under its own confirmation rules.
+- Archiving one divider never deletes a shared node used by another divider. Archived
+  dividers retain their node references so their historical geometry remains recoverable.
+- Deleting a divider removes only that divider's ordered references. A node may be
+  deleted as orphan cleanup only when no active or archived divider references it.
+- Removing, archiving, reactivating, or deleting a divider must leave the remaining
+  active network valid. If it would leave an invalid active plan, the operation is
+  blocked unless the operator archives the complete plan in the same transaction.
+- Changing a node between INTERIOR_WAYPOINT and INTERIOR_JUNCTION is an explicit guarded
+  operation, not an incidental result of dragging or line overlap.
+- Promoting a private waypoint to a shared junction requires an explicit Connect/Share
+  action, selection of the divider path being connected, and atomic validation of the
+  complete resulting plan before the new reference and node kind are committed.
+- Demoting a shared junction to a private waypoint is blocked while more than one divider
+  references it. After the operator explicitly unlinks all additional dividers, demotion
+  may proceed only if the remaining divider and complete active plan still validate.
+- Failed promotion, connection, unlink, or demotion leaves node kind, references, divider
+  geometry, region labels, and acreages unchanged.
+
+7C. DIVIDERS
+
+Table: paddock_dividers
+Entity: PaddockDividerEntity
+
+Fields:
+- id: Long, stable primary key
+- planId: Long, required, indexed
+- name: String, required, trimmed
+- sequence: Int, required, zero-based within the plan
+- createdAt: Long, required
+- updatedAt: Long, required
+- archivedAt: Long?, nullable
+
+Rules:
+- Divider sequence is stable and contiguous after saved reorder.
+- A plan must contain at least one active divider before it is displayed as active.
+
+7D. ORDERED DIVIDER PATHS
+
+Table: paddock_divider_node_refs
+Entity: PaddockDividerNodeRefEntity
+
+Fields:
+- dividerId: Long, part of composite primary key
+- sequence: Int, part of composite primary key, zero-based
+- nodeId: Long, required, indexed
+
+Rules:
+- Node-reference sequence is contiguous after every save and contains at least two nodes.
+- Consecutive references resolve the persisted polyline segments.
+- A divider may reference boundary anchors, private waypoints, and deliberate shared
+  interior junctions in a validated order.
+- No divider may reference the same node twice unless a separately ratified closed-loop
+  behavior is added later.
+- Coordinate truth is geographic or canonical-boundary anchored, never screen pixels.
+- Node, reference, divider, and plan changes commit atomically.
+
+7E. REGION LABELS
+
+- Derived region geometry and acreage are not persisted as duplicate polygons or totals.
+- User labels may be persisted only with a deterministic region identity derived from
+  the validated parent-and-divider topology.
+- If a topology edit invalidates that identity, Save requires label review.
+- Implementation may not guess that the largest, nearest, or first polygon is the same
+  historical region without a tested deterministic rule.
+
+7F. MIGRATION OF ACCEPTED 1.2.0 PLANS
+
+- Every existing paddock_split_plans row becomes one active or archived PaddockPlanEntity
+  with two boundary-anchor PaddockPlanNodeEntity rows, one PaddockDividerEntity, and two
+  ordered PaddockDividerNodeRefEntity rows.
+- Existing stable plan ID, pasture relationship, name, boundary anchors, endpoint ratios,
+  side labels, createdAt, updatedAt, and archivedAt must be preserved or mapped through an
+  explicit documented compatibility record.
+- Migration may not require the operator to redraw the accepted line.
+- After migration, the original straight divider must render at the same coordinates and
+  produce the same two acreage results within accepted tolerance.
+
+🎮 BLOCK 8 — FIELD LEDGER RECORD TYPES AND MEANING
+--------------------------------------------------------------------------------
+User-facing entry point: Field Log
+User-facing history: Field Ledger
+
+Record types:
+- Task
+- Observation
+- Input
+- Repair
+- Animal
+- Weather
+- Note
+
+Meanings:
+- Task: work that should be completed and may carry Open, Completed, or Cancelled state.
+- Observation: a general field condition or finding.
+- Input: an applied material, feed, seed, fertilizer, treatment, or other operator note;
+  it is not automatically a regulated inventory or veterinary record.
+- Repair: damage, maintenance need, or completed repair.
+- Animal: a location-bound livestock or wildlife observation; it does not modify HerdEntity.
+- Weather: a local condition observed by the operator; it is not an official weather feed.
+- Note: any other concise location-bound field record.
+
+🎮 BLOCK 9 — FIELD LOG CAPTURE WORKFLOW
+--------------------------------------------------------------------------------
+1. From the map overflow or a selected map point, choose Field Log.
+2. Choose the record type.
+3. Confirm or move the map point with the accepted precision loupe.
+4. Optionally choose Use My Location while RangeWater is in the foreground.
+5. Enter the required note and review the automatically associated pasture, if any.
+6. For Task, leave the default status Open or choose another valid status.
+7. Save or Cancel.
+
+Location rules:
+- The saved latitude/longitude is the crosshair coordinate shown to the operator.
+- A foreground device-location choice requires ordinary Android permission and displays
+  reported accuracy when available before Save.
+- Denying location permission does not block manual map-point logging.
+- No background location, tracking, route history, geofence, or continuous GPS is added.
+- If the point lies inside exactly one mapped pasture, RangeWater suggests that pasture.
+- If boundaries overlap or no pasture contains the point, the user may choose a pasture
+  or save the record with no pasture association.
+- Moving a pasture boundary later does not rewrite the historical recorded coordinate.
+
+🪨 BLOCK 10 — PROPOSED FIELD LEDGER DATA MODEL
+--------------------------------------------------------------------------------
+Table: field_records
+Entity: FieldRecordEntity
+
+Fields:
+- id: Long, auto-generated stable primary key
+- recordType: FieldRecordType, required
+- note: String, required, trimmed, non-blank
+- latitude: Double, required, finite
+- longitude: Double, required, finite
+- pastureId: Long?, nullable, indexed
+- taskStatus: FieldTaskStatus?, nullable
+- observedAt: Long, required
+- createdAt: Long, required
+- updatedAt: Long, required
+- completedAt: Long?, nullable
+- archivedAt: Long?, nullable
+
+FieldRecordType enum:
+- TASK
+- OBSERVATION
+- INPUT
+- REPAIR
+- ANIMAL
+- WEATHER
+- NOTE
+
+FieldTaskStatus enum:
+- OPEN
+- COMPLETED
+- CANCELLED
+
+Rules:
+- taskStatus is required only for TASK and must be null for every other type.
+- completedAt is required only when a Task is Completed.
+- pastureId uses ON DELETE SET NULL so deleting an otherwise-unblocked pasture does not
+  erase the historical field record or its coordinate.
+- Editing a record preserves its ID and createdAt and advances updatedAt.
+- Archive is the normal removal action. Permanent deletion, if exposed, requires a
+  separate warning and may not be a ledger-wide Clear command.
+- The inspected Track & Trace prototype's destructive Clear All behavior is not copied.
+
+🎮 BLOCK 11 — FIELD LEDGER AND MAP PRESENTATION
+--------------------------------------------------------------------------------
+- Field records appear in a toggleable Field Records map layer.
+- Marker color or icon distinguishes the seven record types without relying on color alone.
+- Selecting a marker opens its type, note, time, pasture association, task state, and
+  Edit, Complete/Reopen where applicable, Archive, and Close actions.
+- The Field Ledger orders active records newest observedAt first.
+- Filters include record type, pasture, Task status, and active/archived state.
+- A text search may match notes and displayed pasture names without requiring network access.
+- Selecting a ledger record may focus the map on its saved coordinate without changing
+  the durable camera preference until the ordinary camera-saving rules apply.
+- Empty states explain whether there are no records or whether active filters hide them.
+- Field Ledger markers remain distinct from herds, water points, gates, junctions, and
+  polystrand geometry on bright and dark imagery.
+
+🔧 BLOCK 12 — ROOM MIGRATION AND TRANSACTION CONTRACT
+--------------------------------------------------------------------------------
+- Advance RangeWaterDatabase from version 8 to version 9.
+- Add explicit MIGRATION_8_9 after every accepted prior migration.
+- Create the normalized polystrand plan/node/divider/path structures and field_records.
+- Migrate existing paddock_split_plans under Block 7F before removing or superseding any
+  legacy table structure.
+- Preserve every schema-8 pasture, junction, vertex, water, assignment, gate, herd,
+  movement, circuit, role, forage observation, and accepted relationship unchanged.
+- Destructive migration and fallbackToDestructiveMigration remain prohibited.
+- Plan saves, divider reorder, node/path replacement, region-label reconciliation, Task
+  completion, and archive/reactivation operations must be transactional.
+- Shared-node move, link, unlink, divider archive/reactivation, divider deletion, and
+  orphan cleanup must validate all affected references and combined geometry in one
+  transaction.
+- Waypoint-to-junction promotion and junction-to-waypoint demotion must update node kind
+  and ordered references atomically; a failed guard or geometry check rolls back both.
+- Node-reference foreign keys use RESTRICT / NO ACTION for node deletion; cascade may be
+  used only from a deliberately deleted divider to its own ordered reference rows.
+- UI validation does not replace DAO-owned validation.
+
+🔧 BLOCK 13 — ARCHIVE FORMAT 4
+--------------------------------------------------------------------------------
+- RangeWater 1.3.0 writes .rangewater archive format 4.
+- Format 4 includes paddock plan containers, nodes, dividers, ordered node references,
+  preserved region labels,
+  and Field Ledger records with exact version-specific record counts.
+- The reader accepts formats 1, 2, 3, and 4.
+- Formats 1 and 2 upgrade with empty polystrand and Field Ledger collections.
+- Format 3 migrates its accepted single-line paddock plans using the same semantic mapping
+  as MIGRATION_8_9 and adds an empty Field Ledger collection.
+- Unsupported newer formats, invalid coordinates, broken anchors, missing parents,
+  malformed node-reference sequences, invalid task states, and unreconciled geometry are
+  rejected before live replacement.
+- Snapshot, replace-all restore, rollback archives, and Undo Last Restore include every
+  new schema-9 record.
+- Restore remains checksummed, validated before writing, foreign-key ordered, and atomic.
+
+🔧 BLOCK 14 — AUTOMATED ACCEPTANCE GATES
+--------------------------------------------------------------------------------
+JVM / GEOMETRY TESTS:
+1. Straight legacy dividers resolve identically after semantic migration.
+2. A valid waypoint divider routes around an obstacle-shaped test area and remains inside.
+3. Self-crossing, boundary-overlap, outside-pasture, zero-area, and overlapping-divider
+   geometry is rejected.
+4. Multiple valid dividers produce the expected region count.
+5. Several dividers may meet at one explicit interior shared node, while an unmodeled
+   visual crossing is rejected.
+6. Region interiors are disjoint and exhaustive within 0.5% acreage tolerance.
+7. Equal-area suggestions are deterministic and disclose approximation.
+8. Boundary anchors survive valid canonical junction movement.
+9. Cancel and interrupted precision placement commit no change.
+
+ANDROID ROOM TESTS:
+1. MIGRATION_8_9 preserves a populated real schema-8 database.
+2. Every existing 1.2.0 split becomes an equivalent one-divider plan without redraw.
+3. Multiple dividers, waypoints, and shared interior nodes survive close and reopen in
+   multiple pastures.
+4. Invalid combined plans and partial node/path writes roll back completely.
+5. Moving one shared interior node revalidates every referencing active divider and
+   either commits the complete valid plan or rolls back every affected row.
+6. A referenced shared node cannot be deleted, and deleting one divider does not remove
+   a node still referenced by another active or archived divider.
+7. Orphan cleanup removes a node only after its final divider reference is deliberately
+   deleted; archive alone does not orphan or remove historical geometry.
+8. Archiving, reactivating, or deleting a divider cannot leave an invalid active network.
+9. Drawing across or dragging onto a private waypoint does not silently promote or share it.
+10. Explicit waypoint-to-junction promotion creates the intended additional reference
+    only when the complete plan validates, and invalid promotion rolls back completely.
+11. Junction-to-waypoint demotion is blocked while multiple dividers reference the node;
+    after explicit unlinking, a valid demotion commits atomically.
+12. Field records of all seven types survive close and reopen.
+13. Task completion/reopen timestamps and status rules are enforced.
+14. Pasture deletion sets a FieldRecord pastureId to null without deleting the record.
+15. Archive/reactivation and filtered observations remain consistent.
+
+ARCHIVE TESTS:
+1. Formats 1 and 2 restore every legacy record with empty new collections.
+2. Format 3 restores its straight plan at identical coordinates and acreage.
+3. Format 4 round-trips multiple dividers, nodes, ordered paths, labels, Field Ledger records,
+   Task states, IDs, coordinates, timestamps, and archive state.
+4. Malformed geometry or relationships are rejected before replacement.
+5. Undo Last Restore returns the complete former schema-9 state.
+
+BUILD GATES:
+- Imagery-gateway regression suite passes.
+- JVM tests pass.
+- Android Room instrumentation tests pass.
+- Debug APK builds.
+- Stable field APK builds and its certificate is verified.
+- Play AAB builds, signs, and matches the configured upload certificate.
+- No private signing material is committed.
+
+🎮 BLOCK 15 — PHYSICAL-GLASS ACCEPTANCE
+--------------------------------------------------------------------------------
+Required devices:
+- Michael's current Samsung phone
+- Samsung Tab S7
+
+Required sequence:
+1. Upgrade an existing RangeWater 1.2.0 installation containing a saved straight plan.
+2. Confirm every accepted ranch record, preference, help behavior, and calculation survives.
+3. Confirm the former straight plan appears unchanged and can accept another divider.
+4. Create multiple dividers in one pasture and at least one divider in another pasture.
+5. Quarter a pasture or create another valid three-or-more-region layout.
+6. Route a waypoint divider around a real or representative obstacle.
+7. Exercise endpoint and waypoint Add, Move, Remove, Undo, Cancel, and Save.
+8. Confirm live region acreages reconcile to the parent and remain after cold reopen.
+9. Confirm one pasture's plan never removes or disables another pasture's plan.
+10. Create a shared interior junction used by several dividers; move it and confirm every
+    referencing line and region previews and saves together.
+11. Attempt to delete the referenced junction and confirm the operation is blocked.
+12. Archive and delete one referencing divider; confirm other divider geometry survives
+    and the shared node remains until its final reference is deliberately removed.
+13. Draw or drag another divider across a private waypoint and confirm no silent sharing.
+14. Use the explicit Connect/Share action to promote that waypoint to a shared junction;
+    confirm the intended divider joins and the complete plan remains valid.
+15. Attempt to demote the still-shared junction and confirm the operation is blocked;
+    explicitly unlink the additional divider, then confirm valid demotion can be saved.
+16. Create each of the seven Field Ledger record types at precise map points.
+17. Create a Task, complete it, reopen it, edit it, and archive it.
+18. Verify manual map placement works with device location permission denied.
+19. If foreground location is exercised, verify the displayed accuracy and saved point.
+20. Filter the ledger by type, pasture, status, and archive state; select a result on map.
+21. Edit a pasture boundary and confirm historical field coordinates do not move.
+22. Create format-4 backup, restore on the other device, and verify plans and records.
+23. Restore a known format-3 backup and confirm the old plan migrates without redraw.
+24. Use Undo Last Restore and confirm the complete prior state returns.
+
+Acceptance authority:
+- CI proves only automated contracts and artifact identity.
+- Michael's physical-glass report is required before field acceptance.
+- A controlled Google Play 1.2.0-to-1.3.0 in-place migration must preserve real ranch
+  records before production promotion may be considered.
+- Production publication requires a separate explicit instruction from Michael for the
+  exact internally tested versionCode 21 bundle. No rebuild may inherit that authority.
+
+🖍️ BLOCK 16 — HUMAN-EDITABLE WORDING AND VISUAL TUNING
+--------------------------------------------------------------------------------
+The following may be tuned during review or physical acceptance without changing data meaning:
+- `Field Log` versus `Log Field Record` command wording;
+- concise record-type descriptions and empty-state text;
+- divider, waypoint, planning-fill, and ledger-marker colors and iconography;
+- marker clustering threshold and phone-safe ledger spacing;
+- precision-loupe size and offset under the already accepted coordinate-truth rule;
+- equal-area disclosure wording; and
+- default generated plan, divider, and region labels.
+
+The following are not mere tuning changes:
+- permanent conversion into new PastureEntity records;
+- allowing invalid intersections or exterior waypoints;
+- automatic changes to herds, movements, circuits, gates, water, rest, or forage;
+- background location or tracking;
+- changing Room or archive versions; or
+- cloud synchronization or multi-user assignment.
+
+🪨 BLOCK 17 — EXPLICITLY OUT OF SCOPE
+--------------------------------------------------------------------------------
+- permanent conversion of temporary dividers into child pastures
+- archiving the parent pasture and creating permanent child histories
+- automatic permanent-gate redistribution during a future conversion
+- parcel ownership lookup or SageWire Parcel Service integration
+- cloud accounts, synchronization, shared assignments, or notifications
+- photos, videos, or other Field Ledger attachments
+- regulated veterinary-treatment, chemical-application, or accounting compliance claims
+- automatic weather-service ingestion
+- divider material, reel, post, energizer, labor, or cost estimation
+- terrain, slope, land-cover, pipe-pressure, or hydraulic analysis
+- automatic stocking rate, rotation dates, carrying capacity, or biological readiness
+- background GPS, employee tracking, or route recording
+- iPhone or iPad implementation
+
+These remain separate proposals and require their own ratified authority.
+
+🖍️ BLOCK 18 — REVIEW CARD
+--------------------------------------------------------------------------------
+Current decision state:
+- Product direction: AUTHORIZED FOR WORK-ORDER CREATION by Michael on 2026-09-29.
+- Work-order status: RATIFIED REVISION 2 — ASSIGNED FOR IMPLEMENTATION.
+- Ratification: GRANTED by Michael on 2026-09-30.
+- Application implementation: ASSIGNED to Ash / OpenAI Codex on 2026-09-30.
+- Database and archive implementation: AUTHORIZED only as specified by Revision 2.
+- Branch creation, build, signing, automated verification, and physical field testing:
+  AUTHORIZED only as specified by Revision 2.
+- Google Play internal testing, production submission, and publication: NOT AUTHORIZED.
+
+Decisions embodied for Michael's review:
+1. One active plan container per pasture may hold multiple dividers.
+2. Each divider may have ordered interior waypoints.
+3. Combined plan geometry determines the current derived regions and acreages.
+4. Shared interior junctions use explicit many-divider references, atomic whole-plan
+   revalidation, restricted deletion, and reference-safe archival/orphan cleanup.
+5. Waypoint/junction promotion and demotion require explicit guarded operations with
+   atomic reference updates; spatial overlap never changes node identity.
+6. Existing 1.2.0 straight plans migrate without redraw.
+7. Field Log uses seven Track & Trace-derived categories but native RangeWater storage,
+   precise placement, task state, map presentation, archive safety, and backup semantics.
+8. Permanent pasture conversion and parcel lookup remain deferred.
+
+Ratification and assignment record:
+- Michael ratified RW-TX-017-MPO Revision 2 on 2026-09-30.
+- Michael assigned RW-TX-017-MPO Revision 2 to Ash / OpenAI Codex for implementation
+  on 2026-09-30.
+- On 2026-10-01, Michael explicitly confirmed both decisions and authorized restoration
+  of the ratified work order, ratification record, and assignment record on
+  codex/rw-tx-017-mpo.
+
+The implementation agent must:
+1. Preserve ratification and the new active resume point in continuity records.
+2. Create codex/rw-tx-017-mpo from the exact closed 1.2.0 baseline.
+3. Implement only the ratified Revision 2 contract.
+4. Run every automated gate.
+5. Deliver identified signed field artifacts and a physical-test card.
+6. Obtain separate authority for internal testing and any production action.
+
+================================================================================
+END — RW-TX-017-MPO — RATIFIED REVISION 2 — ASSIGNED FOR IMPLEMENTATION
+================================================================================
