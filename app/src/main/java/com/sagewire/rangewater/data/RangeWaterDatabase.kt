@@ -27,9 +27,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GrazingCircuitPastureRoleEntity::class,
         HerdGrazingCircuitAssignmentEntity::class,
         PastureForageObservationEntity::class,
-        PaddockSplitPlanEntity::class
+        PaddockPlanEntity::class,
+        PaddockPlanNodeEntity::class,
+        PaddockDividerEntity::class,
+        PaddockDividerNodeRefEntity::class,
+        PaddockRegionLabelEntity::class,
+        FieldRecordEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class RangeWaterDatabase : RoomDatabase() {
@@ -43,7 +48,8 @@ abstract class RangeWaterDatabase : RoomDatabase() {
     abstract fun grazingCircuitDao(): GrazingCircuitDao
     abstract fun forageObservationDao(): ForageObservationDao
     abstract fun pastureRestDao(): PastureRestDao
-    abstract fun paddockSplitPlanDao(): PaddockSplitPlanDao
+    abstract fun paddockPlanDao(): PaddockPlanDao
+    abstract fun fieldRecordDao(): FieldRecordDao
     abstract fun backupDao(): BackupDao
 
     companion object {
@@ -398,6 +404,195 @@ abstract class RangeWaterDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_plans` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `pastureId` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `archivedAt` INTEGER,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_plans_pastureId` ON `paddock_plans` (`pastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_plans_archivedAt` ON `paddock_plans` (`archivedAt`)")
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS `paddock_plans_one_active_insert`
+                    BEFORE INSERT ON `paddock_plans`
+                    WHEN NEW.`archivedAt` IS NULL AND EXISTS (
+                        SELECT 1 FROM `paddock_plans` WHERE `pastureId` = NEW.`pastureId` AND `archivedAt` IS NULL
+                    )
+                    BEGIN SELECT RAISE(ABORT, 'one active paddock plan per pasture'); END
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS `paddock_plans_one_active_update`
+                    BEFORE UPDATE OF `pastureId`, `archivedAt` ON `paddock_plans`
+                    WHEN NEW.`archivedAt` IS NULL AND EXISTS (
+                        SELECT 1 FROM `paddock_plans`
+                        WHERE `pastureId` = NEW.`pastureId` AND `archivedAt` IS NULL AND `id` != NEW.`id`
+                    )
+                    BEGIN SELECT RAISE(ABORT, 'one active paddock plan per pasture'); END
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_plan_nodes` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `planId` INTEGER NOT NULL,
+                        `nodeKind` TEXT NOT NULL,
+                        `boundaryJunctionAId` INTEGER,
+                        `boundaryJunctionBId` INTEGER,
+                        `boundarySegmentRatio` REAL,
+                        `latitude` REAL,
+                        `longitude` REAL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`planId`) REFERENCES `paddock_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`boundaryJunctionAId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`boundaryJunctionBId`) REFERENCES `fence_junctions`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_plan_nodes_planId` ON `paddock_plan_nodes` (`planId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_plan_nodes_boundaryJunctionAId` ON `paddock_plan_nodes` (`boundaryJunctionAId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_plan_nodes_boundaryJunctionBId` ON `paddock_plan_nodes` (`boundaryJunctionBId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_dividers` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `planId` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `sequence` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `archivedAt` INTEGER,
+                        FOREIGN KEY(`planId`) REFERENCES `paddock_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_dividers_planId` ON `paddock_dividers` (`planId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_paddock_dividers_planId_sequence` ON `paddock_dividers` (`planId`, `sequence`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_dividers_archivedAt` ON `paddock_dividers` (`archivedAt`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_divider_node_refs` (
+                        `dividerId` INTEGER NOT NULL,
+                        `sequence` INTEGER NOT NULL,
+                        `nodeId` INTEGER NOT NULL,
+                        PRIMARY KEY(`dividerId`, `sequence`),
+                        FOREIGN KEY(`dividerId`) REFERENCES `paddock_dividers`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`nodeId`) REFERENCES `paddock_plan_nodes`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_divider_node_refs_nodeId` ON `paddock_divider_node_refs` (`nodeId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `paddock_region_labels` (
+                        `planId` INTEGER NOT NULL,
+                        `regionKey` TEXT NOT NULL,
+                        `label` TEXT NOT NULL,
+                        PRIMARY KEY(`planId`, `regionKey`),
+                        FOREIGN KEY(`planId`) REFERENCES `paddock_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paddock_region_labels_planId` ON `paddock_region_labels` (`planId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `field_records` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `recordType` TEXT NOT NULL,
+                        `note` TEXT NOT NULL,
+                        `latitude` REAL NOT NULL,
+                        `longitude` REAL NOT NULL,
+                        `pastureId` INTEGER,
+                        `taskStatus` TEXT,
+                        `observedAt` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `completedAt` INTEGER,
+                        `archivedAt` INTEGER,
+                        FOREIGN KEY(`pastureId`) REFERENCES `pastures`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_field_records_pastureId` ON `field_records` (`pastureId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_field_records_recordType` ON `field_records` (`recordType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_field_records_taskStatus` ON `field_records` (`taskStatus`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_field_records_observedAt` ON `field_records` (`observedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_field_records_archivedAt` ON `field_records` (`archivedAt`)")
+
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_plans` (`id`, `pastureId`, `name`, `createdAt`, `updatedAt`, `archivedAt`)
+                    SELECT `id`, `pastureId`, `name`, `createdAt`, `updatedAt`, `archivedAt`
+                    FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_plan_nodes`
+                        (`id`, `planId`, `nodeKind`, `boundaryJunctionAId`, `boundaryJunctionBId`,
+                         `boundarySegmentRatio`, `latitude`, `longitude`, `createdAt`, `updatedAt`)
+                    SELECT (`id` * 2 - 1), `id`, 'BOUNDARY_ANCHOR', `startJunctionAId`,
+                           `startJunctionBId`, `startSegmentRatio`, NULL, NULL, `createdAt`, `updatedAt`
+                    FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_plan_nodes`
+                        (`id`, `planId`, `nodeKind`, `boundaryJunctionAId`, `boundaryJunctionBId`,
+                         `boundarySegmentRatio`, `latitude`, `longitude`, `createdAt`, `updatedAt`)
+                    SELECT (`id` * 2), `id`, 'BOUNDARY_ANCHOR', `endJunctionAId`,
+                           `endJunctionBId`, `endSegmentRatio`, NULL, NULL, `createdAt`, `updatedAt`
+                    FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_dividers` (`id`, `planId`, `name`, `sequence`, `createdAt`, `updatedAt`, `archivedAt`)
+                    SELECT `id`, `id`, `name`, 0, `createdAt`, `updatedAt`, `archivedAt`
+                    FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_divider_node_refs` (`dividerId`, `sequence`, `nodeId`)
+                    SELECT `id`, 0, (`id` * 2 - 1) FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_divider_node_refs` (`dividerId`, `sequence`, `nodeId`)
+                    SELECT `id`, 1, (`id` * 2) FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_region_labels` (`planId`, `regionKey`, `label`)
+                    SELECT `id`, 'legacy-side-a', `sideALabel` FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `paddock_region_labels` (`planId`, `regionKey`, `label`)
+                    SELECT `id`, 'legacy-side-b', `sideBLabel` FROM `paddock_split_plans`
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE `paddock_split_plans`")
+            }
+        }
+
         fun getDatabase(context: Context): RangeWaterDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -411,7 +606,8 @@ abstract class RangeWaterDatabase : RoomDatabase() {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
                 )
                     .build()
                     .also { instance = it }

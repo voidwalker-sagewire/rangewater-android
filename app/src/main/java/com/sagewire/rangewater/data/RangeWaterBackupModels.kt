@@ -16,7 +16,14 @@ data class RangeWaterBackupData(
     val circuitPastureRoles: List<GrazingCircuitPastureRoleEntity> = emptyList(),
     val herdCircuitAssignments: List<HerdGrazingCircuitAssignmentEntity> = emptyList(),
     val pastureForageObservations: List<PastureForageObservationEntity> = emptyList(),
+    /** Legacy format-3 input only. Format 4 writes this collection empty. */
     val paddockSplitPlans: List<PaddockSplitPlanEntity> = emptyList(),
+    val paddockPlans: List<PaddockPlanEntity> = emptyList(),
+    val paddockPlanNodes: List<PaddockPlanNodeEntity> = emptyList(),
+    val paddockDividers: List<PaddockDividerEntity> = emptyList(),
+    val paddockDividerNodeRefs: List<PaddockDividerNodeRefEntity> = emptyList(),
+    val paddockRegionLabels: List<PaddockRegionLabelEntity> = emptyList(),
+    val fieldRecords: List<FieldRecordEntity> = emptyList(),
     val displayPreferences: DisplayPreferences = DisplayPreferences()
 ) {
     fun recordCounts(): BackupRecordCounts = BackupRecordCounts(
@@ -33,7 +40,13 @@ data class RangeWaterBackupData(
         circuitPastureRoles.size,
         herdCircuitAssignments.size,
         pastureForageObservations.size,
-        paddockSplitPlans.size
+        paddockSplitPlans.size,
+        paddockPlans.size,
+        paddockPlanNodes.size,
+        paddockDividers.size,
+        paddockDividerNodeRefs.size,
+        paddockRegionLabels.size,
+        fieldRecords.size
     )
 }
 
@@ -51,7 +64,13 @@ data class BackupRecordCounts(
     val circuitPastureRoles: Int = 0,
     val herdCircuitAssignments: Int = 0,
     val pastureForageObservations: Int = 0,
-    val paddockSplitPlans: Int = 0
+    val paddockSplitPlans: Int = 0,
+    val paddockPlans: Int = 0,
+    val paddockPlanNodes: Int = 0,
+    val paddockDividers: Int = 0,
+    val paddockDividerNodeRefs: Int = 0,
+    val paddockRegionLabels: Int = 0,
+    val fieldRecords: Int = 0
 )
 
 data class RangeWaterBackupManifest(

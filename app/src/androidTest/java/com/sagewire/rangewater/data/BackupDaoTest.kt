@@ -194,19 +194,37 @@ class BackupDaoTest {
                     updatedAt = now
                 )
             ),
-            paddockSplitPlans = listOf(
-                PaddockSplitPlanEntity(
+            paddockPlans = listOf(
+                PaddockPlanEntity(
                     id = 90,
                     pastureId = 10,
                     name = "Triangle Split",
-                    sideALabel = "Upper",
-                    sideBLabel = "Lower",
-                    startJunctionAId = 20,
-                    startJunctionBId = 21,
-                    startSegmentRatio = 0.5,
-                    endJunctionAId = 21,
-                    endJunctionBId = 22,
-                    endSegmentRatio = 0.5,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            ),
+            paddockPlanNodes = listOf(
+                PaddockPlanNodeEntity(91, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 20, 21, 0.5, createdAt = now, updatedAt = now),
+                PaddockPlanNodeEntity(92, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 21, 22, 0.5, createdAt = now, updatedAt = now)
+            ),
+            paddockDividers = listOf(PaddockDividerEntity(90, 90, "Triangle Split", 0, now, now)),
+            paddockDividerNodeRefs = listOf(
+                PaddockDividerNodeRefEntity(90, 0, 91),
+                PaddockDividerNodeRefEntity(90, 1, 92)
+            ),
+            paddockRegionLabels = listOf(
+                PaddockRegionLabelEntity(90, "legacy-side-a", "Upper"),
+                PaddockRegionLabelEntity(90, "legacy-side-b", "Lower")
+            ),
+            fieldRecords = listOf(
+                FieldRecordEntity(
+                    id = 100,
+                    recordType = FieldRecordType.NOTE,
+                    note = "South fence checked",
+                    latitude = 40.001,
+                    longitude = -99.999,
+                    pastureId = 10,
+                    observedAt = now,
                     createdAt = now,
                     updatedAt = now
                 )

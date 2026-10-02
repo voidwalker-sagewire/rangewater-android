@@ -92,7 +92,13 @@ class RangeWaterArchiveCodecTest {
             circuitPastureRoles = emptyList(),
             herdCircuitAssignments = emptyList(),
             pastureForageObservations = emptyList(),
-            paddockSplitPlans = emptyList()
+            paddockSplitPlans = emptyList(),
+            paddockPlans = emptyList(),
+            paddockPlanNodes = emptyList(),
+            paddockDividers = emptyList(),
+            paddockDividerNodeRefs = emptyList(),
+            paddockRegionLabels = emptyList(),
+            fieldRecords = emptyList()
         )
         val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply {
             remove("grazingCircuits")
@@ -141,7 +147,15 @@ class RangeWaterArchiveCodecTest {
     @Test
     fun formatTwoArchive_restoresWithEmptyPaddockPlans() {
         val gson = Gson()
-        val legacyData = completeData().copy(paddockSplitPlans = emptyList())
+        val legacyData = completeData().copy(
+            paddockSplitPlans = emptyList(),
+            paddockPlans = emptyList(),
+            paddockPlanNodes = emptyList(),
+            paddockDividers = emptyList(),
+            paddockDividerNodeRefs = emptyList(),
+            paddockRegionLabels = emptyList(),
+            fieldRecords = emptyList()
+        )
         val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply { remove("paddockSplitPlans") }
         val dataBytes = gson.toJson(dataJson).toByteArray(StandardCharsets.UTF_8)
         val manifest = RangeWaterBackupManifest(
@@ -167,6 +181,80 @@ class RangeWaterArchiveCodecTest {
 
         assertEquals(legacyData, restored.data)
         assertTrue(restored.data.paddockSplitPlans.isEmpty())
+    }
+
+    @Test
+    fun formatThreeArchive_semanticallyUpgradesStraightSplitToSchemaNineGraph() {
+        val gson = Gson()
+        val legacyData = completeData().copy(
+            paddockPlans = emptyList(),
+            paddockPlanNodes = emptyList(),
+            paddockDividers = emptyList(),
+            paddockDividerNodeRefs = emptyList(),
+            paddockRegionLabels = emptyList(),
+            fieldRecords = emptyList(),
+            paddockSplitPlans = listOf(
+                PaddockSplitPlanEntity(
+                    id = 90,
+                    pastureId = 10,
+                    name = "Triangle Split",
+                    sideALabel = "Upper",
+                    sideBLabel = "Lower",
+                    startJunctionAId = 20,
+                    startJunctionBId = 21,
+                    startSegmentRatio = 0.5,
+                    endJunctionAId = 21,
+                    endJunctionBId = 22,
+                    endSegmentRatio = 0.5,
+                    createdAt = 100,
+                    updatedAt = 100
+                )
+            )
+        )
+        val dataJson = gson.toJsonTree(legacyData).asJsonObject.apply {
+            remove("paddockPlans")
+            remove("paddockPlanNodes")
+            remove("paddockDividers")
+            remove("paddockDividerNodeRefs")
+            remove("paddockRegionLabels")
+            remove("fieldRecords")
+        }
+        val dataBytes = gson.toJson(dataJson).toByteArray(StandardCharsets.UTF_8)
+        val manifest = RangeWaterBackupManifest(
+            formatId = RangeWaterArchiveCodec.FORMAT_ID,
+            formatVersion = 3,
+            databaseSchemaVersion = 8,
+            appVersionName = "1.2.0",
+            createdAt = 789L,
+            dataSha256 = sha256(dataBytes),
+            recordCounts = legacyData.recordCounts()
+        )
+        val manifestJson = gson.toJsonTree(manifest).asJsonObject.apply {
+            getAsJsonObject("recordCounts").apply {
+                remove("paddockPlans")
+                remove("paddockPlanNodes")
+                remove("paddockDividers")
+                remove("paddockDividerNodeRefs")
+                remove("paddockRegionLabels")
+                remove("fieldRecords")
+            }
+        }
+        val restored = RangeWaterArchiveCodec.read(
+            ByteArrayInputStream(
+                zip(
+                    linkedMapOf(
+                        "manifest.json" to gson.toJson(manifestJson).toByteArray(StandardCharsets.UTF_8),
+                        "data.json" to dataBytes
+                    )
+                )
+            )
+        )
+
+        assertTrue(restored.data.paddockSplitPlans.isEmpty())
+        assertEquals(1, restored.data.paddockPlans.size)
+        assertEquals(2, restored.data.paddockPlanNodes.size)
+        assertEquals(1, restored.data.paddockDividers.size)
+        assertEquals(listOf("Upper", "Lower"), restored.data.paddockRegionLabels.map { it.label })
     }
 
     private fun completeData(): RangeWaterBackupData {
@@ -249,19 +337,38 @@ class RangeWaterArchiveCodecTest {
                     updatedAt = now
                 )
             ),
-            paddockSplitPlans = listOf(
-                PaddockSplitPlanEntity(
+            paddockPlans = listOf(
+                PaddockPlanEntity(
                     id = 90,
                     pastureId = 10,
                     name = "Triangle Split",
-                    sideALabel = "Upper",
-                    sideBLabel = "Lower",
-                    startJunctionAId = 20,
-                    startJunctionBId = 21,
-                    startSegmentRatio = 0.5,
-                    endJunctionAId = 21,
-                    endJunctionBId = 22,
-                    endSegmentRatio = 0.5,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            ),
+            paddockPlanNodes = listOf(
+                PaddockPlanNodeEntity(91, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 20, 21, 0.5, createdAt = now, updatedAt = now),
+                PaddockPlanNodeEntity(92, 90, PaddockPlanNodeKind.BOUNDARY_ANCHOR, 21, 22, 0.5, createdAt = now, updatedAt = now)
+            ),
+            paddockDividers = listOf(PaddockDividerEntity(90, 90, "Triangle Split", 0, now, now)),
+            paddockDividerNodeRefs = listOf(
+                PaddockDividerNodeRefEntity(90, 0, 91),
+                PaddockDividerNodeRefEntity(90, 1, 92)
+            ),
+            paddockRegionLabels = listOf(
+                PaddockRegionLabelEntity(90, "legacy-side-a", "Upper"),
+                PaddockRegionLabelEntity(90, "legacy-side-b", "Lower")
+            ),
+            fieldRecords = listOf(
+                FieldRecordEntity(
+                    id = 100,
+                    recordType = FieldRecordType.TASK,
+                    note = "Repair south fence",
+                    latitude = 40.001,
+                    longitude = -99.999,
+                    pastureId = 10,
+                    taskStatus = FieldTaskStatus.OPEN,
+                    observedAt = now,
                     createdAt = now,
                     updatedAt = now
                 )

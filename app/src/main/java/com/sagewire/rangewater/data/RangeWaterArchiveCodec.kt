@@ -17,8 +17,8 @@ import java.util.zip.ZipOutputStream
 /** Versioned, checksummed archive codec. It contains no Android storage assumptions. */
 object RangeWaterArchiveCodec {
     const val FORMAT_ID = "com.sagewire.rangewater.backup"
-    const val FORMAT_VERSION = 3
-    const val DATABASE_SCHEMA_VERSION = 8
+    const val FORMAT_VERSION = 4
+    const val DATABASE_SCHEMA_VERSION = 9
     const val MIME_TYPE = "application/vnd.sagewire.rangewater-backup"
     const val FILE_EXTENSION = ".rangewater"
 
@@ -106,7 +106,7 @@ object RangeWaterArchiveCodec {
             "Backup integrity check failed"
         }
 
-        val data = try {
+        val decoded = try {
             val json = JsonParser.parseString(String(dataBytes, StandardCharsets.UTF_8)).asJsonObject
             if (manifest.formatVersion == 1) {
                 LEGACY_EMPTY_COLLECTIONS.forEach { name ->
@@ -116,13 +116,20 @@ object RangeWaterArchiveCodec {
             if (manifest.formatVersion <= 2 && (!json.has("paddockSplitPlans") || json["paddockSplitPlans"].isJsonNull)) {
                 json.add("paddockSplitPlans", com.google.gson.JsonArray())
             }
+            if (manifest.formatVersion <= 3) {
+                FORMAT_4_COLLECTIONS.forEach { name ->
+                    if (!json.has(name) || json[name].isJsonNull) json.add(name, com.google.gson.JsonArray())
+                }
+            }
             gson.fromJson(json, RangeWaterBackupData::class.java)
         } catch (error: Exception) {
             throw IllegalArgumentException("Backup records cannot be read", error)
         } ?: throw IllegalArgumentException("Backup records are empty")
 
+        require(manifest.recordCounts == decoded.recordCounts()) { "Backup record counts do not match" }
+        val data = if (manifest.formatVersion <= 3) decoded.upgradeLegacyPaddockPlans() else decoded
+        require(data.paddockSplitPlans.isEmpty()) { "Format 4 cannot contain legacy paddock splits" }
         RangeWaterBackupValidator.validate(data)
-        require(manifest.recordCounts == data.recordCounts()) { "Backup record counts do not match" }
         return PreparedRangeWaterRestore(manifest, data)
     }
 
@@ -152,4 +159,82 @@ object RangeWaterArchiveCodec {
         "pastureForageObservations",
         "paddockSplitPlans"
     )
+
+    private val FORMAT_4_COLLECTIONS = listOf(
+        "paddockPlans",
+        "paddockPlanNodes",
+        "paddockDividers",
+        "paddockDividerNodeRefs",
+        "paddockRegionLabels",
+        "fieldRecords"
+    )
+
+    internal fun RangeWaterBackupData.upgradeLegacyPaddockPlans(): RangeWaterBackupData {
+        if (paddockSplitPlans.isEmpty()) return copy(paddockSplitPlans = emptyList())
+        val plans = paddockSplitPlans.map { legacy ->
+            PaddockPlanEntity(
+                id = legacy.id,
+                pastureId = legacy.pastureId,
+                name = legacy.name,
+                createdAt = legacy.createdAt,
+                updatedAt = legacy.updatedAt,
+                archivedAt = legacy.archivedAt
+            )
+        }
+        val nodes = paddockSplitPlans.flatMap { legacy ->
+            listOf(
+                PaddockPlanNodeEntity(
+                    id = legacy.id * 2 - 1,
+                    planId = legacy.id,
+                    nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
+                    boundaryJunctionAId = legacy.startJunctionAId,
+                    boundaryJunctionBId = legacy.startJunctionBId,
+                    boundarySegmentRatio = legacy.startSegmentRatio,
+                    createdAt = legacy.createdAt,
+                    updatedAt = legacy.updatedAt
+                ),
+                PaddockPlanNodeEntity(
+                    id = legacy.id * 2,
+                    planId = legacy.id,
+                    nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
+                    boundaryJunctionAId = legacy.endJunctionAId,
+                    boundaryJunctionBId = legacy.endJunctionBId,
+                    boundarySegmentRatio = legacy.endSegmentRatio,
+                    createdAt = legacy.createdAt,
+                    updatedAt = legacy.updatedAt
+                )
+            )
+        }
+        val dividers = paddockSplitPlans.map { legacy ->
+            PaddockDividerEntity(
+                id = legacy.id,
+                planId = legacy.id,
+                name = legacy.name,
+                sequence = 0,
+                createdAt = legacy.createdAt,
+                updatedAt = legacy.updatedAt,
+                archivedAt = legacy.archivedAt
+            )
+        }
+        val refs = paddockSplitPlans.flatMap { legacy ->
+            listOf(
+                PaddockDividerNodeRefEntity(legacy.id, 0, legacy.id * 2 - 1),
+                PaddockDividerNodeRefEntity(legacy.id, 1, legacy.id * 2)
+            )
+        }
+        val labels = paddockSplitPlans.flatMap { legacy ->
+            listOf(
+                PaddockRegionLabelEntity(legacy.id, "legacy-side-a", legacy.sideALabel),
+                PaddockRegionLabelEntity(legacy.id, "legacy-side-b", legacy.sideBLabel)
+            )
+        }
+        return copy(
+            paddockSplitPlans = emptyList(),
+            paddockPlans = plans,
+            paddockPlanNodes = nodes,
+            paddockDividers = dividers,
+            paddockDividerNodeRefs = refs,
+            paddockRegionLabels = labels
+        )
+    }
 }

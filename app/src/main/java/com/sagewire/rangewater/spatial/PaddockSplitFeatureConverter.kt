@@ -30,9 +30,34 @@ object PaddockSplitFeatureConverter {
         }
     )
 
-    fun draftFeatures(start: PaddockBoundaryAnchor?, result: PaddockSplitResult?): FeatureCollection {
+    fun draftFeatures(
+        start: PaddockBoundaryAnchor?,
+        result: PaddockSplitResult?,
+        customPath: List<PastureCoordinate> = emptyList()
+    ): FeatureCollection {
         val features = mutableListOf<Feature>()
-        if (result != null) {
+        if (customPath.isNotEmpty()) {
+            if (customPath.size >= 2) {
+                features += Feature.fromGeometry(
+                    LineString.fromLngLats(
+                        customPath.map { Point.fromLngLat(it.longitude, it.latitude) }
+                    ),
+                    JsonObject().apply {
+                        addProperty("selected", true)
+                        addProperty("kind", "line")
+                    }
+                )
+            }
+            features += customPath.mapIndexed { index, coordinate ->
+                Feature.fromGeometry(
+                    Point.fromLngLat(coordinate.longitude, coordinate.latitude),
+                    JsonObject().apply {
+                        addProperty("endpoint", index == 0 || index == customPath.lastIndex)
+                        addProperty("waypoint", index > 0 && index < customPath.lastIndex)
+                    }
+                )
+            }
+        } else if (result != null) {
             features += regionFeature(-1, "A", result.sideA, result.sideAAcres, true)
             features += regionFeature(-1, "B", result.sideB, result.sideBAcres, true)
             features += lineFeature(-1, result.start.coordinate, result.end.coordinate, true)

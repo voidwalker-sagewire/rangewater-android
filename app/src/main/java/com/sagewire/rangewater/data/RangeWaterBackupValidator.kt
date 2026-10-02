@@ -1,6 +1,6 @@
 package com.sagewire.rangewater.data
 
-import com.sagewire.rangewater.spatial.PaddockSplitEngine
+import com.sagewire.rangewater.spatial.PolystrandPlanEngine
 
 /** Rejects malformed archives before the live database transaction begins. */
 object RangeWaterBackupValidator {
@@ -14,7 +14,11 @@ object RangeWaterBackupValidator {
         uniquePositiveIds("movement", data.movements.map { it.id })
         val circuitIds = uniquePositiveIds("grazing circuit", data.grazingCircuits.map { it.id })
         uniquePositiveIds("forage observation", data.pastureForageObservations.map { it.id })
-        uniquePositiveIds("paddock split", data.paddockSplitPlans.map { it.id })
+        require(data.paddockSplitPlans.isEmpty()) { "Schema-9 backups cannot contain legacy paddock splits" }
+        val planIds = uniquePositiveIds("paddock plan", data.paddockPlans.map { it.id })
+        val planNodeIds = uniquePositiveIds("paddock plan node", data.paddockPlanNodes.map { it.id })
+        val dividerIds = uniquePositiveIds("paddock divider", data.paddockDividers.map { it.id })
+        uniquePositiveIds("field record", data.fieldRecords.map { it.id })
 
         data.waterPoints.forEach { point ->
             requireCoordinate(point.latitude, point.longitude, "Water point #${point.id}")
@@ -180,58 +184,149 @@ object RangeWaterBackupValidator {
         }
 
         val activePlanPastures = mutableSetOf<Long>()
-        data.paddockSplitPlans.forEach { plan ->
+        data.paddockPlans.forEach { plan ->
             require(plan.pastureId in pastureIds) {
-                "Paddock split #${plan.id} references a missing pasture"
+                "Paddock plan #${plan.id} references a missing pasture"
             }
-            require(plan.name.isNotBlank()) { "Paddock split #${plan.id} has no name" }
-            require(plan.sideALabel.isNotBlank() && plan.sideBLabel.isNotBlank()) {
-                "Paddock split #${plan.id} has a blank side label"
-            }
-            require(plan.startJunctionAId in junctionIds && plan.startJunctionBId in junctionIds &&
-                plan.endJunctionAId in junctionIds && plan.endJunctionBId in junctionIds
-            ) { "Paddock split #${plan.id} references a missing fence junction" }
-            require(plan.startJunctionAId < plan.startJunctionBId && plan.endJunctionAId < plan.endJunctionBId) {
-                "Paddock split #${plan.id} has non-canonical anchors"
-            }
-            require(plan.startSegmentRatio.isFinite() && plan.startSegmentRatio in 0.0..1.0 &&
-                plan.endSegmentRatio.isFinite() && plan.endSegmentRatio in 0.0..1.0
-            ) { "Paddock split #${plan.id} has an invalid endpoint ratio" }
-            val pastureSegments = data.vertices
-                .filter { it.pastureId == plan.pastureId }
-                .sortedBy { it.sequence }
-                .let { vertices ->
-                    vertices.indices.mapTo(mutableSetOf()) { index ->
-                        val first = vertices[index].junctionId
-                        val second = vertices[(index + 1) % vertices.size].junctionId
-                        minOf(first, second) to maxOf(first, second)
-                    }
-                }
-            require((plan.startJunctionAId to plan.startJunctionBId) in pastureSegments &&
-                (plan.endJunctionAId to plan.endJunctionBId) in pastureSegments
-            ) { "Paddock split #${plan.id} references a non-boundary segment" }
-            val pasture = data.pastures.first { it.id == plan.pastureId }
-            val junctionMap = data.junctions.associateBy { it.id }
-            val resolvedPasture = PastureWithVertices(
-                pasture = pasture,
-                vertices = data.vertices
-                    .filter { it.pastureId == plan.pastureId }
-                    .sortedBy { it.sequence }
-                    .map { vertex ->
-                        PastureVertexWithJunction(vertex, junctionMap.getValue(vertex.junctionId))
-                    }
-            )
-            try {
-                PaddockSplitEngine.resolve(plan, resolvedPasture)
-            } catch (error: IllegalArgumentException) {
-                throw IllegalArgumentException(
-                    "Paddock split #${plan.id} has invalid derived geometry: ${error.message}",
-                    error
-                )
-            }
+            require(plan.name.isNotBlank()) { "Paddock plan #${plan.id} has no name" }
             if (plan.archivedAt == null) {
                 require(activePlanPastures.add(plan.pastureId)) {
-                    "A pasture has multiple active paddock splits"
+                    "A pasture has multiple active paddock plans"
+                }
+            }
+        }
+
+        val pastureSegments = data.vertices.groupBy { it.pastureId }.mapValues { (_, rows) ->
+            val ordered = rows.sortedBy { it.sequence }
+            ordered.indices.mapTo(mutableSetOf()) { index ->
+                val first = ordered[index].junctionId
+                val second = ordered[(index + 1) % ordered.size].junctionId
+                minOf(first, second) to maxOf(first, second)
+            }
+        }
+        data.paddockPlanNodes.forEach { node ->
+            require(node.planId in planIds) { "Paddock node #${node.id} references a missing plan" }
+            val plan = data.paddockPlans.first { it.id == node.planId }
+            when (node.nodeKind) {
+                PaddockPlanNodeKind.BOUNDARY_ANCHOR -> {
+                    val a = node.boundaryJunctionAId
+                    val b = node.boundaryJunctionBId
+                    require(a != null && b != null && a in junctionIds && b in junctionIds && a < b) {
+                        "Boundary anchor #${node.id} has invalid junctions"
+                    }
+                    require((a to b) in pastureSegments[plan.pastureId].orEmpty()) {
+                        "Boundary anchor #${node.id} is not on its parent pasture"
+                    }
+                    require(node.boundarySegmentRatio?.let { it.isFinite() && it in 0.0..1.0 } == true) {
+                        "Boundary anchor #${node.id} has an invalid ratio"
+                    }
+                    require(node.latitude == null && node.longitude == null) {
+                        "Boundary anchor #${node.id} contains duplicate coordinates"
+                    }
+                }
+                PaddockPlanNodeKind.INTERIOR_JUNCTION,
+                PaddockPlanNodeKind.INTERIOR_WAYPOINT -> {
+                    require(node.boundaryJunctionAId == null && node.boundaryJunctionBId == null &&
+                        node.boundarySegmentRatio == null
+                    ) { "Interior node #${node.id} carries a boundary anchor" }
+                    requireCoordinate(node.latitude ?: Double.NaN, node.longitude ?: Double.NaN, "Paddock node #${node.id}")
+                }
+            }
+        }
+
+        val dividerSequences = mutableMapOf<Long, MutableList<Int>>()
+        data.paddockDividers.forEach { divider ->
+            require(divider.planId in planIds) { "Divider #${divider.id} references a missing plan" }
+            require(divider.name.isNotBlank() && divider.sequence >= 0) { "Divider #${divider.id} is malformed" }
+            dividerSequences.getOrPut(divider.planId) { mutableListOf() } += divider.sequence
+        }
+        dividerSequences.forEach { (planId, sequences) ->
+            require(sequences.sorted() == sequences.indices.toList()) { "Paddock plan #$planId has a broken divider sequence" }
+        }
+
+        val refsByDivider = data.paddockDividerNodeRefs.groupBy { it.dividerId }
+        data.paddockDividerNodeRefs.forEach { ref ->
+            require(ref.dividerId in dividerIds && ref.nodeId in planNodeIds && ref.sequence >= 0) {
+                "A paddock divider reference is malformed"
+            }
+            val divider = data.paddockDividers.first { it.id == ref.dividerId }
+            val node = data.paddockPlanNodes.first { it.id == ref.nodeId }
+            require(divider.planId == node.planId) { "Divider #${divider.id} references a node from another plan" }
+        }
+        refsByDivider.forEach { (dividerId, refs) ->
+            val ordered = refs.sortedBy { it.sequence }
+            require(ordered.size >= 2 && ordered.map { it.sequence } == ordered.indices.toList()) {
+                "Divider #$dividerId has a broken node sequence"
+            }
+            require(ordered.map { it.nodeId }.distinct().size == ordered.size) {
+                "Divider #$dividerId references the same node twice"
+            }
+            val first = data.paddockPlanNodes.first { it.id == ordered.first().nodeId }
+            val last = data.paddockPlanNodes.first { it.id == ordered.last().nodeId }
+            require(first.nodeKind != PaddockPlanNodeKind.INTERIOR_WAYPOINT &&
+                last.nodeKind != PaddockPlanNodeKind.INTERIOR_WAYPOINT
+            ) { "Divider #$dividerId has a private waypoint endpoint" }
+        }
+        val refsByNode = data.paddockDividerNodeRefs.groupBy { it.nodeId }
+        data.paddockPlanNodes.forEach { node ->
+            val count = refsByNode[node.id].orEmpty().map { it.dividerId }.distinct().size
+            if (node.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT) {
+                require(count <= 1) { "Private waypoint #${node.id} is shared by multiple dividers" }
+            }
+        }
+        val activeDividersByPlan = data.paddockDividers.filter { it.archivedAt == null }.groupBy { it.planId }
+        data.paddockPlans.filter { it.archivedAt == null }.forEach { plan ->
+            require(activeDividersByPlan[plan.id].orEmpty().isNotEmpty()) {
+                "Active plan #${plan.id} has no active divider"
+            }
+        }
+
+        data.paddockRegionLabels.forEach { label ->
+            require(label.planId in planIds && label.regionKey.isNotBlank() && label.label.isNotBlank()) {
+                "A paddock region label is malformed"
+            }
+        }
+
+        val junctionMap = data.junctions.associateBy { it.id }
+        data.paddockPlans.forEach { plan ->
+            val pasture = PastureWithVertices(
+                pasture = data.pastures.first { it.id == plan.pastureId },
+                vertices = data.vertices.filter { it.pastureId == plan.pastureId }
+                    .sortedBy { it.sequence }
+                    .map { PastureVertexWithJunction(it, junctionMap.getValue(it.junctionId)) }
+            )
+            val planDividers = data.paddockDividers.filter { it.planId == plan.id }
+            val geometryDividers = if (plan.archivedAt == null) planDividers else {
+                planDividers.map { it.copy(archivedAt = null) }
+            }
+            try {
+                PolystrandPlanEngine.resolve(
+                    plan.copy(archivedAt = null),
+                    data.paddockPlanNodes.filter { it.planId == plan.id },
+                    geometryDividers,
+                    data.paddockDividerNodeRefs.filter { it.dividerId in planDividers.map { row -> row.id }.toSet() },
+                    data.paddockRegionLabels.filter { it.planId == plan.id },
+                    pasture
+                )
+            } catch (error: IllegalArgumentException) {
+                throw IllegalArgumentException("Paddock plan #${plan.id} has invalid geometry: ${error.message}", error)
+            }
+        }
+
+        data.fieldRecords.forEach { record ->
+            require(record.note.isNotBlank()) { "Field record #${record.id} has no note" }
+            requireCoordinate(record.latitude, record.longitude, "Field record #${record.id}")
+            require(record.pastureId == null || record.pastureId in pastureIds) {
+                "Field record #${record.id} references a missing pasture"
+            }
+            if (record.recordType == FieldRecordType.TASK) {
+                require(record.taskStatus != null) { "Task #${record.id} has no status" }
+                require((record.taskStatus == FieldTaskStatus.COMPLETED) == (record.completedAt != null)) {
+                    "Task #${record.id} has inconsistent completion state"
+                }
+            } else {
+                require(record.taskStatus == null && record.completedAt == null) {
+                    "Non-task field record #${record.id} carries task state"
                 }
             }
         }

@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import com.sagewire.rangewater.spatial.PaddockSplitEngine
+import com.sagewire.rangewater.spatial.PolystrandPlanEngine
 
 /* 🪨 One transaction owns every pasture boundary and shared-junction mutation. */
 @Dao
@@ -88,13 +88,24 @@ interface PastureDao {
     @Query("SELECT COUNT(*) FROM pasture_forage_observations WHERE pastureId = :pastureId")
     suspend fun forageObservationCountForPasture(pastureId: Long): Int
 
-    @Query("SELECT * FROM paddock_split_plans WHERE pastureId = :pastureId ORDER BY id")
-    suspend fun paddockPlansForPasture(pastureId: Long): List<PaddockSplitPlanEntity>
+    @Query("SELECT * FROM paddock_plans WHERE pastureId = :pastureId ORDER BY id")
+    suspend fun paddockPlansForPasture(pastureId: Long): List<PaddockPlanEntity>
+
+    @Query("SELECT * FROM paddock_plan_nodes WHERE planId = :planId ORDER BY id")
+    suspend fun paddockNodesForPlan(planId: Long): List<PaddockPlanNodeEntity>
+
+    @Query("SELECT * FROM paddock_dividers WHERE planId = :planId ORDER BY sequence, id")
+    suspend fun paddockDividersForPlan(planId: Long): List<PaddockDividerEntity>
+
+    @Query("SELECT r.* FROM paddock_divider_node_refs r INNER JOIN paddock_dividers d ON d.id = r.dividerId WHERE d.planId = :planId ORDER BY d.sequence, r.sequence")
+    suspend fun paddockRefsForPlan(planId: Long): List<PaddockDividerNodeRefEntity>
+
+    @Query("SELECT * FROM paddock_region_labels WHERE planId = :planId ORDER BY regionKey")
+    suspend fun paddockLabelsForPlan(planId: Long): List<PaddockRegionLabelEntity>
 
     @Query(
-        "SELECT COUNT(*) FROM paddock_split_plans WHERE " +
-            "startJunctionAId = :junctionId OR startJunctionBId = :junctionId OR " +
-            "endJunctionAId = :junctionId OR endJunctionBId = :junctionId"
+        "SELECT COUNT(*) FROM paddock_plan_nodes WHERE " +
+            "boundaryJunctionAId = :junctionId OR boundaryJunctionBId = :junctionId"
     )
     suspend fun paddockPlanCountForJunction(junctionId: Long): Int
 
@@ -209,10 +220,12 @@ interface PastureDao {
         val newSegments = vertices.canonicalCoordinateSegments()
         val paddockPlans = paddockPlansForPasture(pastureId)
         paddockPlans.forEach { plan ->
-            check((plan.startJunctionAId to plan.startJunctionBId) in newSegments &&
-                (plan.endJunctionAId to plan.endJunctionBId) in newSegments
-            ) {
-                "Cannot alter fence: Paddock split '${plan.name}' is anchored to a changed segment"
+            paddockNodesForPlan(plan.id)
+                .filter { it.nodeKind == PaddockPlanNodeKind.BOUNDARY_ANCHOR }
+                .forEach { node ->
+                    check((node.boundaryJunctionAId to node.boundaryJunctionBId) in newSegments) {
+                        "Cannot alter fence: Polystrand plan '${plan.name}' is anchored to a changed segment"
+                    }
             }
         }
         existingVertices.canonicalVertexSegments().forEach { (junctionAId, junctionBId) ->
@@ -234,7 +247,16 @@ interface PastureDao {
         insertVertices(resolveVertexEntities(pastureId, vertices))
         val updatedPasture = getById(pastureId)
             ?: throw IllegalStateException("Pasture $pastureId disappeared during boundary update")
-        paddockPlans.forEach { PaddockSplitEngine.resolve(it, updatedPasture) }
+        paddockPlans.filter { it.archivedAt == null }.forEach { plan ->
+            PolystrandPlanEngine.resolve(
+                plan,
+                paddockNodesForPlan(plan.id),
+                paddockDividersForPlan(plan.id),
+                paddockRefsForPlan(plan.id),
+                paddockLabelsForPlan(plan.id),
+                updatedPasture
+            )
+        }
         affectedPastureIds.forEach { touch(it, now) }
         deleteOrphanJunctions()
     }

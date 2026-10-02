@@ -69,6 +69,7 @@ object MapConfig {
     const val SOURCE_PADDOCK_REGIONS = "source-paddock-regions"
     const val SOURCE_PADDOCK_LINES = "source-paddock-lines"
     const val SOURCE_PADDOCK_DRAFT = "source-paddock-draft"
+    const val SOURCE_FIELD_RECORDS = "source-field-records"
     const val LAYER_PASTURE_FILL = "layer-pasture-fill"
     const val LAYER_PASTURE_CASING = "layer-pasture-casing"
     const val LAYER_PASTURE_LINE = "layer-pasture-line"
@@ -83,6 +84,8 @@ object MapConfig {
     const val LAYER_PADDOCK_DRAFT_FILL = "layer-paddock-draft-fill"
     const val LAYER_PADDOCK_DRAFT_LINE = "layer-paddock-draft-line"
     const val LAYER_PADDOCK_DRAFT_HANDLE = "layer-paddock-draft-handle"
+    const val LAYER_FIELD_RECORDS = "layer-field-records"
+    const val LAYER_FIELD_RECORD_LABELS = "layer-field-record-labels"
     const val LAYER_WATER_TRANSITION_FILL = "layer-water-transition-fill"
     const val LAYER_WATER_PREFERRED_FILL = "layer-water-preferred-fill"
     const val LAYER_WATER_RINGS_LINE = "layer-water-rings-line"
@@ -189,6 +192,10 @@ object MapConfig {
               "data": { "type": "FeatureCollection", "features": [] }
             },
             "$SOURCE_PADDOCK_DRAFT": {
+              "type": "geojson",
+              "data": { "type": "FeatureCollection", "features": [] }
+            },
+            "$SOURCE_FIELD_RECORDS": {
               "type": "geojson",
               "data": { "type": "FeatureCollection", "features": [] }
             }
@@ -403,6 +410,38 @@ object MapConfig {
                 "circle-stroke-color": "#FFFFFF",
                 "circle-stroke-width": 3.0
               }
+            },
+            {
+              "id": "$LAYER_FIELD_RECORDS",
+              "type": "circle",
+              "source": "$SOURCE_FIELD_RECORDS",
+              "paint": {
+                "circle-radius": ["case", ["get", "selected"], 13.0, 10.0],
+                "circle-color": [
+                  "match", ["get", "recordType"],
+                  "TASK", "#FFD54F",
+                  "OBSERVATION", "#00E5FF",
+                  "INPUT", "#8BC34A",
+                  "REPAIR", "#FF9100",
+                  "ANIMAL", "#E040FB",
+                  "WEATHER", "#42A5F5",
+                  "#FFFFFF"
+                ],
+                "circle-stroke-color": ["case", ["get", "selected"], "#FFFFFF", "#151515"],
+                "circle-stroke-width": ["case", ["get", "selected"], 4.0, 3.0]
+              }
+            },
+            {
+              "id": "$LAYER_FIELD_RECORD_LABELS",
+              "type": "symbol",
+              "source": "$SOURCE_FIELD_RECORDS",
+              "layout": {
+                "text-field": ["get", "markerLabel"],
+                "text-size": 12,
+                "text-allow-overlap": true,
+                "text-ignore-placement": true
+              },
+              "paint": { "text-color": "#151515", "text-halo-color": "#FFFFFF", "text-halo-width": 0.5 }
             },
             {
               "id": "$LAYER_GATE_OVERVIEW",

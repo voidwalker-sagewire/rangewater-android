@@ -622,7 +622,7 @@ class DatabaseMigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
-            .addMigrations(RangeWaterDatabase.MIGRATION_7_8)
+            .addMigrations(RangeWaterDatabase.MIGRATION_7_8, RangeWaterDatabase.MIGRATION_8_9)
             .allowMainThreadQueries()
             .build()
         try {
@@ -632,12 +632,12 @@ class DatabaseMigrationTest {
             assertEquals("Migration Herd", migrated.herdDao().getById(50)?.name)
             assertEquals("Migration Circuit", migrated.grazingCircuitDao().getCircuit(70)?.name)
             assertEquals(80L, migrated.forageObservationDao().latestForPasture(10)?.id)
-            assertTrue(migrated.paddockSplitPlanDao().observeAll().first().isEmpty())
+            assertTrue(migrated.paddockPlanDao().observePlans().first().isEmpty())
 
             val pasture = migrated.pastureDao().getById(10)!!
             val start = com.sagewire.rangewater.spatial.PaddockSplitEngine.resolveAnchor(pasture, 20, 21, 0.5)
             val end = com.sagewire.rangewater.spatial.PaddockSplitEngine.resolveAnchor(pasture, 22, 23, 0.5)
-            val planId = migrated.paddockSplitPlanDao().create(
+            val planId = migrated.paddockPlanDao().create(
                 pastureId = 10,
                 name = "Migration Split",
                 sideALabel = "West",
@@ -646,7 +646,7 @@ class DatabaseMigrationTest {
                 end = end,
                 now = 200
             )
-            assertEquals("Migration Split", migrated.paddockSplitPlanDao().getById(planId)?.name)
+            assertEquals("Migration Split", migrated.paddockPlanDao().getPlan(planId)?.name)
         } finally {
             migrated.close()
         }

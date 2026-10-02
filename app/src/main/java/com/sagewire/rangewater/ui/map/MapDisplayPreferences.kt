@@ -31,7 +31,8 @@ data class DisplayPreferences(
     val pastureBoundariesEnabled: Boolean = true,
     val waterPointsEnabled: Boolean = true,
     val gatesEnabled: Boolean = true,
-    val herdBadgesEnabled: Boolean = true
+    val herdBadgesEnabled: Boolean = true,
+    val fieldRecordsEnabled: Boolean = true
 )
 
 class DisplayPreferencesRepository(context: Context) {
@@ -51,7 +52,8 @@ class DisplayPreferencesRepository(context: Context) {
         pastureBoundariesEnabled = preferences.getBoolean(KEY_PASTURE_BOUNDARIES, true),
         waterPointsEnabled = preferences.getBoolean(KEY_WATER_POINTS, true),
         gatesEnabled = preferences.getBoolean(KEY_GATES, true),
-        herdBadgesEnabled = preferences.getBoolean(KEY_HERD_BADGES, true)
+        herdBadgesEnabled = preferences.getBoolean(KEY_HERD_BADGES, true),
+        fieldRecordsEnabled = preferences.getBoolean(KEY_FIELD_RECORDS, true)
     )
 
     fun saveCoverageMode(mode: WaterCoverageMode) {
@@ -78,6 +80,10 @@ class DisplayPreferencesRepository(context: Context) {
         preferences.edit().putBoolean(KEY_HERD_BADGES, enabled).apply()
     }
 
+    fun saveFieldRecordsEnabled(enabled: Boolean) {
+        preferences.edit().putBoolean(KEY_FIELD_RECORDS, enabled).apply()
+    }
+
     fun saveCoverageScope(scope: SpatialCoverageScope) {
         preferences.edit().putString(KEY_COVERAGE_SCOPE, scope.name).apply()
     }
@@ -91,6 +97,7 @@ class DisplayPreferencesRepository(context: Context) {
         .putBoolean(KEY_WATER_POINTS, value.waterPointsEnabled)
         .putBoolean(KEY_GATES, value.gatesEnabled)
         .putBoolean(KEY_HERD_BADGES, value.herdBadgesEnabled)
+        .putBoolean(KEY_FIELD_RECORDS, value.fieldRecordsEnabled)
         .commit()
 
     companion object {
@@ -102,5 +109,6 @@ class DisplayPreferencesRepository(context: Context) {
         const val KEY_WATER_POINTS = "water_points_enabled"
         const val KEY_GATES = "gates_enabled"
         const val KEY_HERD_BADGES = "herd_badges_enabled"
+        const val KEY_FIELD_RECORDS = "field_records_enabled"
     }
 }

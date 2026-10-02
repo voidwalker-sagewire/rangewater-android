@@ -1,12 +1,17 @@
 package com.sagewire.rangewater.ui.map
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ComponentCallbacks2
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
 import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
@@ -78,6 +83,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -95,8 +101,13 @@ import com.sagewire.rangewater.data.HerdLocationKind
 import com.sagewire.rangewater.data.MovementStatus
 import com.sagewire.rangewater.data.StockClass
 import com.sagewire.rangewater.data.PastureWithVertices
-import com.sagewire.rangewater.data.PaddockSplitPlanEntity
+import com.sagewire.rangewater.data.PaddockPlanEntity
+import com.sagewire.rangewater.data.PaddockNodeDraft
+import com.sagewire.rangewater.data.PaddockPlanNodeKind
 import com.sagewire.rangewater.data.FenceJunctionEntity
+import com.sagewire.rangewater.data.FieldRecordEntity
+import com.sagewire.rangewater.data.FieldRecordType
+import com.sagewire.rangewater.data.FieldTaskStatus
 import com.sagewire.rangewater.data.ForageCalibrationSource
 import com.sagewire.rangewater.data.ForageCalculator
 import com.sagewire.rangewater.data.ForageStandCondition
@@ -120,6 +131,7 @@ import com.sagewire.rangewater.spatial.GateFeatureConverter
 import com.sagewire.rangewater.spatial.GateSnapResult
 import com.sagewire.rangewater.spatial.GateSnappingEngine
 import com.sagewire.rangewater.spatial.HerdFeatureConverter
+import com.sagewire.rangewater.spatial.FieldRecordFeatureConverter
 import com.sagewire.rangewater.spatial.MovementFeatureConverter
 import com.sagewire.rangewater.spatial.SnappedGateCandidate
 import com.sagewire.rangewater.spatial.CornerSnappingEngine
@@ -130,6 +142,9 @@ import com.sagewire.rangewater.spatial.PaddockBoundaryAnchor
 import com.sagewire.rangewater.spatial.PaddockSplitEngine
 import com.sagewire.rangewater.spatial.PaddockSplitFeatureConverter
 import com.sagewire.rangewater.spatial.PaddockSplitResult
+import com.sagewire.rangewater.spatial.PolystrandPlanEngine
+import com.sagewire.rangewater.spatial.PolystrandPlanFeatureConverter
+import com.sagewire.rangewater.spatial.PolystrandPlanResult
 import com.sagewire.rangewater.spatial.PastureFeatureConverter.orderedCoordinates
 import com.sagewire.rangewater.spatial.WaterFeatureConverter
 import com.sagewire.rangewater.ui.help.FieldGuideSection
@@ -168,7 +183,8 @@ private enum class InteractionState {
     PASTURE_EDITING,
     GATE_PLACEMENT,
     GATE_MOVING,
-    PADDOCK_SPLIT_PLACEMENT
+    PADDOCK_SPLIT_PLACEMENT,
+    FIELD_LOG_PLACEMENT
 }
 
 private enum class PastureEditMode {
@@ -221,8 +237,19 @@ fun MapScreen(
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val forageObservations by database.forageObservationDao().observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val paddockPlanDao = remember(database) { database.paddockSplitPlanDao() }
-    val paddockPlans by paddockPlanDao.observeActive()
+    val fieldRecordDao = remember(database) { database.fieldRecordDao() }
+    val fieldRecords by fieldRecordDao.observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockPlanDao = remember(database) { database.paddockPlanDao() }
+    val paddockPlans by paddockPlanDao.observeActivePlans()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockPlanNodes by paddockPlanDao.observeAllNodes()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockDividers by paddockPlanDao.observeAllDividers()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockNodeRefs by paddockPlanDao.observeAllNodeRefs()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val paddockRegionLabels by paddockPlanDao.observeAllRegionLabels()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val assignmentMap = remember(assignments) {
         assignments.groupBy({ it.waterPointId }, { it.pastureId })
@@ -287,6 +314,7 @@ fun MapScreen(
     var selectedHerdId by remember { mutableStateOf<Long?>(null) }
     var focusedHerdId by remember { mutableStateOf<Long?>(null) }
     var selectedMovementId by remember { mutableStateOf<Long?>(null) }
+    var selectedFieldRecordId by remember { mutableStateOf<Long?>(null) }
     var herdManagerPastureFilterId by remember { mutableStateOf<Long?>(null) }
     var showHerdManagerDialog by remember { mutableStateOf(false) }
     var showCircuitManagerDialog by remember { mutableStateOf(false) }
@@ -334,6 +362,11 @@ fun MapScreen(
     var movingPaddockStart by remember { mutableStateOf<Boolean?>(null) }
     var paddockDraftResult by remember { mutableStateOf<PaddockSplitResult?>(null) }
     var editingPaddockPlanId by remember { mutableStateOf<Long?>(null) }
+    var addingPaddockDivider by remember { mutableStateOf(false) }
+    var paddockCustomMode by remember { mutableStateOf(false) }
+    val paddockCustomPoints = remember { mutableStateListOf<PaddockNodeDraft>() }
+    var showPaddockModeDialog by remember { mutableStateOf(false) }
+    var showPaddockCustomSaveDialog by remember { mutableStateOf(false) }
     var showPaddockPlanDialog by remember { mutableStateOf(false) }
     var showPaddockSaveDialog by remember { mutableStateOf(false) }
     var showPaddockDeleteDialog by remember { mutableStateOf(false) }
@@ -341,6 +374,14 @@ fun MapScreen(
     var paddockSideAInput by remember { mutableStateOf("Paddock A") }
     var paddockSideBInput by remember { mutableStateOf("Paddock B") }
     var suppressMapClickUntil by remember { mutableLongStateOf(0L) }
+
+    var showFieldRecordEditor by remember { mutableStateOf(false) }
+    var showFieldLedger by remember { mutableStateOf(false) }
+    var editingFieldRecord by remember { mutableStateOf<FieldRecordEntity?>(null) }
+    var fieldDraftCoordinate by remember {
+        mutableStateOf(initialLat to initialLng)
+    }
+    var fieldLocationAccuracy by remember { mutableStateOf<Float?>(null) }
 
     var showWaterEditDialog by remember { mutableStateOf(false) }
     var showWaterDeleteDialog by remember { mutableStateOf(false) }
@@ -431,11 +472,29 @@ fun MapScreen(
     val effectivePastures = remember(pastures, ephemeralJunctionMoves.toMap()) {
         applyJunctionMovePreview(pastures, ephemeralJunctionMoves)
     }
-    val resolvedPaddockPlans = remember(paddockPlans, effectivePastures) {
+    val resolvedPaddockPlans = remember(
+        paddockPlans,
+        paddockPlanNodes,
+        paddockDividers,
+        paddockNodeRefs,
+        paddockRegionLabels,
+        effectivePastures
+    ) {
         paddockPlans.mapNotNull { plan ->
             val pasture = effectivePastures.firstOrNull { it.pasture.id == plan.pastureId }
                 ?: return@mapNotNull null
-            runCatching { plan.id to PaddockSplitEngine.resolve(plan, pasture) }.getOrNull()
+            runCatching {
+                PolystrandPlanEngine.resolve(
+                    plan,
+                    paddockPlanNodes.filter { it.planId == plan.id },
+                    paddockDividers.filter { it.planId == plan.id },
+                    paddockNodeRefs.filter { ref ->
+                        ref.dividerId in paddockDividers.filter { it.planId == plan.id }.map { it.id }.toSet()
+                    },
+                    paddockRegionLabels.filter { it.planId == plan.id },
+                    pasture
+                )
+            }.getOrNull()
         }
     }
     val effectiveJunctionCoordinates = remember(allJunctions, ephemeralJunctionMoves.toMap()) {
@@ -503,6 +562,41 @@ fun MapScreen(
     val mapView = remember { MapView(context).apply { onCreate(Bundle()) } }
     val currentMapInstance by rememberUpdatedState(mapInstance)
 
+    @SuppressLint("MissingPermission")
+    fun captureLastKnownFieldLocation() {
+        val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val best = listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.PASSIVE_PROVIDER
+        ).mapNotNull { provider -> runCatching { manager.getLastKnownLocation(provider) }.getOrNull() }
+            .maxByOrNull { it.time }
+        if (best == null) {
+            Toast.makeText(context, "No foreground location fix is available. Place the point manually.", Toast.LENGTH_LONG).show()
+        } else {
+            fieldDraftCoordinate = best.latitude to best.longitude
+            fieldLocationAccuracy = best.accuracy.takeIf { best.hasAccuracy() }
+            showFieldRecordEditor = true
+        }
+    }
+
+    val fieldLocationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) captureLastKnownFieldLocation()
+        else Toast.makeText(context, "Location denied. Manual Field Log placement remains available.", Toast.LENGTH_LONG).show()
+    }
+
+    fun useMyFieldLocation() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            captureLastKnownFieldLocation()
+        } else {
+            fieldLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
     fun replaceDraft(vertices: List<PastureCoordinate>) {
         draftVertices.clear()
         draftVertices.addAll(vertices)
@@ -517,6 +611,7 @@ fun MapScreen(
         selectedHerdId = null
         focusedHerdId = null
         selectedMovementId = null
+        selectedFieldRecordId = null
         candidateGate = null
         movingGate = null
         draftGateMoveCandidate = null
@@ -715,8 +810,45 @@ fun MapScreen(
                     )?.coordinate?.toLatLng()
                 } ?: rawCoordinate
             }
+            InteractionState.FIELD_LOG_PLACEMENT -> rawCoordinate
             else -> rawCoordinate
         }
+    }
+
+    fun commitCustomPaddockPoint(map: MapLibreMap, coordinate: LatLng) {
+        val pasture = selectedPasture ?: return
+        val anchor = PaddockSplitEngine.nearestBoundaryAnchor(
+            coordinate.toPastureCoordinate(),
+            pasture,
+            screenToleranceMeters(map, coordinate, 40f * context.resources.displayMetrics.density)
+        )
+        if (paddockCustomPoints.isEmpty()) {
+            if (anchor == null) {
+                Toast.makeText(context, "Start the custom divider on the pasture boundary", Toast.LENGTH_SHORT).show()
+            } else {
+                paddockCustomPoints += anchor.toNodeDraft()
+                Toast.makeText(context, "Start set. Tap inside for waypoints or tap the boundary to finish.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        if (anchor != null) {
+            paddockCustomPoints += anchor.toNodeDraft()
+            showPaddockCustomSaveDialog = true
+            return
+        }
+        val insideSelectedPasture = suggestFieldPasture(
+            coordinate.latitude to coordinate.longitude,
+            listOf(pasture)
+        ) == pasture.pasture.id
+        if (!insideSelectedPasture) {
+            Toast.makeText(context, "Waypoints must remain inside the selected pasture", Toast.LENGTH_LONG).show()
+            return
+        }
+        paddockCustomPoints += PaddockNodeDraft(
+            nodeKind = PaddockPlanNodeKind.INTERIOR_WAYPOINT,
+            latitude = coordinate.latitude,
+            longitude = coordinate.longitude
+        )
     }
 
     fun commitPrecisionPlacement(map: MapLibreMap, coordinate: LatLng) {
@@ -798,6 +930,10 @@ fun MapScreen(
                 }
             }
             InteractionState.PADDOCK_SPLIT_PLACEMENT -> {
+                if (paddockCustomMode) {
+                    commitCustomPaddockPoint(map, coordinate)
+                    return
+                }
                 val pasture = selectedPasture ?: return
                 val anchor = PaddockSplitEngine.nearestBoundaryAnchor(
                     coordinate.toPastureCoordinate(),
@@ -832,6 +968,12 @@ fun MapScreen(
                         Toast.LENGTH_LONG
                     ).show()
                 }
+            }
+            InteractionState.FIELD_LOG_PLACEMENT -> {
+                fieldDraftCoordinate = coordinate.latitude to coordinate.longitude
+                fieldLocationAccuracy = null
+                interactionState = InteractionState.ORDINARY
+                showFieldRecordEditor = true
             }
             InteractionState.ORDINARY,
             InteractionState.PASTURE_EDITING -> Unit
@@ -917,6 +1059,9 @@ fun MapScreen(
         paddockPlans,
         paddockDraftResult,
         paddockStartAnchor,
+        paddockCustomPoints.toList(),
+        fieldRecords,
+        selectedFieldRecordId,
         mapInstance
     ) {
         pushAllOverlays(
@@ -943,16 +1088,20 @@ fun MapScreen(
             resolvedPaddockPlans = resolvedPaddockPlans,
             selectedPaddockPlanId = selectedPaddockPlan?.id,
             paddockStartAnchor = paddockStartAnchor,
-            paddockDraftResult = paddockDraftResult
+            paddockDraftResult = paddockDraftResult,
+            paddockCustomPath = resolvePaddockDraftPath(paddockCustomPoints, selectedPasture),
+            fieldRecords = fieldRecords,
+            selectedFieldRecordId = selectedFieldRecordId
         )
     }
-    LaunchedEffect(waterPoints, pastures, gates, herds, movements, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, focusedHerdId, selectedMovementId) {
+    LaunchedEffect(waterPoints, pastures, gates, herds, movements, fieldRecords, selectedWaterId, selectedPastureId, selectedGateId, selectedHerdId, focusedHerdId, selectedMovementId, selectedFieldRecordId) {
         if (selectedWaterId != null && selectedWater == null) selectedWaterId = null
         if (selectedPastureId != null && selectedPasture == null) selectedPastureId = null
         if (selectedGateId != null && gates.none { it.id == selectedGateId }) selectedGateId = null
         if (selectedHerdId != null && selectedHerd == null) selectedHerdId = null
         if (focusedHerdId != null && focusedHerd == null) focusedHerdId = null
         if (selectedMovementId != null && movements.none { it.id == selectedMovementId }) selectedMovementId = null
+        if (selectedFieldRecordId != null && fieldRecords.none { it.id == selectedFieldRecordId }) selectedFieldRecordId = null
         if (selectedWater == null) showAssignPasturesDialog = false
     }
     LaunchedEffect(interactionState) {
@@ -1031,7 +1180,17 @@ fun MapScreen(
                     return@OnMapClickListener true
                 }
                 when (interactionState) {
+                    InteractionState.FIELD_LOG_PLACEMENT -> {
+                        fieldDraftCoordinate = coordinate.latitude to coordinate.longitude
+                        fieldLocationAccuracy = null
+                        interactionState = InteractionState.ORDINARY
+                        showFieldRecordEditor = true
+                    }
                     InteractionState.PADDOCK_SPLIT_PLACEMENT -> {
+                        if (paddockCustomMode) {
+                            commitCustomPaddockPoint(map, coordinate)
+                            return@OnMapClickListener true
+                        }
                         val pasture = selectedPasture
                         if (pasture == null) {
                             interactionState = InteractionState.ORDINARY
@@ -1276,6 +1435,7 @@ fun MapScreen(
                             selectedPastureId = null
                             selectedHerdId = null
                             selectedMovementId = null
+                            selectedFieldRecordId = null
                         } else {
                             val waterHit = queryFeaturesNear(
                                 map,
@@ -1289,6 +1449,7 @@ fun MapScreen(
                                 selectedGateId = null
                                 selectedHerdId = null
                                 selectedMovementId = null
+                                selectedFieldRecordId = null
                             } else {
                                 val herdHit = queryHerdFeatureAt(map, screenPoint)
                                 if (herdHit != null) {
@@ -1303,8 +1464,21 @@ fun MapScreen(
                                     selectedWaterId = null
                                     selectedPastureId = null
                                     selectedMovementId = null
+                                    selectedFieldRecordId = null
                                 } else {
-                                    val pastureHit = map.queryRenderedFeatures(
+                                    val fieldHit = map.queryRenderedFeatures(
+                                        screenPoint,
+                                        MapConfig.LAYER_FIELD_RECORDS
+                                    ).firstOrNull()
+                                    if (fieldHit != null) {
+                                        selectedFieldRecordId = fieldHit.getNumberProperty("id").toLong()
+                                        selectedPastureId = null
+                                        selectedWaterId = null
+                                        selectedGateId = null
+                                        selectedHerdId = null
+                                        selectedMovementId = null
+                                    } else {
+                                        val pastureHit = map.queryRenderedFeatures(
                                         screenPoint,
                                         MapConfig.LAYER_PASTURE_FILL
                                     ).firstOrNull()
@@ -1313,6 +1487,8 @@ fun MapScreen(
                                     selectedGateId = null
                                     selectedHerdId = null
                                     selectedMovementId = null
+                                        selectedFieldRecordId = null
+                                    }
                                 }
                             }
                         }
@@ -1334,7 +1510,8 @@ fun MapScreen(
             interactionState == InteractionState.PASTURE_DRAWING ||
             interactionState == InteractionState.GATE_PLACEMENT ||
             interactionState == InteractionState.GATE_MOVING ||
-            interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT
+            interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT ||
+            interactionState == InteractionState.FIELD_LOG_PLACEMENT
         if (precisionMap == null || !supported) {
             onDispose { }
         } else {
@@ -1566,7 +1743,10 @@ fun MapScreen(
                                 resolvedPaddockPlans = resolvedPaddockPlans,
                                 selectedPaddockPlanId = selectedPaddockPlan?.id,
                                 paddockStartAnchor = paddockStartAnchor,
-                                paddockDraftResult = paddockDraftResult
+                                paddockDraftResult = paddockDraftResult,
+                                paddockCustomPath = resolvePaddockDraftPath(paddockCustomPoints, selectedPasture),
+                                fieldRecords = fieldRecords,
+                                selectedFieldRecordId = selectedFieldRecordId
                             )
                             isMapStyleReady = true
                         }
@@ -1765,7 +1945,13 @@ fun MapScreen(
 
         if (interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT) {
             PaddockPlacementControls(
-                text = if (paddockStartAnchor == null) {
+                text = if (paddockCustomMode) {
+                    if (paddockCustomPoints.isEmpty()) {
+                        "Tap the first endpoint on the pasture boundary"
+                    } else {
+                        "Tap inside to add a waypoint • Tap the boundary to finish"
+                    }
+                } else if (paddockStartAnchor == null) {
                     if (paddockRetainedAnchor == null) {
                         "Tap the first endpoint on the pasture boundary"
                     } else {
@@ -1774,10 +1960,15 @@ fun MapScreen(
                 } else {
                     "Tap the second endpoint on another boundary segment"
                 },
-                canUndo = paddockStartAnchor != null || paddockDraftResult != null,
+                canUndo = if (paddockCustomMode) paddockCustomPoints.isNotEmpty()
+                    else paddockStartAnchor != null || paddockDraftResult != null,
                 onUndo = {
-                    paddockDraftResult = null
-                    if (paddockRetainedAnchor == null) paddockStartAnchor = null
+                    if (paddockCustomMode) {
+                        if (paddockCustomPoints.isNotEmpty()) paddockCustomPoints.removeAt(paddockCustomPoints.lastIndex)
+                    } else {
+                        paddockDraftResult = null
+                        if (paddockRetainedAnchor == null) paddockStartAnchor = null
+                    }
                 },
                 onCancel = {
                     paddockStartAnchor = null
@@ -1785,7 +1976,21 @@ fun MapScreen(
                     movingPaddockStart = null
                     paddockDraftResult = null
                     editingPaddockPlanId = null
+                    addingPaddockDivider = false
+                    paddockCustomMode = false
+                    paddockCustomPoints.clear()
                     interactionState = InteractionState.ORDINARY
+                }
+            )
+        }
+
+        if (interactionState == InteractionState.FIELD_LOG_PLACEMENT) {
+            BottomInstruction(
+                text = "Tap or press-and-hold the exact Field Log point",
+                action = "Cancel",
+                onAction = {
+                    interactionState = InteractionState.ORDINARY
+                    showFieldRecordEditor = true
                 }
             )
         }
@@ -1949,7 +2154,7 @@ fun MapScreen(
                     isStockpiledWinter = selectedPastureIsStockpiledWinter,
                     paddockPlan = selectedPaddockPlan,
                     paddockResult = selectedPaddockPlan?.let { plan ->
-                        resolvedPaddockPlans.firstOrNull { it.first == plan.id }?.second
+                        resolvedPaddockPlans.firstOrNull { it.plan.id == plan.id }
                     },
                     onClose = { selectedPastureId = null },
                     onAddGate = {
@@ -1973,6 +2178,7 @@ fun MapScreen(
                             showPaddockPlanDialog = true
                         } else {
                             editingPaddockPlanId = null
+                            addingPaddockDivider = false
                             paddockStartAnchor = null
                             paddockRetainedAnchor = null
                             movingPaddockStart = null
@@ -1980,7 +2186,7 @@ fun MapScreen(
                             paddockNameInput = "${pasture.pasture.name} Split"
                             paddockSideAInput = "Paddock A"
                             paddockSideBInput = "Paddock B"
-                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                            showPaddockModeDialog = true
                         }
                     },
                     onEditBoundary = {
@@ -2164,6 +2370,21 @@ fun MapScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
+                        onClick = {
+                            val target = mapInstance?.cameraPosition?.target
+                            fieldDraftCoordinate = (target?.latitude ?: initialLat) to (target?.longitude ?: initialLng)
+                            fieldLocationAccuracy = null
+                            editingFieldRecord = null
+                            showOverflowDialog = false
+                            showFieldRecordEditor = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Field Log") }
+                    OutlinedButton(
+                        onClick = { showOverflowDialog = false; showFieldLedger = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Field Ledger") }
+                    Button(
                         onClick = { showOverflowDialog = false; showHelpDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Help & Field Guide") }
@@ -2178,6 +2399,135 @@ fun MapScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { showOverflowDialog = false }) { Text("Close") } }
+        )
+    }
+
+    if (showFieldRecordEditor) {
+        val suggestedPastureId = suggestFieldPasture(fieldDraftCoordinate, effectivePastures)
+        FieldRecordEditorDialog(
+            coordinate = fieldDraftCoordinate,
+            accuracyMeters = fieldLocationAccuracy,
+            pastures = effectivePastures,
+            suggestedPastureId = suggestedPastureId,
+            editing = editingFieldRecord,
+            onPlaceOnMap = {
+                showFieldRecordEditor = false
+                interactionState = InteractionState.FIELD_LOG_PLACEMENT
+            },
+            onUseMyLocation = { useMyFieldLocation() },
+            onDismiss = {
+                showFieldRecordEditor = false
+                editingFieldRecord = null
+            },
+            onSave = { type, note, pastureId, taskStatus, observedAt ->
+                val existing = editingFieldRecord
+                val now = System.currentTimeMillis()
+                val completedAt = if (type == FieldRecordType.TASK && taskStatus == FieldTaskStatus.COMPLETED) {
+                    existing?.completedAt ?: now
+                } else null
+                val record = FieldRecordEntity(
+                    id = existing?.id ?: 0,
+                    recordType = type,
+                    note = note,
+                    latitude = fieldDraftCoordinate.first,
+                    longitude = fieldDraftCoordinate.second,
+                    pastureId = pastureId,
+                    taskStatus = taskStatus.takeIf { type == FieldRecordType.TASK },
+                    observedAt = observedAt,
+                    createdAt = existing?.createdAt ?: now,
+                    updatedAt = now,
+                    completedAt = completedAt,
+                    archivedAt = existing?.archivedAt
+                )
+                scope.launch {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            if (existing == null) fieldRecordDao.create(record) else fieldRecordDao.edit(record, now)
+                        }
+                    }.onSuccess {
+                        showFieldRecordEditor = false
+                        editingFieldRecord = null
+                        interactionState = InteractionState.ORDINARY
+                        Toast.makeText(context, "Field record saved", Toast.LENGTH_SHORT).show()
+                    }.onFailure { error ->
+                        Toast.makeText(context, error.message ?: "Could not save Field Log", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+
+    if (showFieldLedger) {
+        FieldLedgerDialog(
+            records = fieldRecords,
+            pastures = effectivePastures,
+            onSelect = { record ->
+                showFieldLedger = false
+                selectedFieldRecordId = record.id
+                mapInstance?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(record.latitude, record.longitude), 18.0),
+                    500
+                )
+            },
+            onDismiss = { showFieldLedger = false }
+        )
+    }
+
+    fieldRecords.firstOrNull { it.id == selectedFieldRecordId }?.let { record ->
+        val pastureName = effectivePastures.firstOrNull { it.pasture.id == record.pastureId }?.pasture?.name
+        AlertDialog(
+            onDismissRequest = { selectedFieldRecordId = null },
+            title = { Text(record.recordType.displayName()) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text(record.note)
+                    Text(pastureName ?: "No pasture association", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        String.format(Locale.US, "Lat %.6f • Lng %.6f", record.latitude, record.longitude),
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                    record.taskStatus?.let { status ->
+                        Text("Task: ${status.name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }}")
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                editingFieldRecord = record
+                                fieldDraftCoordinate = record.latitude to record.longitude
+                                fieldLocationAccuracy = null
+                                selectedFieldRecordId = null
+                                showFieldRecordEditor = true
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Edit") }
+                        if (record.recordType == FieldRecordType.TASK) {
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            if (record.taskStatus == FieldTaskStatus.COMPLETED) {
+                                                fieldRecordDao.reopenTask(record.id)
+                                            } else {
+                                                fieldRecordDao.completeTask(record.id)
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text(if (record.taskStatus == FieldTaskStatus.COMPLETED) "Reopen" else "Complete") }
+                        }
+                    }
+                    TextButton(
+                        onClick = {
+                            scope.launch { withContext(Dispatchers.IO) { fieldRecordDao.archive(record.id) } }
+                            selectedFieldRecordId = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Archive", color = Color.Red) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { selectedFieldRecordId = null }) { Text("Close") } }
         )
     }
 
@@ -2212,9 +2562,111 @@ fun MapScreen(
         )
     }
 
+    if (showPaddockModeDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaddockModeDialog = false },
+            title = { Text("Place Polystrand Divider") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choose a straight assisted divider or route around obstacles with custom waypoints.")
+                    Button(
+                        onClick = {
+                            paddockCustomMode = false
+                            paddockCustomPoints.clear()
+                            showPaddockModeDialog = false
+                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Assisted Straight") }
+                    OutlinedButton(
+                        onClick = {
+                            paddockCustomMode = true
+                            paddockCustomPoints.clear()
+                            paddockStartAnchor = null
+                            paddockDraftResult = null
+                            showPaddockModeDialog = false
+                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Custom Waypoints") }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showPaddockModeDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (showPaddockCustomSaveDialog && paddockCustomPoints.size >= 2 && selectedPasture != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showPaddockCustomSaveDialog = false
+                if (paddockCustomPoints.lastOrNull()?.nodeKind == PaddockPlanNodeKind.BOUNDARY_ANCHOR) {
+                    paddockCustomPoints.removeAt(paddockCustomPoints.lastIndex)
+                }
+            },
+            title = { Text(if (editingPaddockPlanId == null) "Save Polystrand Plan" else "Add Custom Divider") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = paddockNameInput,
+                        onValueChange = { paddockNameInput = it },
+                        label = { Text(if (editingPaddockPlanId == null) "Plan and divider name" else "Divider name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text("${paddockCustomPoints.size - 2} interior ${if (paddockCustomPoints.size == 3) "waypoint" else "waypoints"}")
+                    Text(
+                        "The complete active plan must validate before this saves. Cancel or a failed save changes no ranch record.",
+                        color = Color(0xFFFFB74D),
+                        fontSize = 12.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val planId = editingPaddockPlanId
+                    val pastureId = selectedPasture.pasture.id
+                    val points = paddockCustomPoints.toList()
+                    scope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                if (planId == null) {
+                                    paddockPlanDao.createWithDivider(
+                                        pastureId,
+                                        paddockNameInput,
+                                        paddockNameInput,
+                                        points
+                                    )
+                                } else {
+                                    paddockPlanDao.addDivider(planId, paddockNameInput, points)
+                                }
+                            }
+                        }.onSuccess {
+                            showPaddockCustomSaveDialog = false
+                            paddockCustomPoints.clear()
+                            paddockCustomMode = false
+                            addingPaddockDivider = false
+                            editingPaddockPlanId = null
+                            interactionState = InteractionState.ORDINARY
+                            Toast.makeText(context, "Polystrand divider saved", Toast.LENGTH_SHORT).show()
+                        }.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Divider is not valid", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPaddockCustomSaveDialog = false
+                    if (paddockCustomPoints.lastOrNull()?.nodeKind == PaddockPlanNodeKind.BOUNDARY_ANCHOR) {
+                        paddockCustomPoints.removeAt(paddockCustomPoints.lastIndex)
+                    }
+                }) { Text("Back") }
+            }
+        )
+    }
+
     if (showPaddockPlanDialog && selectedPaddockPlan != null) {
         val plan = selectedPaddockPlan
-        val result = resolvedPaddockPlans.firstOrNull { it.first == plan.id }?.second
+        val result = resolvedPaddockPlans.firstOrNull { it.plan.id == plan.id }
         AlertDialog(
             onDismissRequest = { showPaddockPlanDialog = false },
             title = { Text(plan.name) },
@@ -2223,11 +2675,17 @@ fun MapScreen(
                     if (result == null) {
                         Text("This plan cannot be drawn against the current pasture boundary.", color = Color.Red)
                     } else {
-                        Text(String.format(Locale.US, "%s: %.1f acres", plan.sideALabel, result.sideAAcres))
-                        Text(String.format(Locale.US, "%s: %.1f acres", plan.sideBLabel, result.sideBAcres))
+                        result.regions.forEach { region ->
+                            Text(String.format(Locale.US, "%s: %.1f acres", region.label, region.acreage))
+                        }
                         Text(
-                            String.format(Locale.US, "Parent pasture: %.1f acres (map estimate)", result.parentAcres),
+                            String.format(Locale.US, "Parent pasture: %.1f acres (map estimate)", result.parentAcreage),
                             color = Color.Gray,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            "${result.dividers.size} active ${if (result.dividers.size == 1) "divider" else "dividers"}",
+                            color = Color.LightGray,
                             fontSize = 12.sp
                         )
                     }
@@ -2239,68 +2697,18 @@ fun MapScreen(
                     OutlinedButton(
                         enabled = result != null,
                         onClick = {
-                            paddockNameInput = plan.name
-                            paddockSideAInput = plan.sideALabel
-                            paddockSideBInput = plan.sideBLabel
+                            paddockNameInput = "Divider ${(result?.dividers?.size ?: 0) + 1}"
                             editingPaddockPlanId = plan.id
-                            paddockStartAnchor = result?.start
-                            paddockRetainedAnchor = null
-                            movingPaddockStart = null
-                            paddockDraftResult = result
-                            showPaddockPlanDialog = false
-                            showPaddockSaveDialog = true
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Edit Name & Labels") }
-                    OutlinedButton(
-                        onClick = {
-                            paddockNameInput = plan.name
-                            paddockSideAInput = plan.sideALabel
-                            paddockSideBInput = plan.sideBLabel
-                            editingPaddockPlanId = plan.id
+                            addingPaddockDivider = true
                             paddockStartAnchor = null
                             paddockRetainedAnchor = null
                             movingPaddockStart = null
                             paddockDraftResult = null
                             showPaddockPlanDialog = false
-                            interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                            showPaddockModeDialog = true
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Redraw Split Line") }
-                    if (result != null) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    paddockNameInput = plan.name
-                                    paddockSideAInput = plan.sideALabel
-                                    paddockSideBInput = plan.sideBLabel
-                                    editingPaddockPlanId = plan.id
-                                    paddockStartAnchor = null
-                                    paddockRetainedAnchor = result.end
-                                    movingPaddockStart = true
-                                    paddockDraftResult = null
-                                    showPaddockPlanDialog = false
-                                    interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { Text("Move Start", fontSize = 11.sp) }
-                            OutlinedButton(
-                                onClick = {
-                                    paddockNameInput = plan.name
-                                    paddockSideAInput = plan.sideALabel
-                                    paddockSideBInput = plan.sideBLabel
-                                    editingPaddockPlanId = plan.id
-                                    paddockStartAnchor = null
-                                    paddockRetainedAnchor = result.start
-                                    movingPaddockStart = false
-                                    paddockDraftResult = null
-                                    showPaddockPlanDialog = false
-                                    interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { Text("Move End", fontSize = 11.sp) }
-                        }
-                    }
+                    ) { Text("Add Divider") }
                     TextButton(
                         onClick = { showPaddockPlanDialog = false; showPaddockDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth()
@@ -2331,7 +2739,15 @@ fun MapScreen(
         val result = requireNotNull(paddockDraftResult)
         AlertDialog(
             onDismissRequest = { showPaddockSaveDialog = false },
-            title = { Text(if (editingPaddockPlanId == null) "Save Paddock Plan" else "Update Paddock Plan") },
+            title = {
+                Text(
+                    when {
+                        editingPaddockPlanId == null -> "Save Polystrand Plan"
+                        addingPaddockDivider -> "Add Polystrand Divider"
+                        else -> "Update Polystrand Plan"
+                    }
+                )
+            },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -2340,21 +2756,23 @@ fun MapScreen(
                     OutlinedTextField(
                         value = paddockNameInput,
                         onValueChange = { paddockNameInput = it },
-                        label = { Text("Plan name") },
+                        label = { Text(if (addingPaddockDivider) "Divider name" else "Plan name") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(
-                        value = paddockSideAInput,
-                        onValueChange = { paddockSideAInput = it },
-                        label = { Text(String.format(Locale.US, "Side A (%.1f ac)", result.sideAAcres)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = paddockSideBInput,
-                        onValueChange = { paddockSideBInput = it },
-                        label = { Text(String.format(Locale.US, "Side B (%.1f ac)", result.sideBAcres)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    if (!addingPaddockDivider) {
+                        OutlinedTextField(
+                            value = paddockSideAInput,
+                            onValueChange = { paddockSideAInput = it },
+                            label = { Text(String.format(Locale.US, "Region A (%.1f ac)", result.sideAAcres)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = paddockSideBInput,
+                            onValueChange = { paddockSideBInput = it },
+                            label = { Text(String.format(Locale.US, "Region B (%.1f ac)", result.sideBAcres)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     Text(
                         "Saved as a temporary-polywire planning blueprint. It does not permanently split the pasture.",
                         color = Color(0xFFFFB74D),
@@ -2378,6 +2796,13 @@ fun MapScreen(
                                         result.start,
                                         result.end
                                     )
+                                } else if (addingPaddockDivider) {
+                                    paddockPlanDao.addStraightDivider(
+                                        planId,
+                                        paddockNameInput,
+                                        result.start,
+                                        result.end
+                                    )
                                 } else {
                                     paddockPlanDao.update(
                                         planId,
@@ -2396,6 +2821,7 @@ fun MapScreen(
                             movingPaddockStart = null
                             paddockDraftResult = null
                             editingPaddockPlanId = null
+                            addingPaddockDivider = false
                             interactionState = InteractionState.ORDINARY
                             Toast.makeText(context, "Paddock plan saved", Toast.LENGTH_SHORT).show()
                         }.onFailure { error ->
@@ -3815,6 +4241,15 @@ fun MapScreen(
                             displayPreferencesRepository.saveHerdBadgesEnabled(enabled)
                         }
                     )
+                    MapLayerToggle(
+                        label = "Field Records",
+                        description = "Show the seven offline Field Ledger marker types.",
+                        checked = displayPreferences.fieldRecordsEnabled,
+                        onCheckedChange = { enabled ->
+                            displayPreferences = displayPreferences.copy(fieldRecordsEnabled = enabled)
+                            displayPreferencesRepository.saveFieldRecordsEnabled(enabled)
+                        }
+                    )
                     if (focusedHerd != null) {
                         OutlinedButton(
                             onClick = {
@@ -3924,6 +4359,9 @@ private fun applyLayerVisibility(
         ).forEach { layerId ->
             style.getLayer(layerId)?.setProperties(visibility(herdVisibility))
         }
+        val fieldVisibility = if (preferences.fieldRecordsEnabled) Property.VISIBLE else Property.NONE
+        style.getLayer(MapConfig.LAYER_FIELD_RECORDS)?.setProperties(visibility(fieldVisibility))
+        style.getLayer(MapConfig.LAYER_FIELD_RECORD_LABELS)?.setProperties(visibility(fieldVisibility))
     }
 }
 
@@ -4844,8 +5282,8 @@ private fun BoxScope.PastureInspectionCard(
     restStatus: PastureRestStatus?,
     latestForageObservation: PastureForageObservationEntity?,
     isStockpiledWinter: Boolean,
-    paddockPlan: PaddockSplitPlanEntity?,
-    paddockResult: PaddockSplitResult?,
+    paddockPlan: PaddockPlanEntity?,
+    paddockResult: PolystrandPlanResult?,
     onClose: () -> Unit,
     onAddGate: () -> Unit,
     onEditDetails: () -> Unit,
@@ -4948,14 +5386,9 @@ private fun BoxScope.PastureInspectionCard(
             )
             if (paddockPlan != null && paddockResult != null) {
                 Text(
-                    String.format(
-                        Locale.US,
-                        "%s: %.1f ac • %s: %.1f ac",
-                        paddockPlan.sideALabel,
-                        paddockResult.sideAAcres,
-                        paddockPlan.sideBLabel,
-                        paddockResult.sideBAcres
-                    ),
+                    paddockResult.regions.joinToString(" • ") { region ->
+                        String.format(Locale.US, "%s: %.1f ac", region.label, region.acreage)
+                    },
                     color = Color(0xFF00E5FF),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -4970,7 +5403,7 @@ private fun BoxScope.PastureInspectionCard(
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
                     Text(
-                        if (paddockPlan == null) "Plan Paddock Split" else "Paddock Plan",
+                        if (paddockPlan == null) "Plan Polystrand" else "Polystrand Plan",
                         color = Color(0xFF00E5FF),
                         fontWeight = FontWeight.Bold
                     )
@@ -5278,10 +5711,13 @@ private fun pushAllOverlays(
     assignments: Map<Long, List<Long>>,
     sharedJunctionIds: Set<Long>,
     activeSnappedJunction: FenceJunctionEntity?,
-    resolvedPaddockPlans: List<Pair<Long, PaddockSplitResult>>,
+    resolvedPaddockPlans: List<PolystrandPlanResult>,
     selectedPaddockPlanId: Long?,
     paddockStartAnchor: PaddockBoundaryAnchor?,
-    paddockDraftResult: PaddockSplitResult?
+    paddockDraftResult: PaddockSplitResult?,
+    paddockCustomPath: List<PastureCoordinate>,
+    fieldRecords: List<FieldRecordEntity>,
+    selectedFieldRecordId: Long?
 ) {
     map?.getStyle { style ->
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_WATER_POINTS)
@@ -5341,11 +5777,51 @@ private fun pushAllOverlays(
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_SNAPPED_JUNCTION)
             ?.setGeoJson(FeatureCollection.fromFeatures(snapFeatures))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_REGIONS)
-            ?.setGeoJson(PaddockSplitFeatureConverter.regionFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
+            ?.setGeoJson(PolystrandPlanFeatureConverter.regionFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_LINES)
-            ?.setGeoJson(PaddockSplitFeatureConverter.lineFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
+            ?.setGeoJson(PolystrandPlanFeatureConverter.lineFeatures(resolvedPaddockPlans, selectedPaddockPlanId))
         style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_PADDOCK_DRAFT)
-            ?.setGeoJson(PaddockSplitFeatureConverter.draftFeatures(paddockStartAnchor, paddockDraftResult))
+            ?.setGeoJson(
+                PaddockSplitFeatureConverter.draftFeatures(
+                    paddockStartAnchor,
+                    paddockDraftResult,
+                    paddockCustomPath
+                )
+            )
+        style.getSourceAs<GeoJsonSource>(MapConfig.SOURCE_FIELD_RECORDS)
+            ?.setGeoJson(FieldRecordFeatureConverter.toFeatures(fieldRecords, selectedFieldRecordId))
+    }
+}
+
+private fun PaddockBoundaryAnchor.toNodeDraft() = PaddockNodeDraft(
+    nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
+    boundaryJunctionAId = junctionAId,
+    boundaryJunctionBId = junctionBId,
+    boundarySegmentRatio = segmentRatio
+)
+
+private fun resolvePaddockDraftPath(
+    drafts: List<PaddockNodeDraft>,
+    pasture: PastureWithVertices?
+): List<PastureCoordinate> {
+    if (pasture == null) return emptyList()
+    return drafts.mapNotNull { draft ->
+        when (draft.nodeKind) {
+            PaddockPlanNodeKind.BOUNDARY_ANCHOR -> runCatching {
+                PaddockSplitEngine.resolveAnchor(
+                    pasture,
+                    requireNotNull(draft.boundaryJunctionAId),
+                    requireNotNull(draft.boundaryJunctionBId),
+                    requireNotNull(draft.boundarySegmentRatio)
+                ).coordinate
+            }.getOrNull()
+            PaddockPlanNodeKind.INTERIOR_JUNCTION,
+            PaddockPlanNodeKind.INTERIOR_WAYPOINT -> {
+                val latitude = draft.latitude ?: return@mapNotNull null
+                val longitude = draft.longitude ?: return@mapNotNull null
+                PastureCoordinate(latitude, longitude)
+            }
+        }
     }
 }
 
@@ -5450,6 +5926,30 @@ private fun queryHerdFeatureAt(map: MapLibreMap, point: PointF): Feature? {
 }
 
 private fun LatLng.toPastureCoordinate() = PastureCoordinate(latitude, longitude)
+
+private fun suggestFieldPasture(
+    coordinate: Pair<Double, Double>,
+    pastures: List<PastureWithVertices>
+): Long? {
+    val matches = pastures.filter { pasture ->
+        val vertices = pasture.vertices.sortedBy { it.sequence }
+        if (vertices.size < 3) return@filter false
+        var inside = false
+        var previous = vertices.last()
+        vertices.forEach { current ->
+            val crosses = (current.latitude > coordinate.first) != (previous.latitude > coordinate.first)
+            if (crosses) {
+                val intersectionLongitude = (previous.longitude - current.longitude) *
+                    (coordinate.first - current.latitude) /
+                    (previous.latitude - current.latitude) + current.longitude
+                if (coordinate.second < intersectionLongitude) inside = !inside
+            }
+            previous = current
+        }
+        inside
+    }
+    return matches.singleOrNull()?.pasture?.id
+}
 
 private fun CameraPosition.toSavedMapCamera() = SavedMapCamera(
     latitude = target?.latitude ?: MapConfig.DEFAULT_LATITUDE,

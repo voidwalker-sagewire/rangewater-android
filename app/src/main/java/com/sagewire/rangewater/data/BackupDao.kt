@@ -48,8 +48,12 @@ interface BackupDao {
     @Query("SELECT * FROM pasture_forage_observations ORDER BY id")
     suspend fun allPastureForageObservations(): List<PastureForageObservationEntity>
 
-    @Query("SELECT * FROM paddock_split_plans ORDER BY id")
-    suspend fun allPaddockSplitPlans(): List<PaddockSplitPlanEntity>
+    @Query("SELECT * FROM paddock_plans ORDER BY id") suspend fun allPaddockPlans(): List<PaddockPlanEntity>
+    @Query("SELECT * FROM paddock_plan_nodes ORDER BY id") suspend fun allPaddockPlanNodes(): List<PaddockPlanNodeEntity>
+    @Query("SELECT * FROM paddock_dividers ORDER BY planId, sequence, id") suspend fun allPaddockDividers(): List<PaddockDividerEntity>
+    @Query("SELECT * FROM paddock_divider_node_refs ORDER BY dividerId, sequence") suspend fun allPaddockDividerNodeRefs(): List<PaddockDividerNodeRefEntity>
+    @Query("SELECT * FROM paddock_region_labels ORDER BY planId, regionKey") suspend fun allPaddockRegionLabels(): List<PaddockRegionLabelEntity>
+    @Query("SELECT * FROM field_records ORDER BY id") suspend fun allFieldRecords(): List<FieldRecordEntity>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertWaterPoints(rows: List<WaterPointEntity>)
@@ -90,11 +94,19 @@ interface BackupDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPastureForageObservations(rows: List<PastureForageObservationEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertPaddockSplitPlans(rows: List<PaddockSplitPlanEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertPaddockPlans(rows: List<PaddockPlanEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertPaddockPlanNodes(rows: List<PaddockPlanNodeEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertPaddockDividers(rows: List<PaddockDividerEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertPaddockDividerNodeRefs(rows: List<PaddockDividerNodeRefEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertPaddockRegionLabels(rows: List<PaddockRegionLabelEntity>)
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertFieldRecords(rows: List<FieldRecordEntity>)
 
-    @Query("DELETE FROM paddock_split_plans")
-    suspend fun deletePaddockSplitPlans()
+    @Query("DELETE FROM field_records") suspend fun deleteFieldRecords()
+    @Query("DELETE FROM paddock_region_labels") suspend fun deletePaddockRegionLabels()
+    @Query("DELETE FROM paddock_divider_node_refs") suspend fun deletePaddockDividerNodeRefs()
+    @Query("DELETE FROM paddock_dividers") suspend fun deletePaddockDividers()
+    @Query("DELETE FROM paddock_plan_nodes") suspend fun deletePaddockPlanNodes()
+    @Query("DELETE FROM paddock_plans") suspend fun deletePaddockPlans()
 
     @Query("DELETE FROM pasture_forage_observations")
     suspend fun deletePastureForageObservations()
@@ -150,13 +162,23 @@ interface BackupDao {
         circuitPastureRoles = allCircuitPastureRoles(),
         herdCircuitAssignments = allHerdCircuitAssignments(),
         pastureForageObservations = allPastureForageObservations(),
-        paddockSplitPlans = allPaddockSplitPlans()
+        paddockPlans = allPaddockPlans(),
+        paddockPlanNodes = allPaddockPlanNodes(),
+        paddockDividers = allPaddockDividers(),
+        paddockDividerNodeRefs = allPaddockDividerNodeRefs(),
+        paddockRegionLabels = allPaddockRegionLabels(),
+        fieldRecords = allFieldRecords()
     )
 
     /** Delete order and insert order deliberately follow the foreign-key graph. */
     @Transaction
     suspend fun replaceAll(data: RangeWaterBackupData) {
-        deletePaddockSplitPlans()
+        deleteFieldRecords()
+        deletePaddockRegionLabels()
+        deletePaddockDividerNodeRefs()
+        deletePaddockDividers()
+        deletePaddockPlanNodes()
+        deletePaddockPlans()
         deletePastureForageObservations()
         deleteCircuitPastureRoles()
         deleteHerdCircuitAssignments()
@@ -184,6 +206,11 @@ interface BackupDao {
         insertCircuitPastureRoles(data.circuitPastureRoles)
         insertHerdCircuitAssignments(data.herdCircuitAssignments)
         insertPastureForageObservations(data.pastureForageObservations)
-        insertPaddockSplitPlans(data.paddockSplitPlans)
+        insertPaddockPlans(data.paddockPlans)
+        insertPaddockPlanNodes(data.paddockPlanNodes)
+        insertPaddockDividers(data.paddockDividers)
+        insertPaddockDividerNodeRefs(data.paddockDividerNodeRefs)
+        insertPaddockRegionLabels(data.paddockRegionLabels)
+        insertFieldRecords(data.fieldRecords)
     }
 }
