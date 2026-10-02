@@ -365,6 +365,7 @@ fun MapScreen(
     var paddockDraftResult by remember { mutableStateOf<PaddockSplitResult?>(null) }
     var editingPaddockPlanId by remember { mutableStateOf<Long?>(null) }
     var addingPaddockDivider by remember { mutableStateOf(false) }
+    var connectingPaddockWaypointId by remember { mutableStateOf<Long?>(null) }
     var paddockCustomMode by remember { mutableStateOf(false) }
     val paddockCustomPoints = remember { mutableStateListOf<PaddockNodeDraft>() }
     var showPaddockModeDialog by remember { mutableStateOf(false) }
@@ -1951,7 +1952,9 @@ fun MapScreen(
         if (interactionState == InteractionState.PADDOCK_SPLIT_PLACEMENT) {
             PaddockPlacementControls(
                 text = if (paddockCustomMode) {
-                    if (paddockCustomPoints.isEmpty()) {
+                    if (connectingPaddockWaypointId != null && paddockCustomPoints.size == 1) {
+                        "Shared junction selected • Tap inside for waypoints or tap the boundary to finish"
+                    } else if (paddockCustomPoints.isEmpty()) {
                         "Tap the first endpoint on the pasture boundary"
                     } else {
                         "Tap inside to add a waypoint • Tap the boundary to finish"
@@ -1965,11 +1968,16 @@ fun MapScreen(
                 } else {
                     "Tap the second endpoint on another boundary segment"
                 },
-                canUndo = if (paddockCustomMode) paddockCustomPoints.isNotEmpty()
+                canUndo = if (paddockCustomMode) {
+                    paddockCustomPoints.size > if (connectingPaddockWaypointId == null) 0 else 1
+                }
                     else paddockStartAnchor != null || paddockDraftResult != null,
                 onUndo = {
                     if (paddockCustomMode) {
-                        if (paddockCustomPoints.isNotEmpty()) paddockCustomPoints.removeAt(paddockCustomPoints.lastIndex)
+                        val retainedPointCount = if (connectingPaddockWaypointId == null) 0 else 1
+                        if (paddockCustomPoints.size > retainedPointCount) {
+                            paddockCustomPoints.removeAt(paddockCustomPoints.lastIndex)
+                        }
                     } else {
                         paddockDraftResult = null
                         if (paddockRetainedAnchor == null) paddockStartAnchor = null
@@ -1982,6 +1990,7 @@ fun MapScreen(
                     paddockDraftResult = null
                     editingPaddockPlanId = null
                     addingPaddockDivider = false
+                    connectingPaddockWaypointId = null
                     paddockCustomMode = false
                     paddockCustomPoints.clear()
                     interactionState = InteractionState.ORDINARY
@@ -2184,6 +2193,7 @@ fun MapScreen(
                         } else {
                             editingPaddockPlanId = null
                             addingPaddockDivider = false
+                            connectingPaddockWaypointId = null
                             paddockStartAnchor = null
                             paddockRetainedAnchor = null
                             movingPaddockStart = null
@@ -2600,6 +2610,7 @@ fun MapScreen(
                     Text("Choose an acreage-balanced straight suggestion or route around obstacles with custom waypoints.")
                     Button(
                         onClick = {
+                            connectingPaddockWaypointId = null
                             paddockCustomMode = false
                             paddockCustomPoints.clear()
                             showPaddockModeDialog = false
@@ -2629,6 +2640,7 @@ fun MapScreen(
                     ) { Text("Assisted Equal Area") }
                     OutlinedButton(
                         onClick = {
+                            connectingPaddockWaypointId = null
                             paddockCustomMode = true
                             paddockCustomPoints.clear()
                             paddockStartAnchor = null
@@ -2684,6 +2696,12 @@ fun MapScreen(
                                         paddockNameInput,
                                         points
                                     )
+                                } else if (connectingPaddockWaypointId != null) {
+                                    paddockPlanDao.connectWaypointWithNewDivider(
+                                        requireNotNull(connectingPaddockWaypointId),
+                                        paddockNameInput,
+                                        points
+                                    )
                                 } else {
                                     paddockPlanDao.addDivider(planId, paddockNameInput, points)
                                 }
@@ -2693,6 +2711,7 @@ fun MapScreen(
                             paddockCustomPoints.clear()
                             paddockCustomMode = false
                             addingPaddockDivider = false
+                            connectingPaddockWaypointId = null
                             editingPaddockPlanId = null
                             interactionState = InteractionState.ORDINARY
                             Toast.makeText(context, "Polystrand divider saved", Toast.LENGTH_SHORT).show()
@@ -2717,6 +2736,13 @@ fun MapScreen(
         val plan = selectedPaddockPlan
         val result = resolvedPaddockPlans.firstOrNull { it.plan.id == plan.id }
         val planDividers = paddockDividers.filter { it.planId == plan.id }.sortedBy { it.sequence }
+        val activeDividerIds = planDividers.filter { it.archivedAt == null }.map { it.id }.toSet()
+        val activeNodeIds = paddockNodeRefs.filter { it.dividerId in activeDividerIds }.map { it.nodeId }.toSet()
+        val privateWaypoints = paddockPlanNodes.filter {
+            it.planId == plan.id &&
+                it.id in activeNodeIds &&
+                it.nodeKind == PaddockPlanNodeKind.INTERIOR_WAYPOINT
+        }
         AlertDialog(
             onDismissRequest = { showPaddockPlanDialog = false },
             title = { Text(plan.name) },
@@ -2750,6 +2776,7 @@ fun MapScreen(
                     OutlinedButton(
                         enabled = result != null,
                         onClick = {
+                            connectingPaddockWaypointId = null
                             paddockNameInput = "Divider ${(result?.dividers?.size ?: 0) + 1}"
                             editingPaddockPlanId = plan.id
                             addingPaddockDivider = true
@@ -2762,6 +2789,37 @@ fun MapScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Add Divider") }
+                    if (privateWaypoints.isNotEmpty()) {
+                        Text("Connect / Share", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(
+                            "Promote a private waypoint to a shared junction and connect a new divider in one safe save.",
+                            color = Color.LightGray,
+                            fontSize = 11.sp
+                        )
+                        privateWaypoints.forEachIndexed { index, waypoint ->
+                            OutlinedButton(
+                                onClick = {
+                                    connectingPaddockWaypointId = waypoint.id
+                                    paddockNameInput = "Divider ${(result?.dividers?.size ?: 0) + 1}"
+                                    editingPaddockPlanId = plan.id
+                                    addingPaddockDivider = true
+                                    paddockCustomMode = true
+                                    paddockCustomPoints.clear()
+                                    paddockCustomPoints += PaddockNodeDraft(
+                                        existingNodeId = waypoint.id,
+                                        nodeKind = PaddockPlanNodeKind.INTERIOR_JUNCTION,
+                                        latitude = waypoint.latitude,
+                                        longitude = waypoint.longitude
+                                    )
+                                    paddockStartAnchor = null
+                                    paddockDraftResult = null
+                                    showPaddockPlanDialog = false
+                                    interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Connect waypoint ${index + 1}") }
+                        }
+                    }
                     planDividers.forEach { divider ->
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
