@@ -1,0 +1,80 @@
+================================================================================
+RANGEWATER PRODUCT RATIFICATION RECORD
+RW-TX-017-MPO REVISION 2 — PROPOSED -> RATIFIED
+================================================================================
+Format: CaveCode continuity transition record
+Record-ID: RW-TX-017-MPO-REV2-RATIFICATION
+Project: RangeWater
+Title: RangeWater 1.3.0 Multiple Polystrand Planning and Field Ledger Ratification
+Revision: 2
+State: RATIFIED
+Authority: Michael (Project Owner, Lead Architect, Final Decision Authority)
+Recorded-By: Ash / OpenAI Codex
+Original-Decision-At: 2026-09-30T05:21:15-04:00
+Recovery-Confirmed-At: 2026-10-01T23:38:33-04:00
+Source-Type: Explicit human authority statements
+Repository: voidwalker-sagewire/rangewater-android
+Branch: codex/rw-tx-017-mpo
+Baseline-Head: b28ed7c20364f972c9d7282204a935b63cb79d96
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+
+🪨 BLOCK 1 — AUTHORITY STATEMENTS
+--------------------------------------------------------------------------------
+Original ratification statement preserved from the project conversation on 2026-09-30:
+
+"I ratify RW-TX-017-MPO proposed revision 2."
+
+Recovery confirmation stated by Michael on 2026-10-01:
+
+"I confirm that I ratified RW-TX-017-MPO Revision 2 and assigned it to Ash slash
+OpenAI Codex for implementation. I authorize restoration of the ratified work order
+ratification record and assignment record on Codex backslash RW-TX-017-MPO."
+
+🪨 BLOCK 2 — IDENTIFIER NORMALIZATION
+--------------------------------------------------------------------------------
+Canonical artifact:
+- RW-TX-017-MPO Revision 2.
+- workorders/RW-TX-017-MPO.cavecode.
+- Target release: RangeWater 1.3.0, versionCode 21.
+- Feature title: Multiple Polystrand Planning and Field Ledger.
+
+Normalization:
+- "proposed revision 2" identifies the complete proposed Revision 2 supplied for review.
+- "slash" in the confirmation is normalized to "/" in Ash / OpenAI Codex.
+- "Codex backslash RW-TX-017-MPO" is normalized to the established Git branch
+  codex/rw-tx-017-mpo.
+- These normalizations change no approved scope or authority.
+
+🪨 BLOCK 3 — STATE TRANSITION
+--------------------------------------------------------------------------------
+Prior State: PROPOSED REVISION 2
+New State: RATIFIED REVISION 2
+Transition Authority: Michael
+Transition Time: 2026-09-30T05:21:15-04:00
+Recovery Confirmation Time: 2026-10-01T23:38:33-04:00
+Conflict-Status: NONE
+Human-Decision-Needed: NO
+
+🪨 BLOCK 4 — RATIFIED EFFECT
+--------------------------------------------------------------------------------
+The ratification fixes as project truth the complete scope, constraints, migrations,
+automated gates, physical tests, exclusions, and authority boundaries contained in
+RW-TX-017-MPO Revision 2.
+
+Ratification authorizes the specified implementation work only after assignment is
+recorded. Assignment is preserved separately in:
+continuity/transitions/RW-FK-TR-013-RW-TX-017-MPO-ASSIGNED.cavecode.
+
+🛡️ BLOCK 5 — UNCHANGED AUTHORITY GATES
+--------------------------------------------------------------------------------
+This ratification does not:
+- claim implementation, verification, field acceptance, or publication;
+- authorize Google Play internal testing, production submission, or publication;
+- authorize a different scope, baseline, version, schema, or archive format;
+- authorize any item explicitly excluded by Revision 2; or
+- allow later rebuilds to inherit acceptance or release authority silently.
+
+================================================================================
+END — RW-TX-017-MPO REVISION 2 RATIFICATION RECORD
+================================================================================
