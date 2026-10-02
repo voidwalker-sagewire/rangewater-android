@@ -122,7 +122,10 @@ object PolystrandPlanEngine {
         val linework = mutableListOf<Geometry>(parent.boundary)
         linework += resolvedDividers.map { line(it.coordinates) }
         val noded = UnaryUnionOp.union(linework)
-        val polygonizer = Polygonizer(true).apply { add(noded) }
+        // Keep every face created by the noded boundary plus divider linework.
+        // `extractOnlyPolygonal=true` intentionally drops adjacent faces to produce
+        // an edge-disjoint subset, which is the opposite of a paddock partition.
+        val polygonizer = Polygonizer().apply { add(noded) }
         @Suppress("UNCHECKED_CAST")
         val candidatePolygons = polygonizer.polygons as Collection<Polygon>
         val pieces = candidatePolygons
