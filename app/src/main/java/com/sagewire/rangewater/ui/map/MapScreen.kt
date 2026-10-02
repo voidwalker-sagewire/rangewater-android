@@ -139,6 +139,7 @@ import com.sagewire.rangewater.spatial.PastureAnalyticsCalculator
 import com.sagewire.rangewater.spatial.PastureCoverageMetrics
 import com.sagewire.rangewater.spatial.PastureFeatureConverter
 import com.sagewire.rangewater.spatial.PaddockBoundaryAnchor
+import com.sagewire.rangewater.spatial.PaddockEqualAreaSuggester
 import com.sagewire.rangewater.spatial.PaddockSplitEngine
 import com.sagewire.rangewater.spatial.PaddockSplitFeatureConverter
 import com.sagewire.rangewater.spatial.PaddockSplitResult
@@ -2568,16 +2569,36 @@ fun MapScreen(
             title = { Text("Place Polystrand Divider") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choose a straight assisted divider or route around obstacles with custom waypoints.")
+                    Text("Choose an acreage-balanced straight suggestion or route around obstacles with custom waypoints.")
                     Button(
                         onClick = {
                             paddockCustomMode = false
                             paddockCustomPoints.clear()
                             showPaddockModeDialog = false
                             interactionState = InteractionState.PADDOCK_SPLIT_PLACEMENT
+                            val pasture = selectedPasture
+                            if (pasture != null) {
+                                scope.launch {
+                                    runCatching {
+                                        withContext(Dispatchers.Default) {
+                                            PaddockEqualAreaSuggester.suggest(pasture)
+                                        }
+                                    }.onSuccess { suggestion ->
+                                        paddockStartAnchor = suggestion.start
+                                        paddockDraftResult = suggestion
+                                        showPaddockSaveDialog = true
+                                    }.onFailure { error ->
+                                        Toast.makeText(
+                                            context,
+                                            error.message ?: "No valid straight suggestion is available",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Assisted Straight") }
+                    ) { Text("Assisted Equal Area") }
                     OutlinedButton(
                         onClick = {
                             paddockCustomMode = true
@@ -2774,7 +2795,8 @@ fun MapScreen(
                         )
                     }
                     Text(
-                        "Saved as a temporary-polywire planning blueprint. It does not permanently split the pasture.",
+                        "Planning aid only: the suggested line is not surveyed or guaranteed equal. " +
+                            "Review the mapped acreage estimates before saving. This does not permanently split the pasture.",
                         color = Color(0xFFFFB74D),
                         fontSize = 12.sp
                     )

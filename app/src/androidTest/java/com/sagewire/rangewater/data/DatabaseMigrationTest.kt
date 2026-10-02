@@ -88,6 +88,38 @@ interface SchemaSevenSeedDao {
     @Insert suspend fun insertForage(row: PastureForageObservationEntity)
 }
 
+@Database(
+    entities = [
+        WaterPointEntity::class,
+        PastureEntity::class,
+        FenceJunctionEntity::class,
+        PastureVertexEntity::class,
+        WaterPastureAssignmentEntity::class,
+        GateEntity::class,
+        HerdEntity::class,
+        CattleMovementEntity::class,
+        GrazingCircuitEntity::class,
+        GrazingCircuitPastureEntity::class,
+        GrazingCircuitPastureRoleEntity::class,
+        HerdGrazingCircuitAssignmentEntity::class,
+        PastureForageObservationEntity::class,
+        PaddockSplitPlanEntity::class
+    ],
+    version = 8,
+    exportSchema = false
+)
+abstract class SchemaEightTestDatabase : RoomDatabase() {
+    abstract fun seedDao(): SchemaEightSeedDao
+}
+
+@Dao
+interface SchemaEightSeedDao {
+    @Insert suspend fun insertPasture(row: PastureEntity)
+    @Insert suspend fun insertJunctions(rows: List<FenceJunctionEntity>)
+    @Insert suspend fun insertVertices(rows: List<PastureVertexEntity>)
+    @Insert suspend fun insertSplit(row: PaddockSplitPlanEntity)
+}
+
 @RunWith(AndroidJUnit4::class)
 class DatabaseMigrationTest {
     private val databaseName = "rangewater-migration-test"
@@ -647,6 +679,68 @@ class DatabaseMigrationTest {
                 now = 200
             )
             assertEquals("Migration Split", migrated.paddockPlanDao().getPlan(planId)?.name)
+        } finally {
+            migrated.close()
+        }
+    }
+
+    @Test
+    fun migrationEightToNinePreservesLegacySplitAsPolystrandGraph() = runBlocking {
+        val schemaEight = Room.databaseBuilder(context, SchemaEightTestDatabase::class.java, databaseName)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val seed = schemaEight.seedDao()
+            seed.insertPasture(PastureEntity(10, "Migration Square", "", 1, 1))
+            seed.insertJunctions(
+                listOf(
+                    FenceJunctionEntity(20, 40.0, -80.0),
+                    FenceJunctionEntity(21, 40.0, -79.99),
+                    FenceJunctionEntity(22, 40.01, -79.99),
+                    FenceJunctionEntity(23, 40.01, -80.0)
+                )
+            )
+            seed.insertVertices(
+                listOf(
+                    PastureVertexEntity(30, 10, 0, 20),
+                    PastureVertexEntity(31, 10, 1, 21),
+                    PastureVertexEntity(32, 10, 2, 22),
+                    PastureVertexEntity(33, 10, 3, 23)
+                )
+            )
+            seed.insertSplit(
+                PaddockSplitPlanEntity(
+                    id = 90,
+                    pastureId = 10,
+                    name = "Legacy Center Split",
+                    sideALabel = "West",
+                    sideBLabel = "East",
+                    startJunctionAId = 20,
+                    startJunctionBId = 21,
+                    startSegmentRatio = 0.5,
+                    endJunctionAId = 22,
+                    endJunctionBId = 23,
+                    endSegmentRatio = 0.5,
+                    createdAt = 100,
+                    updatedAt = 100
+                )
+            )
+        } finally {
+            schemaEight.close()
+        }
+
+        val migrated = Room.databaseBuilder(context, RangeWaterDatabase::class.java, databaseName)
+            .addMigrations(RangeWaterDatabase.MIGRATION_8_9)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val dao = migrated.paddockPlanDao()
+            assertEquals("Legacy Center Split", dao.getPlan(90)?.name)
+            assertEquals(2, dao.nodes(90).size)
+            assertEquals(1, dao.dividers(90).size)
+            assertEquals(2, dao.nodeRefs(90).size)
+            assertEquals(listOf("West", "East"), dao.resolve(90).regions.map { it.label })
+            assertTrue(migrated.fieldRecordDao().observeAll().first().isEmpty())
         } finally {
             migrated.close()
         }
