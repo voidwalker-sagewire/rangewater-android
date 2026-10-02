@@ -381,6 +381,8 @@ fun MapScreen(
     var insertingPaddockDraftPointIndex by remember { mutableStateOf<Int?>(null) }
     val paddockPointEditHistory = remember { mutableStateListOf<List<PaddockNodeDraft>>() }
     var paddockDividerNameInput by remember { mutableStateOf("") }
+    var renamingPaddockRegionKey by remember { mutableStateOf<String?>(null) }
+    var paddockRegionLabelInput by remember { mutableStateOf("") }
     var paddockNameInput by remember { mutableStateOf("Paddock Split") }
     var paddockSideAInput by remember { mutableStateOf("Paddock A") }
     var paddockSideBInput by remember { mutableStateOf("Paddock B") }
@@ -2831,7 +2833,16 @@ fun MapScreen(
                         Text("This plan cannot be drawn against the current pasture boundary.", color = Color.Red)
                     } else {
                         result.regions.forEach { region ->
-                            Text(String.format(Locale.US, "%s: %.1f acres", region.label, region.acreage))
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    String.format(Locale.US, "%s: %.1f acres", region.label, region.acreage),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = {
+                                    renamingPaddockRegionKey = region.key
+                                    paddockRegionLabelInput = region.label
+                                }) { Text("Rename", fontSize = 10.sp) }
+                            }
                         }
                         Text(
                             String.format(Locale.US, "Parent pasture: %.1f acres (map estimate)", result.parentAcreage),
@@ -2983,6 +2994,42 @@ fun MapScreen(
             },
             dismissButton = { TextButton(onClick = { showPaddockPlanDialog = false }) { Text("Close") } }
         )
+    }
+
+    renamingPaddockRegionKey?.let { regionKey ->
+        val plan = selectedPaddockPlan
+        if (plan != null) {
+            AlertDialog(
+                onDismissRequest = { renamingPaddockRegionKey = null },
+                title = { Text("Rename Planning Region") },
+                text = {
+                    OutlinedTextField(
+                        value = paddockRegionLabelInput,
+                        onValueChange = { paddockRegionLabelInput = it },
+                        label = { Text("Region label") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        enabled = paddockRegionLabelInput.isNotBlank(),
+                        onClick = {
+                            scope.launch {
+                                runCatching {
+                                    withContext(Dispatchers.IO) {
+                                        paddockPlanDao.renameRegionLabel(plan.id, regionKey, paddockRegionLabelInput)
+                                    }
+                                }.onSuccess { renamingPaddockRegionKey = null }
+                                    .onFailure { error ->
+                                        Toast.makeText(context, error.message ?: "Could not rename region", Toast.LENGTH_LONG).show()
+                                    }
+                            }
+                        }
+                    ) { Text("Save") }
+                },
+                dismissButton = { TextButton(onClick = { renamingPaddockRegionKey = null }) { Text("Cancel") } }
+            )
+        }
     }
 
     editingPaddockDividerPoints?.let { divider ->

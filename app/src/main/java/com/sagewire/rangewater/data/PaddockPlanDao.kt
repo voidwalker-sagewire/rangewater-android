@@ -84,6 +84,8 @@ interface PaddockPlanDao {
     @Update suspend fun updateDivider(row: PaddockDividerEntity)
 
     @Query("DELETE FROM paddock_region_labels WHERE planId = :planId") suspend fun deleteLabels(planId: Long)
+    @Query("UPDATE paddock_region_labels SET label = :label WHERE planId = :planId AND regionKey = :regionKey")
+    suspend fun renameRegionLabelRaw(planId: Long, regionKey: String, label: String): Int
     @Query("DELETE FROM paddock_divider_node_refs WHERE dividerId = :dividerId") suspend fun deleteRefs(dividerId: Long)
     @Query("DELETE FROM paddock_dividers WHERE id = :dividerId") suspend fun deleteDividerRaw(dividerId: Long)
     @Query("DELETE FROM paddock_plan_nodes WHERE id = :nodeId") suspend fun deleteNodeRaw(nodeId: Long)
@@ -380,6 +382,21 @@ interface PaddockPlanDao {
     suspend fun renameDivider(dividerId: Long, name: String, now: Long = System.currentTimeMillis()) {
         val divider = dividersForNodeMutation(dividerId)
         updateDivider(divider.copy(name = normalizedLabel(name, divider.name), updatedAt = now))
+    }
+
+    @Transaction
+    suspend fun renameRegionLabel(
+        planId: Long,
+        regionKey: String,
+        label: String,
+        now: Long = System.currentTimeMillis()
+    ) {
+        val plan = getPlan(planId) ?: throw IllegalArgumentException("Paddock plan #$planId not found")
+        check(plan.archivedAt == null) { "Archived plans cannot be edited" }
+        val normalized = label.trim()
+        require(normalized.isNotEmpty()) { "Region label cannot be blank" }
+        check(renameRegionLabelRaw(planId, regionKey, normalized) == 1) { "Planning region no longer exists" }
+        updatePlan(plan.copy(updatedAt = now))
     }
 
     @Transaction
