@@ -16,7 +16,6 @@ import org.locationtech.jts.geom.Polygon
 import org.locationtech.jts.geom.PrecisionModel
 import org.locationtech.jts.operation.polygonize.Polygonizer
 import org.locationtech.jts.operation.union.UnaryUnionOp
-import org.locationtech.jts.precision.GeometryPrecisionReducer
 import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.abs
@@ -53,12 +52,6 @@ object PolystrandPlanEngine {
     private const val MIN_REGION_SQUARE_METERS = 1.0
     private const val EPSILON = 1e-9
     private val geometryFactory = GeometryFactory(PrecisionModel(), 4326)
-    // Field boundaries and boundary-anchor interpolation arrive as floating-point GPS
-    // coordinates.  Two values that describe the same boundary point can differ below
-    // map precision, which leaves a divider microscopically disconnected from the ring
-    // when JTS nodes the linework.  A centimetre-scale fixed grid makes those shared
-    // points identical before polygonization without changing any meaningful acreage.
-    private val nodingPrecisionModel = PrecisionModel(100_000_000.0)
 
     fun resolve(
         plan: PaddockPlanEntity,
@@ -126,13 +119,9 @@ object PolystrandPlanEngine {
             }
         }
 
-        val precisionReducer = GeometryPrecisionReducer(nodingPrecisionModel).apply {
-            setChangePrecisionModel(true)
-            setRemoveCollapsedComponents(true)
-        }
         val nodingBoundary = boundaryWithAnchors(pasture, resolvedNodes.values.toList())
-        val linework = mutableListOf<Geometry>(precisionReducer.reduce(nodingBoundary))
-        linework += resolvedDividers.map { precisionReducer.reduce(line(it.coordinates)) }
+        val linework = mutableListOf<Geometry>(nodingBoundary)
+        linework += resolvedDividers.map { line(it.coordinates) }
         val noded = UnaryUnionOp.union(linework)
         // Keep every face created by the noded boundary plus divider linework.
         // `extractOnlyPolygonal=true` intentionally drops adjacent faces to produce
