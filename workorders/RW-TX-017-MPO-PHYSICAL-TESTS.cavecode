@@ -67,6 +67,15 @@ Samsung Tab S7 result: NOT RUN
 Installed artifact identity:
 Backup fixtures used:
 Observed failures or notes:
+- 2026-10-02, Samsung physical glass, Google Play Internal 1.3.0 (21): FAILED.
+  Straight assisted placement and custom-waypoint placement both reached a save review
+  with plausible region geometry, then rejected the save with "Combined dividers do not
+  create valid planning regions." The screenshots also showed the placement guidance
+  banner layered over the save dialog, materially obstructing the field workflow.
+- This failure blocks physical acceptance and production authorization. The rejected
+  transaction did not authorize or establish a saved plan.
+- Corrective target: RangeWater 1.3.1, versionCode 22. Retest every unchecked step; do
+  not infer acceptance from the 1.3.0 result.
 
 Final physical-glass decision: NOT GRANTED
 Decision authority: Michael

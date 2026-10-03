@@ -2452,7 +2452,13 @@ fun MapScreen(
             }
         }
 
-        transientGuidance?.let { message -> GuidanceBanner(message, onDismiss = { transientGuidance = null }) }
+        if (!showPaddockSaveDialog && !showPaddockCustomSaveDialog && !showPaddockModeDialog &&
+            !showPaddockPlanDialog && !showPaddockPointEditor
+        ) {
+            transientGuidance?.let { message ->
+                GuidanceBanner(message, onDismiss = { transientGuidance = null })
+            }
+        }
         ActiveAttribution(activeMode, currentZoom)
     }
 

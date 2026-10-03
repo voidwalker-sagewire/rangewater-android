@@ -31,11 +31,14 @@ record. Michael is the Project Owner, Lead Architect, and Final Decision Authori
   `df061bc07d8b09c6f678d56b1d439aa3e4e02923`; superseded for current distribution.
 - Production continuity branch: `codex/rw-tx-016-pmp`.
 - Active implementation branch: `codex/rw-tx-017-mpo`.
-- RW-TX-017-MPO Revision 2: implemented and automated-verification passed for
-  RangeWater 1.3.0, versionCode 21, at source
-  `5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb` in GitHub Actions run 162.
-- RangeWater 1.3.0 remains pending physical-glass acceptance; no Google Play internal,
-  production, or publication action is authorized.
+- RW-TX-017-MPO Revision 2: RangeWater 1.3.0, versionCode 21, passed automated
+  verification at source `5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb` in GitHub Actions
+  run 162 and was released to Google Play Internal testing under Michael's exact-artifact
+  authorization.
+- Physical testing on 2026-10-02 withheld acceptance after straight and custom divider
+  saves rejected plausible field geometry. Corrective RangeWater 1.3.1, versionCode 22,
+  is in implementation and has no Google Play release authority.
+- Production promotion and publication remain unauthorized.
 - Automated acceptance: passed.
 - Physical field acceptance: passed on Michael's Samsung phone and Samsung Tab S7.
 - Google Play internal release: delivered; controlled 1.1.0-to-1.2.0 in-place migration

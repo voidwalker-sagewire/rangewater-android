@@ -42,6 +42,44 @@ class PolystrandPlanEngineTest {
     }
 
     @Test
+    fun irregularGpsBoundaryWithInterpolatedAnchorsProducesReconciledRegions() {
+        val fieldPlan = plan.copy(pastureId = 7)
+        val nodes = listOf(
+            PaddockPlanNodeEntity(
+                id = 1,
+                planId = fieldPlan.id,
+                nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
+                boundaryJunctionAId = 101,
+                boundaryJunctionBId = 205,
+                boundarySegmentRatio = 0.318271639,
+                createdAt = 1,
+                updatedAt = 1
+            ),
+            PaddockPlanNodeEntity(
+                id = 2,
+                planId = fieldPlan.id,
+                nodeKind = PaddockPlanNodeKind.BOUNDARY_ANCHOR,
+                boundaryJunctionAId = 409,
+                boundaryJunctionBId = 511,
+                boundarySegmentRatio = 0.672811473,
+                createdAt = 1,
+                updatedAt = 1
+            )
+        )
+        val result = PolystrandPlanEngine.resolve(
+            fieldPlan,
+            nodes,
+            listOf(PaddockDividerEntity(1, fieldPlan.id, "Field divider", 0, 1, 1)),
+            refs(1, 1, 2),
+            emptyList(),
+            irregularGpsPasture()
+        )
+
+        assertEquals(2, result.regions.size)
+        assertEquals(result.parentAcreage, result.regions.sumOf { it.acreage }, result.parentAcreage * 0.005)
+    }
+
+    @Test
     fun deliberateSharedJunctionProducesFourRegions() {
         val nodes = listOf(
             boundary(1, 1, 4, 0.5), boundary(2, 2, 3, 0.5),
@@ -116,6 +154,26 @@ class PolystrandPlanEngineTest {
             junctions.mapIndexed { index, junction ->
                 PastureVertexWithJunction(
                     PastureVertexEntity(index.toLong() + 20, 1, index, junction.id),
+                    junction
+                )
+            }
+        )
+    }
+
+    private fun irregularGpsPasture(): PastureWithVertices {
+        val junctions = listOf(
+            FenceJunctionEntity(101, 40.000110927341, -80.000370618227),
+            FenceJunctionEntity(205, 39.999930381552, -79.998810427613),
+            FenceJunctionEntity(307, 40.000740736841, -79.997920186432),
+            FenceJunctionEntity(409, 40.002190583764, -79.998330914725),
+            FenceJunctionEntity(511, 40.002520196438, -79.999760327519),
+            FenceJunctionEntity(613, 40.001410842367, -80.000620744103)
+        )
+        return PastureWithVertices(
+            PastureEntity(7, "Irregular GPS field", "", 1, 1),
+            junctions.mapIndexed { index, junction ->
+                PastureVertexWithJunction(
+                    PastureVertexEntity(index.toLong() + 70, 7, index, junction.id),
                     junction
                 )
             }

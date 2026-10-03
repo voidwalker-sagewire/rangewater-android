@@ -134,14 +134,15 @@ RW-TX-016 release authority and acceptance:
 RW-TX-017 implementation and verification:
 - RW-TX-017-MPO Revision 2: RATIFIED and ASSIGNED by Michael.
 - Active implementation branch: codex/rw-tx-017-mpo.
-- Target: RangeWater 1.3.0, versionCode 21, Room schema 9, archive format 4.
+- Verified internal-test artifact: RangeWater 1.3.0, versionCode 21, Room schema 9,
+  archive format 4.
 - Exact implementation candidate:
   5a8e6bf8d290f305b854ec742bef98e9dc6bd2eb.
 - Automated verification: PASSED in GitHub Actions run 36967155368 (run 162), including
   imagery-gateway regression, JVM tests, Room instrumentation, signed field APK,
   field-certificate verification, signed Play AAB, and upload-certificate verification.
-- State: VERIFIED — PENDING PHYSICAL-GLASS ACCEPTANCE.
-- Google Play internal testing, production submission, and publication: NOT AUTHORIZED.
+- State: VERIFIED — PHYSICAL-GLASS ACCEPTANCE WITHHELD AFTER OBSERVED FAILURE.
+- Google Play production submission and publication: NOT AUTHORIZED.
 - Implementation transition:
   continuity/transitions/RW-FK-TR-014-RW-TX-017-MPO-IMPLEMENTED.cavecode.
 - Verification transition:
@@ -152,6 +153,17 @@ RW-TX-017 implementation and verification:
   exact verified versionCode 21 bundle from run 162 only.
 - Internal-release authorization transition:
   continuity/transitions/RW-FK-TR-016-RW-TX-017-INTERNAL-RELEASE-AUTHORIZED.cavecode.
+- VersionCode 21 was published to Google Play Internal testing and delivered to Michael's
+  Samsung device on 2026-10-02 after Play initially left version 1.2.0 installed.
+- Physical field test then reproduced a blocking topology defect: both straight and
+  custom-waypoint saves could report "Combined dividers do not create valid planning
+  regions" after displaying plausible region geometry. Placement guidance also obscured
+  the save dialog. Evidence is recorded in the physical-test card.
+- Michael additionally identified that forage observations still snapshot the complete
+  parent-pasture acreage rather than a selected temporary planning region. That product
+  boundary requires an explicit corrective specification before production acceptance.
+- Corrective implementation target: RangeWater 1.3.1, versionCode 22. It is not yet
+  verified, field accepted, or authorized for Google Play release.
 
 🪨 BLOCK 4 — SUPERSESSION STATUS
 --------------------------------------------------------------------------------

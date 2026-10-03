@@ -1,0 +1,65 @@
+================================================================================
+RANGEWATER CONTINUITY CAPTURE
+RW-FK-CAP-004 — POLYSTRAND PHYSICAL FAILURE AND FORAGE-REGION GAP
+================================================================================
+Record-ID: RW-FK-CAP-004
+Project: RangeWater
+Revision: 1
+State: CAPTURED — PHYSICAL ACCEPTANCE BLOCKED
+Authority: Michael for physical observations and product intent
+Recorded-By: Ash / OpenAI Codex
+Recorded-At: 2026-10-02
+Source-Type: Michael physical-device test and screenshots
+Repository: voidwalker-sagewire/rangewater-android
+Related-Work-Order: RW-TX-017-MPO Revision 2
+Observed-Artifact: Google Play Internal RangeWater 1.3.0, versionCode 21
+
+🪨 BLOCK 1 — PHYSICAL TOPOLOGY FAILURE
+--------------------------------------------------------------------------------
+On Michael's Samsung device, both assisted straight placement and custom-waypoint
+placement reached a save review showing plausible proposed region geometry. Saving then
+failed with:
+
+"Combined dividers do not create valid planning regions"
+
+The save-dialog presentation was also obstructed by the still-visible placement-guidance
+banner and system toast. This is a failed physical-glass result. It does not grant field
+acceptance or production authority.
+
+🪨 BLOCK 2 — FORAGE-REGION PRODUCT GAP
+--------------------------------------------------------------------------------
+Michael identified that a grazing-stick observation taken for one temporary paddock must
+not silently calculate total forage against the complete parent pasture. The current
+implementation snapshots the parent PastureEntity acreage, so a measurement intended for
+one region of a divided 140-acre pasture would still use approximately 140 acres.
+
+Required product decision before implementation:
+- allow Record Forage to target the whole parent pasture or one named active planning
+  region;
+- visibly show the selected acreage basis before Save;
+- snapshot the selected region identity, label, geometry lineage, and acreage so later
+  plan edits do not rewrite historical observations; and
+- define behavior when the selected planning region is later renamed, reshaped, archived,
+  deleted, or permanently converted.
+
+This captured requirement is not silently added to ratified RW-TX-017-MPO Revision 2.
+It requires an explicit corrective proposal and Michael's ratification before its data
+model and archive consequences are implemented.
+
+🪨 BLOCK 3 — CORRECTIVE BOUNDARY
+--------------------------------------------------------------------------------
+- Topology robustness and save-dialog obstruction are implementation defects within the
+  already-ratified multi-polystrand workflow and may be corrected under the existing
+  assignment.
+- Michael explicitly authorized Codex on 2026-10-02 to commit and push the 1.3.1
+  corrective source changes and physical-test failure records to
+  codex/rw-tx-017-mpo.
+- The corrective application identity is RangeWater 1.3.1, versionCode 22.
+- VersionCode 22 requires fresh automated verification, physical testing, and explicit
+  Google Play Internal release authority.
+- The forage-region relationship remains captured, not ratified or implemented.
+- Production promotion remains NOT AUTHORIZED.
+
+================================================================================
+END — RW-FK-CAP-004 — CAPTURED — PHYSICAL ACCEPTANCE BLOCKED
+================================================================================
