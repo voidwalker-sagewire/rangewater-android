@@ -130,7 +130,8 @@ object PolystrandPlanEngine {
             setChangePrecisionModel(true)
             setRemoveCollapsedComponents(true)
         }
-        val linework = mutableListOf<Geometry>(precisionReducer.reduce(parent.boundary))
+        val nodingBoundary = boundaryWithAnchors(pasture, resolvedNodes.values.toList())
+        val linework = mutableListOf<Geometry>(precisionReducer.reduce(nodingBoundary))
         linework += resolvedDividers.map { precisionReducer.reduce(line(it.coordinates)) }
         val noded = UnaryUnionOp.union(linework)
         // Keep every face created by the noded boundary plus divider linework.
@@ -218,6 +219,40 @@ object PolystrandPlanEngine {
     private fun line(coordinates: List<PastureCoordinate>): LineString = geometryFactory.createLineString(
         coordinates.map { Coordinate(it.longitude, it.latitude) }.toTypedArray()
     )
+
+    /**
+     * Inserts durable boundary anchors into their parent boundary segments before
+     * polygonization. The anchor and divider endpoint then use the same coordinate,
+     * instead of asking the noder to rediscover a point produced by interpolation.
+     */
+    private fun boundaryWithAnchors(
+        pasture: PastureWithVertices,
+        nodes: List<ResolvedPaddockNode>
+    ): LineString {
+        val orderedVertices = pasture.vertices.sortedBy { it.sequence }
+        val boundaryAnchors = nodes.filter { it.node.nodeKind == PaddockPlanNodeKind.BOUNDARY_ANCHOR }
+        val coordinates = mutableListOf<Coordinate>()
+        orderedVertices.indices.forEach { index ->
+            val start = orderedVertices[index]
+            val end = orderedVertices[(index + 1) % orderedVertices.size]
+            coordinates += Coordinate(start.longitude, start.latitude)
+            boundaryAnchors
+                .filter { resolved ->
+                    val node = resolved.node
+                    node.boundaryJunctionAId == minOf(start.junctionId, end.junctionId) &&
+                        node.boundaryJunctionBId == maxOf(start.junctionId, end.junctionId)
+                }
+                .sortedBy { resolved ->
+                    val ratio = requireNotNull(resolved.node.boundarySegmentRatio)
+                    if (start.junctionId < end.junctionId) ratio else 1.0 - ratio
+                }
+                .forEach { resolved ->
+                    coordinates += Coordinate(resolved.coordinate.longitude, resolved.coordinate.latitude)
+                }
+        }
+        coordinates += coordinates.first().copy()
+        return geometryFactory.createLineString(coordinates.toTypedArray())
+    }
 
     private fun polygon(coordinates: List<PastureCoordinate>): Polygon {
         require(coordinates.size >= 3) { "Pasture requires at least three corners" }
