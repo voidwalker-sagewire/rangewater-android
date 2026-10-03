@@ -120,6 +120,8 @@ object PolystrandPlanEngine {
         }
 
         val nodingBoundary = boundaryWithAnchors(pasture, resolvedNodes.values.toList())
+        val nodingParent = geometryFactory.createPolygon(nodingBoundary.coordinates)
+        require(nodingParent.isValid) { "Boundary anchors create invalid parent linework" }
         val linework = mutableListOf<Geometry>(nodingBoundary)
         linework += resolvedDividers.map { line(it.coordinates) }
         val noded = UnaryUnionOp.union(linework)
@@ -130,7 +132,7 @@ object PolystrandPlanEngine {
         @Suppress("UNCHECKED_CAST")
         val candidatePolygons = polygonizer.polygons as Collection<Polygon>
         val pieces = candidatePolygons
-            .filter { it.area > 0.0 && parent.covers(it.interiorPoint) }
+            .filter { it.area > 0.0 && nodingParent.covers(it.interiorPoint) }
             .sortedWith(compareBy<Polygon>({ it.centroid.y }, { it.centroid.x }, { it.area }))
         require(pieces.size >= 2) { "Combined dividers do not create valid planning regions" }
 
@@ -141,7 +143,7 @@ object PolystrandPlanEngine {
             .filter { it.regionKey.startsWith("legacy-side-") }
             .sortedBy { it.regionKey }
         val regions = pieces.mapIndexed { index, piece ->
-            require(parent.covers(piece) && piece.isValid) { "A derived region is invalid" }
+            require(nodingParent.covers(piece) && piece.isValid) { "A derived region is invalid" }
             val coordinates = piece.exteriorRing.coordinates.dropLast(1).map {
                 PastureCoordinate(latitude = it.y, longitude = it.x)
             }
