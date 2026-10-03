@@ -162,8 +162,18 @@ RW-TX-017 implementation and verification:
 - Michael additionally identified that forage observations still snapshot the complete
   parent-pasture acreage rather than a selected temporary planning region. That product
   boundary requires an explicit corrective specification before production acceptance.
-- Corrective implementation target: RangeWater 1.3.1, versionCode 22. It is not yet
-  verified, field accepted, or authorized for Google Play release.
+- Corrective candidate: RangeWater 1.3.1, versionCode 22, exact source
+  94aa8bf2c7d35f7f3bb888ac2012cc7f4ec21557.
+- Corrective automated verification: PASSED in GitHub Actions run 37085749926 (run 168),
+  including imagery-gateway regression, 91 JVM tests, Room instrumentation, stable field
+  signing/certificate verification, and Play-bundle signing/certificate verification.
+- Corrective artifacts from run 168:
+  - RangeWater-Field-APK artifact 11260139532, GitHub artifact digest
+    sha256:e930abc0bf9f0b40670e79a048955c58cd2d8a591adbd03ad5cacf64897672df.
+  - RangeWater-Play-AAB artifact 11260104706, GitHub artifact digest
+    sha256:bc23ecd49bf51b65e94d07b72929aeed7c9304890890424f8e86786bfdce2e4b.
+- VersionCode 22 remains pending physical retest and is not authorized for Google Play
+  Internal release, production submission, or publication.
 
 🪨 BLOCK 4 — SUPERSESSION STATUS
 --------------------------------------------------------------------------------

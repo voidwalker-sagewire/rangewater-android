@@ -37,7 +37,9 @@ record. Michael is the Project Owner, Lead Architect, and Final Decision Authori
   authorization.
 - Physical testing on 2026-10-02 withheld acceptance after straight and custom divider
   saves rejected plausible field geometry. Corrective RangeWater 1.3.1, versionCode 22,
-  is in implementation and has no Google Play release authority.
+  passed automated verification at source `94aa8bf2c7d35f7f3bb888ac2012cc7f4ec21557`
+  in GitHub Actions run 168; it remains pending physical retest and has no Google Play
+  release authority.
 - Production promotion and publication remain unauthorized.
 - Automated acceptance: passed.
 - Physical field acceptance: passed on Michael's Samsung phone and Samsung Tab S7.
