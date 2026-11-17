@@ -1,0 +1,53 @@
+name: Validate Imagery Gateway
+
+on:
+  pull_request:
+    paths:
+      - "imagery-gateway/**"
+      - ".github/workflows/imagery-gateway-validation.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "imagery-gateway/**"
+      - ".github/workflows/imagery-gateway-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: imagery-gateway
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: imagery-gateway/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Show resolved Wrangler version
+        run: npm ls wrangler --depth=0
+
+      - name: Check dependency advisories
+        run: npm audit --audit-level=high
+
+      - name: Run gateway tests
+        run: npm test
+
+      - name: Bundle Worker without deploying
+        run: npx --no-install wrangler deploy --dry-run --outdir "$RUNNER_TEMP/rangewater-imagery-gateway"
