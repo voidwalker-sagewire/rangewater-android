@@ -1151,3 +1151,16 @@ to help producers plan trough placement, fence layouts, and pasture utilization.
 ================================================================================
 END — RANGEWATER MASTER STATE & PROJECT MEMORY
 ================================================================================
+
+BUILD MAINTENANCE PREPARATION — 2026-10-20
+BUILD-STAB-20261020: owner authorized preparation of Ubuntu 24.04 runner pins.
+Record: docs/maintenance/BUILD-STABILIZATION-2026-10-20.md
+Prepared against main at 6a743c2c7cd7adfe6600eb136a5af088401daad4.
+This maintenance branch is pending review/merge; no release, deployment, or field
+acceptance is implied. Existing product states and work orders remain authoritative.
+
+BUILD MAINTENANCE REFRESH — 2026-11-18
+Refreshed PR #4 against main d55adc03f0b3cb2615ece36bc6fdf1559527b452;
+Gradle 8.14.7 and imagery-gateway Wrangler 4.158.0 are preserved.
+Validation and artifact evidence are maintained in the PR linked from the maintenance record.
+Status: preparation and build verification only; no merge or publication.

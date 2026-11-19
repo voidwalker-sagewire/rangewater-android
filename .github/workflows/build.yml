@@ -6,12 +6,12 @@ name: Build RangeWater Field APK and Play Bundle
 
 on:
   push:
-    branches: [ "main", "codex/rw-tx-008-jct-rev2", "codex/rw-tx-009-gte", "codex/rw-tx-010-hrd", "codex/rw-tx-011-bkr", "codex/rw-tx-012-mch", "codex/rw-tx-013-ply", "codex/rw-1.0.1-map-control", "codex/gradle-security-20261116" ]
+    branches: [ "main", "codex/rw-tx-008-jct-rev2", "codex/rw-tx-009-gte", "codex/rw-tx-010-hrd", "codex/rw-tx-011-bkr", "codex/rw-tx-012-mch", "codex/rw-tx-013-ply", "codex/rw-1.0.1-map-control", "codex/gradle-security-20261116", "codex/build-stabilization-20261020" ]
   workflow_dispatch:
 
 jobs:
   imagery-gateway-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Repository
@@ -33,7 +33,7 @@ jobs:
         run: npm test
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RANGEWATER_FIELD_KEYSTORE_BASE64: ${{ secrets.RANGEWATER_FIELD_KEYSTORE_BASE64 }}
       RANGEWATER_FIELD_STORE_PASSWORD: ${{ secrets.RANGEWATER_FIELD_STORE_PASSWORD }}
