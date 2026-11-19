@@ -21,9 +21,9 @@ This pins the OS release, not an immutable runner image. GitHub still updates th
 
 ## Scope and validation boundary
 
-Only runner labels and maintenance documentation change. Existing triggers, permissions, commands, dependencies, signing, artifact retention, product versions, and deployment behavior are preserved. This work does not merge the branch, publish an app, deploy a service, flash firmware, or establish field acceptance.
+Runner labels, the exact maintenance-branch push allowlist, and maintenance documentation change. The additional push branch enables the existing verification build before merge. Permissions, commands, dependencies, signing, artifact retention, product versions, and deployment behavior are preserved. This work does not merge the branch, publish an app, deploy a service, flash firmware, or establish field acceptance.
 
-Local validation compares parsed workflow structure before and after: only `jobs.*.runs-on` may differ, and every changed label must be `ubuntu-24.04`. Remote source is read back after writing. Existing GitHub event rules determine whether CI runs; the pull request checks/run history are the authority for compiler and test results. A runner-label pin alone is not a claim of passing CI.
+Local validation compares parsed workflow structure before and after: only `jobs.*.runs-on` and the addition of `codex/build-stabilization-20261020` to `on.push.branches` may differ. Every changed runner label must be `ubuntu-24.04`. Remote source is read back after writing. Existing GitHub event rules determine whether CI runs; the pull request checks/run history are the authority for compiler and test results. A runner-label pin alone is not a claim of passing CI.
 
 Deployment, release-signing, and automatic version-bump workflows are not manually dispatched for validation. Any workflow limited to pushes on its target branch cannot be runtime-verified from this preparation branch without a separate approved trigger change or test dispatch.
 
@@ -32,3 +32,13 @@ Deployment, release-signing, and automatic version-bump workflows are not manual
 Review this maintenance-only diff and available CI results before merging into `main`. Prepare a separate Ubuntu 26.04 compatibility test when migration is desired; do not remove this pin merely because the label migration completes. Existing product work orders and release/field acceptance states retain their authority.
 
 Source: https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration/
+
+
+## Refresh — November 18, 2026
+
+- Refreshed the existing PR #4 against current main `d55adc03f0b3cb2615ece36bc6fdf1559527b452`.
+- Preserved the merged Gradle 8.14.7 security update and gateway Wrangler 4.158.0 lockfile update.
+- Application source and product versions are unchanged.
+- Added this maintenance branch to the existing build workflow's push allowlist so its JVM tests, Room emulator tests, signing verification, APK and AAB artifact steps run before merge.
+- Exact verification status and run links are maintained in [PR #4](https://github.com/voidwalker-sagewire/rangewater-android/pull/4); review readiness requires successful CI on the refreshed head.
+- No Google Play publication, installation, production deployment, or physical-device acceptance is included.
